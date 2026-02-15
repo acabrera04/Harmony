@@ -13,6 +13,7 @@
 | Version | Date       | Description                              |
 |---------|------------|------------------------------------------|
 | 1.0     | 2026-02-12 | Initial development specification        |
+| 2.0     | 2026-02-15 | Cross-spec consolidation: label fixes, cache key alignment, convention standardization |
 
 ### Author and Role
 
@@ -54,9 +55,9 @@
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           EDGE LAYER (CDN - CloudFlare)                          │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ E1 Edge Cache Module                                                       │  │
+│  │ W1 Edge Cache Module                                                       │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
-│  │  │ E1.1 CacheRouter            │    │ E1.2 BotDetector               │   │  │
+│  │  │ W1.1 CacheRouter            │    │ W1.2 BotDetector               │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
 │  │  │ cacheKey: string            │    │ userAgent: string               │   │  │
 │  │  │ ttl: number                 │    │ isBot: boolean                  │   │  │
@@ -160,9 +161,9 @@
 │  │  │ cacheService: ref           │    │ ─────────────────────────────── │   │  │
 │  │  │ ─────────────────────────── │    │ filterSensitiveContent()        │   │  │
 │  │  │ isChannelPublic()           │    │ redactUserMentions()            │   │  │
-│  │  │ isServerPublic()            │    │ sanitizeAttachments()           │   │  │
-│  │  │ getVisibilityStatus()       │    └─────────────────────────────────┘   │  │
-│  │  └─────────────────────────────┘                                          │  │
+│  │  │ isServerPublic()            │    │ sanitizeForDisplay()            │   │  │
+│  │  │ getVisibilityStatus()       │    │ sanitizeAttachments()           │   │  │
+│  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ C4.3 RateLimiter            │    │ C4.4 AnonymousSessionManager    │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
@@ -196,6 +197,7 @@
 │  │  │ isAttachmentPublic()        │    │ generateDescription()           │   │  │
 │  │  └─────────────────────────────┘    │ generateStructuredData()        │   │  │
 │  │                                     │ generateBreadcrumbs()           │   │  │
+│  │                                     │ getCanonicalUrl()               │   │  │
 │  │                                     └─────────────────────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
@@ -265,14 +267,14 @@
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ D8.1 ChannelVisibilityCache │    │ D8.2 PublicMessagesCache        │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
-│  │  │ key: channel:{slug}:vis     │    │ key: channel:{id}:msgs:{page}   │   │  │
+│  │  │ key: channel:{id}:visibility│    │ key: channel:{id}:msgs:{page}   │   │  │
 │  │  │ value: VisibilityEnum       │    │ value: MessageDTO[]             │   │  │
 │  │  │ ttl: 3600 seconds           │    │ ttl: 60 seconds                 │   │  │
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ D8.3 ServerInfoCache        │    │ D8.4 GuestSessionCache          │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
-│  │  │ key: server:{slug}:info     │    │ key: guest:{sessionId}          │   │  │
+│  │  │ key: server:{id}:info       │    │ key: guest:{sessionId}          │   │  │
 │  │  │ value: ServerInfoDTO        │    │ value: GuestPreferences         │   │  │
 │  │  │ ttl: 300 seconds            │    │ ttl: 86400 seconds              │   │  │
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
@@ -280,20 +282,22 @@
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+> **Note:** All cache keys use UUID-based identifiers (e.g., `channel:{channelId}:visibility`) for consistency across all Harmony specs.
+
 ### 2.2 Information Flow Summary
 
 | Flow ID | Source | Destination | Data | Protocol |
 |---------|--------|-------------|------|----------|
-| F1 | A1 Guest User | E1.1 CacheRouter | HTTP GET Request | HTTPS |
-| F2 | E1.1 CacheRouter | C1.1 PublicChannelPage | Cache Miss Forward | HTTPS |
+| F1 | A1 Guest User | W1.1 CacheRouter | HTTP GET Request | HTTPS |
+| F2 | W1.1 CacheRouter | C1.1 PublicChannelPage | Cache Miss Forward | HTTPS |
 | F3 | C1.1 PublicChannelPage | C3.1 PublicChannelController | Channel Data Request | Internal |
 | F4 | C3.1 PublicChannelController | C4.1 VisibilityGuard | Visibility Check | Internal |
 | F5 | C4.1 VisibilityGuard | C6.1 ChannelRepository | Database Query | Internal |
 | F6 | C3.1 PublicChannelController | C5.1 MessageService | Message Fetch | Internal |
 | F7 | C5.1 MessageService | C6.2 MessageRepository | Paginated Query | Internal |
 | F8 | C5.4 SEOService | C1.2 SEOMetadataComponent | SEO Data | Internal |
-| F9 | C1.1 PublicChannelPage | E1.1 CacheRouter | Rendered HTML | HTTPS |
-| F10 | E1.1 CacheRouter | A1 Guest User | Cached/Fresh Response | HTTPS |
+| F9 | C1.1 PublicChannelPage | W1.1 CacheRouter | Rendered HTML | HTTPS |
+| F10 | W1.1 CacheRouter | A1 Guest User | Cached/Fresh Response | HTTPS |
 
 ### 2.3 Request Path Diagram
 
@@ -437,7 +441,7 @@ Guest User                CDN Edge              Next.js SSR           Database
     ├─────────────────────────┤         ├─────────────────────────┤
     │ + id: string            │         │ + id: string            │
     │ + name: string          │         │ + content: string       │
-    │ + slug: string          │         │ + author: AuthorDTO     │
+    │ + slug: string          │         │ + author: PublicAuthorDTO│
     │ + topic: string         │         │ + timestamp: DateTime   │
     │ + messageCount: number  │         │ + attachments: []       │
     │ + serverSlug: string    │         │ + permalink: string     │
@@ -473,7 +477,7 @@ Guest User                CDN Edge              Next.js SSR           Database
     └───────────────────────────────────────────────────────────────────────────┘
 
     ┌─────────────────────────┐         ┌─────────────────────────┐
-    │ CL5.1 Channel           │◄────────│ CL5.2 Message           │
+    │ CL-D7 Channel           │◄────────│ CL-D8 Message           │
     │ <<Entity>>              │ 1    *  │ <<Entity>>              │
     ├─────────────────────────┤         ├─────────────────────────┤
     │ + id: UUID              │         │ + id: UUID              │
@@ -488,7 +492,7 @@ Guest User                CDN Edge              Next.js SSR           Database
               │
               │ 1
     ┌─────────┴───────────────┐         ┌─────────────────────────┐
-    │ CL5.3 Server            │         │ CL5.4 User              │
+    │ CL-D9 Server            │         │ CL-D10 User             │
     │ <<Entity>>              │         │ <<Entity>>              │
     ├─────────────────────────┤         ├─────────────────────────┤
     │ + id: UUID              │         │ + id: UUID              │
@@ -498,18 +502,30 @@ Guest User                CDN Edge              Next.js SSR           Database
     │ + isPublic: boolean     │         │ + publicProfile: bool   │
     │ + memberCount: number   │         └─────────────────────────┘
     └─────────────────────────┘
+
+    ┌─────────────────────────┐
+    │ CL-D11 Attachment       │
+    │ <<Entity>>              │
+    ├─────────────────────────┤
+    │ + id: UUID              │
+    │ + messageId: UUID       │
+    │ + filename: string      │
+    │ + url: string           │
+    │ + contentType: string   │
+    │ + sizeBytes: number     │
+    └─────────────────────────┘
 ```
 
 ---
 
 ## 4. List of Classes
 
-### 4.1 Edge Layer (E1)
+### 4.1 Edge Layer (W1)
 
 | Label | Class Name | Type | Purpose |
 |-------|------------|------|---------|
-| CL-E1.1 | CacheRouter | Edge Worker | Routes requests through CDN cache, determines cache hit/miss, manages cache keys |
-| CL-E1.2 | BotDetector | Edge Worker | Identifies search engine bots vs human users, applies appropriate rate limits and headers |
+| CL-W1.1 | CacheRouter | Edge Worker | Routes requests through CDN cache, determines cache hit/miss, manages cache keys |
+| CL-W1.2 | BotDetector | Edge Worker | Identifies search engine bots vs human users, applies appropriate rate limits and headers |
 
 ### 4.2 Public View Module (M1)
 
@@ -576,15 +592,38 @@ Guest User                CDN Edge              Next.js SSR           Database
 | CL-D5 | PageDataDTO | DTO | Combined data for SSR page rendering |
 | CL-D6 | SEODataDTO | DTO | SEO metadata for page head |
 
+#### PublicChannelDTO Fields
+
+```typescript
+interface PublicChannelDTO {
+  id: string;           // Channel UUID
+  name: string;         // Display name
+  slug: string;         // URL-safe identifier
+  topic: string;        // Channel topic/description
+  messageCount: number; // Total messages in channel (computed, not a DB column)
+  serverSlug: string;   // Parent server's slug
+}
+```
+
+#### ChannelVisibility Enum
+
+```typescript
+enum ChannelVisibility {
+  PUBLIC_INDEXABLE = 'PUBLIC_INDEXABLE',   // Visible to guests and indexed by search engines
+  PUBLIC_NO_INDEX = 'PUBLIC_NO_INDEX',     // Visible to guests but not indexed
+  PRIVATE = 'PRIVATE'                      // Only visible to authenticated members
+}
+```
+
 ### 4.9 Domain Entities
 
 | Label | Class Name | Type | Purpose |
 |-------|------------|------|---------|
-| CL-E1 | Channel | Entity | Channel domain entity with visibility state |
-| CL-E2 | Message | Entity | Message domain entity |
-| CL-E3 | Server | Entity | Server domain entity |
-| CL-E4 | User | Entity | User domain entity with privacy settings |
-| CL-E5 | Attachment | Entity | Message attachment entity |
+| CL-D7 | Channel | Entity | Channel domain entity with visibility state |
+| CL-D8 | Message | Entity | Message domain entity |
+| CL-D9 | Server | Entity | Server domain entity |
+| CL-D10 | User | Entity | User domain entity with privacy settings |
+| CL-D11 | Attachment | Entity | Message attachment entity |
 
 ---
 
@@ -600,6 +639,8 @@ Guest User                CDN Edge              Next.js SSR           Database
 | guest.sessionId | string | Anonymous session identifier |
 | page.loadState | LoadState | Current page loading state |
 | messages.pagination | PaginationState | Current pagination position |
+
+> **Convention:** `is_public` (boolean) applies to **servers** — whether the server appears in discovery. `visibility` (enum: `PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE`) applies to **channels** — whether channel content is accessible to guests and/or indexed by search engines.
 
 ### 5.2 Page Load State Machine
 
@@ -685,6 +726,8 @@ State Transition Table:
 │ Current State      │ Condition/Action           │ Next State         │ Side Effects                 │
 ├────────────────────┼────────────────────────────┼────────────────────┼──────────────────────────────┤
 │ S1: Cache Check    │ Cache key exists, valid    │ S2: Serve Cached   │ Return cached HTML           │
+│ S1: Cache Check    │ Cache stale (expired <300s)│ S2: Serve Cached   │ Return stale HTML; trigger   │
+│                    │                            │                    │ background revalidation      │
 │ S1: Cache Check    │ Cache miss or expired      │ S3: Origin Request │ Forward to origin            │
 │ S3: Origin Request │ Always                     │ S4: Visibility     │ Query database               │
 │ S4: Visibility     │ visibility != PUBLIC_*     │ S5: Access Denied  │ Return 403 or redirect       │
@@ -809,7 +852,7 @@ Decision Logic:
             ┌───────────────────────────────┐
             │ [F1.1] Request reaches        │
             │ CloudFlare edge               │
-            │ Edge.CacheRouter.checkCache() │
+            │ CacheRouter.checkCache() │
             └───────────────┬───────────────┘
                             │
                             ▼
@@ -835,7 +878,7 @@ Decision Logic:
                 │                                  ▼
                 │                  ┌───────────────────────────────┐
                 │                  │ [F1.6] Look up channel        │
-                │                  │ Server.ChannelRepository.     │
+                │                  │ ChannelRepository.     │
                 │                  │   findBySlug(serverSlug,      │
                 │                  │     channelSlug)              │
                 │                  └───────────────┬───────────────┘
@@ -847,7 +890,7 @@ Decision Logic:
                 │                   ▼                             ▼
                 │      ┌─────────────────────┐    ┌───────────────────────────────┐
                 │      │ [F1.8] Return 404   │    │ [F1.9] Check visibility       │
-                │      │ "Channel not found" │    │ Server.VisibilityGuard.       │
+                │      │ "Channel not found" │    │ VisibilityGuard.       │
                 │      │ page                │    │   isChannelPublic(channelId)  │
                 │      └──────────┬──────────┘    └───────────────┬───────────────┘
                 │                 │                               │
@@ -859,7 +902,7 @@ Decision Logic:
                 │                 │            ▼                                  ▼
                 │                 │  ┌─────────────────────┐   ┌───────────────────────────────┐
                 │                 │  │ [F1.11] Handle      │   │ [F1.12] Fetch server info     │
-                │                 │  │ private channel     │   │ Server.ServerRepository.      │
+                │                 │  │ private channel     │   │ ServerRepository.      │
                 │                 │  │ (See Flow 6.2)      │   │   getPublicInfo(serverId)     │
                 │                 │  └──────────┬──────────┘   └───────────────┬───────────────┘
                 │                 │             │                              │
@@ -867,14 +910,14 @@ Decision Logic:
                 │                 │             │              ┌───────────────────────────────┐
                 │                 │             │              │ [F1.13] Fetch public channels │
                 │                 │             │              │ for sidebar navigation        │
-                │                 │             │              │ Server.ChannelRepository.     │
+                │                 │             │              │ ChannelRepository.     │
                 │                 │             │              │   findPublicByServerId()      │
                 │                 │             │              └───────────────┬───────────────┘
                 │                 │             │                              │
                 │                 │             │                              ▼
                 │                 │             │              ┌───────────────────────────────┐
                 │                 │             │              │ [F1.14] Fetch messages        │
-                │                 │             │              │ Server.MessageService.        │
+                │                 │             │              │ MessageService.        │
                 │                 │             │              │   getMessagesForPublicView(   │
                 │                 │             │              │     channelId, page=1,        │
                 │                 │             │              │     limit=50)                 │
@@ -883,23 +926,31 @@ Decision Logic:
                 │                 │             │                              ▼
                 │                 │             │              ┌───────────────────────────────┐
                 │                 │             │              │ [F1.15] Filter content        │
-                │                 │             │              │ Server.ContentFilter.         │
+                │                 │             │              │ ContentFilter.         │
                 │                 │             │              │   filterSensitiveContent()    │
                 │                 │             │              │   redactUserMentions()        │
                 │                 │             │              └───────────────┬───────────────┘
                 │                 │             │                              │
                 │                 │             │                              ▼
                 │                 │             │              ┌───────────────────────────────┐
+                │                 │             │              │ [F1.15b] Resolve attachments  │
+                │                 │             │              │ AttachmentService.            │
+                │                 │             │              │   getPublicAttachmentUrl()    │
+                │                 │             │              │   isAttachmentPublic()        │
+                │                 │             │              └───────────────┬───────────────┘
+                │                 │             │                              │
+                │                 │             │                              ▼
+                │                 │             │              ┌───────────────────────────────┐
                 │                 │             │              │ [F1.16] Build public author   │
                 │                 │             │              │ DTOs (no user IDs)            │
-                │                 │             │              │ Server.AuthorService.         │
+                │                 │             │              │ AuthorService.         │
                 │                 │             │              │   getPublicAuthorInfo()       │
                 │                 │             │              └───────────────┬───────────────┘
                 │                 │             │                              │
                 │                 │             │                              ▼
                 │                 │             │              ┌───────────────────────────────┐
                 │                 │             │              │ [F1.17] Generate SEO data     │
-                │                 │             │              │ Server.SEOService.            │  [State: S7]
+                │                 │             │              │ SEOService.            │  [State: S7]
                 │                 │             │              │   generatePageTitle()         │
                 │                 │             │              │   generateDescription()       │
                 │                 │             │              │   generateStructuredData()    │
@@ -949,7 +1000,7 @@ Decision Logic:
                 ┌───────────────────────┐    ┌───────────────────────────────┐
                 │ [F1.23] Display from  │    │ [F1.24] Scroll to message     │
                 │ top of channel        │    │ and highlight it              │
-                │                       │    │ Client.MessageLinkHandler.    │
+                │                       │    │ MessageLinkHandler.    │
                 │                       │    │   scrollToMessage()           │
                 │                       │    │   highlightMessage()          │
                 └───────────┬───────────┘    └───────────────┬───────────────┘
@@ -960,7 +1011,7 @@ Decision Logic:
                                ┌───────────────────────────────┐
                                │ [F1.25] Parse search terms    │
                                │ from referrer URL             │
-                               │ Client.SearchHighlighter.     │
+                               │ SearchHighlighter.     │
                                │   parseSearchTerms()          │
                                │   highlightMatches()          │
                                └───────────────┬───────────────┘
@@ -986,7 +1037,7 @@ Decision Logic:
             ┌───────────────────────────────┐
             │ [F2.1] Visibility check       │
             │ returns PRIVATE               │
-            │ Server.VisibilityGuard.       │
+            │ VisibilityGuard.       │
             │   getVisibilityStatus()       │
             └───────────────┬───────────────┘
                             │
@@ -1050,7 +1101,7 @@ Decision Logic:
             ┌───────────────────────────────┐
             │ [F3.1] IntersectionObserver   │
             │ detects sentinel element      │
-            │ Client.InfiniteScrollHandler. │
+            │ InfiniteScrollHandler. │
             │   onIntersect()               │
             └───────────────┬───────────────┘
                             │
@@ -1089,14 +1140,14 @@ Decision Logic:
                                 ▼                             ▼
                 ┌───────────────────────────┐  ┌───────────────────────────────┐
                 │ [F3.8] Return 403         │  │ [F3.9] Fetch messages         │
-                │ Show "channel is now      │  │ Server.MessageRepository.     │
+                │ Show "channel is now      │  │ MessageRepository.     │
                 │ private" message          │  │   findByChannelPaginated()    │
                 └───────────────────────────┘  └───────────────┬───────────────┘
                                                                │
                                                                ▼
                                                ┌───────────────────────────────┐
                                                │ [F3.10] Apply content filter  │
-                                               │ Server.ContentFilter.         │
+                                               │ ContentFilter.         │
                                                │   filterSensitiveContent()    │
                                                └───────────────┬───────────────┘
                                                                │
@@ -1114,7 +1165,7 @@ Decision Logic:
                                                ┌───────────────────────────────┐
                                                │ [F3.12] Append messages to    │  [State: M4]
                                                │ existing list                 │
-                                               │ Client.MessageListComponent.  │
+                                               │ MessageListComponent.  │
                                                │   appendMessages()            │
                                                └───────────────┬───────────────┘
                                                                │
@@ -1145,7 +1196,7 @@ Decision Logic:
                             ▼
             ┌───────────────────────────────┐
             │ [F4.1] Bot detection at edge  │
-            │ Edge.BotDetector.detectBot()  │
+            │ BotDetector.detectBot()  │
             │ Identified: Googlebot         │
             └───────────────┬───────────────┘
                             │
@@ -1208,6 +1259,32 @@ Decision Logic:
                     - Structured data parsed
                     - Links discovered
 ```
+
+### 6.5 Cross-Spec Integration: VISIBILITY_CHANGED Event Consumption
+
+When the Channel Visibility Toggle spec emits a `VISIBILITY_CHANGED` event (via Redis Pub/Sub EventBus), the Guest Public Channel View system reacts as follows:
+
+| New Visibility | Guest View Action |
+|---------------|-------------------|
+| `PUBLIC_INDEXABLE` | Warm guest view cache for channel; begin serving public content |
+| `PUBLIC_NO_INDEX` | Keep guest view cache (content still public); update `X-Robots-Tag` to `noindex` |
+| `PRIVATE` | Invalidate all guest view caches for channel; return 403/404 on subsequent requests |
+
+**Event Payload Consumed:**
+```typescript
+interface VisibilityChangeEvent {
+  channelId: string;        // UUID
+  oldVisibility: ChannelVisibility;
+  newVisibility: ChannelVisibility;
+  actorId: string;          // UUID of admin who made the change
+  timestamp: DateTime;
+}
+```
+
+**Cache Keys Invalidated on PRIVATE:**
+- `channel:{channelId}:visibility`
+- `channel:{channelId}:msgs:*` (all pages)
+- `server:{serverId}:info`
 
 ---
 
@@ -1288,22 +1365,41 @@ Decision Logic:
 | Label | Technology | Version | Purpose | Rationale | Source/Documentation |
 |-------|------------|---------|---------|-----------|---------------------|
 | T1 | TypeScript | 5.3+ | Primary language | Type safety across stack | https://www.typescriptlang.org/ |
-| T2 | Next.js | 14.0+ | React framework with SSR | Critical for SEO; server components | https://nextjs.org/ |
-| T3 | React | 18.2+ | UI framework | Component model; hydration support | https://react.dev/ |
+| T2 | React | 18.2+ | UI framework | Component model; hydration support | https://react.dev/ |
+| T3 | Next.js | 14.0+ | React framework with SSR | Critical for SEO; server components | https://nextjs.org/ |
 | T4 | Node.js | 20 LTS | Server runtime | SSR execution; API routes | https://nodejs.org/ |
 | T5 | PostgreSQL | 16+ | Primary database | Robust queries; full-text search | https://www.postgresql.org/ |
-| T6 | Redis | 7.2+ | Caching layer | Fast reads; session storage | https://redis.io/ |
+| T6 | Redis | 7.2+ | Caching and EventBus (Pub/Sub) | Fast reads; session storage; event messaging | https://redis.io/ |
 | T7 | Prisma | 5.8+ | ORM | Type-safe database access | https://www.prisma.io/ |
-| T8 | CloudFlare | N/A | CDN/Edge | Global caching; DDoS protection; edge workers | https://www.cloudflare.com/ |
-| T9 | TailwindCSS | 3.4+ | Styling | Utility-first; consistent design | https://tailwindcss.com/ |
-| T10 | Zod | 3.22+ | Validation | Runtime type checking | https://zod.dev/ |
-| T11 | DOMPurify | 3.0+ | HTML sanitization | XSS prevention | https://github.com/cure53/DOMPurify |
-| T12 | schema-dts | 1.1+ | Structured data types | Type-safe JSON-LD generation | https://github.com/google/schema-dts |
-| T13 | intersection-observer | (polyfill) | Infinite scroll | Cross-browser scroll detection | https://github.com/w3c/IntersectionObserver |
-| T14 | sharp | 0.33+ | Image processing | Thumbnail generation; optimization | https://sharp.pixelplumbing.com/ |
+| T8 | tRPC | 10.45+ | End-to-end typesafe APIs (authenticated internal) | Type-safe client-server communication | https://trpc.io/ |
+| T9 | Zod | 3.22+ | Validation | Runtime type checking (integrates with tRPC) | https://zod.dev/ |
+| T10 | TailwindCSS | 3.4+ | Styling | Utility-first; consistent design | https://tailwindcss.com/ |
+| T11 | CloudFlare | N/A | CDN/Edge | Global caching; DDoS protection; edge workers | https://www.cloudflare.com/ |
+| T12 | Docker | 24+ | Containerization | Consistent environments | https://www.docker.com/ |
+| T13 | Google Search Console API | v1 | Programmatic indexing | Sitemap ping; URL submission | https://developers.google.com/webmaster-tools |
+| T14 | Bing Webmaster API | v1 | Microsoft search integration | URL submission; sitemap ping | https://www.bing.com/webmasters |
 | T15 | Jest | 29+ | Unit testing | Component and service tests | https://jestjs.io/ |
 | T16 | Playwright | 1.40+ | E2E testing | SEO verification; crawl simulation | https://playwright.dev/ |
-| T17 | Lighthouse CI | 11+ | Performance testing | Core Web Vitals monitoring | https://github.com/GoogleChrome/lighthouse-ci |
+| T17 | DOMPurify | 3.0+ | HTML sanitization | XSS prevention | https://github.com/cure53/DOMPurify |
+| T18 | schema-dts | 1.1+ | Structured data types | Type-safe JSON-LD generation | https://github.com/google/schema-dts |
+| T19 | intersection-observer | (polyfill) | Infinite scroll | Cross-browser scroll detection | https://github.com/w3c/IntersectionObserver |
+| T20 | sharp | 0.33+ | Image processing | Thumbnail generation; optimization | https://sharp.pixelplumbing.com/ |
+| T21 | Lighthouse CI | 11+ | Performance testing | Core Web Vitals monitoring | https://github.com/GoogleChrome/lighthouse-ci |
+
+> **Convention:** tRPC is used for authenticated internal APIs between client and server. Public-facing endpoints (public channel pages, sitemaps, robots.txt) use REST for maximum compatibility with crawlers and third-party consumers.
+
+### 8.1 EventBus
+
+**Technology:** Redis Pub/Sub (T6)
+
+Event types consumed by this spec:
+
+| Event | Source Spec | Description |
+|-------|-------------|-------------|
+| `VISIBILITY_CHANGED` | Channel Visibility Toggle | Channel visibility state changed; invalidate/warm caches |
+| `MESSAGE_CREATED` | SEO Meta Tag Generation | New message in public channel; invalidate message cache |
+| `MESSAGE_EDITED` | SEO Meta Tag Generation | Message edited; invalidate affected cache pages |
+| `MESSAGE_DELETED` | SEO Meta Tag Generation | Message deleted; invalidate affected cache pages |
 
 ---
 
@@ -1615,11 +1711,22 @@ getCanonicalUrl(
 **Public Methods:**
 
 ```typescript
+// Find channel by ID (shared with toggle spec)
+findById(
+  channelId: string
+): Promise<Channel | null>
+
 // Find channel by slug
 findBySlug(
   serverSlug: string,
   channelSlug: string
 ): Promise<Channel | null>
+
+// Update channel (shared with toggle spec)
+update(
+  channelId: string,
+  data: Partial<Channel>
+): Promise<Channel>
 
 // Find all public channels for server
 findPublicByServerId(
@@ -1630,7 +1737,19 @@ findPublicByServerId(
 getVisibility(
   channelId: string
 ): Promise<ChannelVisibility>
+
+// Get channel metadata (shared with toggle spec)
+getMetadata(
+  channelId: string
+): Promise<ChannelMetadata>
+
+// Invalidate channel cache entries (shared with toggle spec)
+invalidateCache(
+  channelId: string
+): Promise<void>
 ```
+
+> **Note:** `ChannelRepository` is shared across specs. The toggle spec is the canonical owner of `findById`, `update`, `getMetadata`, and `invalidateCache`. This spec primarily uses `findBySlug`, `findPublicByServerId`, and `getVisibility`.
 
 #### 9.4.2 CL-C6.2 MessageRepository
 
@@ -1653,6 +1772,22 @@ countByChannel(
   channelId: string
 ): Promise<number>
 ```
+
+### 9.5 Rate Limiting
+
+| Consumer Type | Limit | Window | Enforcement |
+|--------------|-------|--------|-------------|
+| Human (anonymous) | 100 requests | 1 minute | Token bucket per IP |
+| Verified bot (Googlebot, Bingbot, etc.) | 1000 requests | 1 minute | User-Agent verification |
+| Suspicious pattern | CAPTCHA challenge | After 500 page views/hour | Behavioral analysis |
+
+### 9.6 Pagination Precedence
+
+When both cursor and page parameters are provided, cursor-based pagination takes precedence:
+
+1. If `before` or `after` (cursor) is provided, use cursor-based pagination (ignore `page`)
+2. Otherwise, fall back to offset-based pagination using `page` and `limit`
+3. Default: `page=1`, `limit=50`
 
 ---
 
@@ -1782,6 +1917,75 @@ paths:
         '404':
           description: Server not found or not public
 
+  /api/public/channels/{channelId}/messages/{messageId}:
+    get:
+      summary: Get single public message (deep link)
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Message retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicMessageDTO'
+        '403':
+          description: Channel is not public
+        '404':
+          description: Message or channel not found
+
+  /api/public/servers/{serverSlug}/channels:
+    get:
+      summary: Get list of public channels in server
+      parameters:
+        - name: serverSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Public channels listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicChannelDTO'
+        '404':
+          description: Server not found or not public
+
+  /s/{serverSlug}:
+    get:
+      summary: Server landing page (SSR)
+      description: Renders server landing page with list of public channels
+      parameters:
+        - name: serverSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server landing page HTML
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Server not found or not public
+
 components:
   schemas:
     PublicMessagesResponse:
@@ -1893,6 +2097,16 @@ components:
           description: Server slug for redirect (if server is public)
 ```
 
+### 10.3 Cross-Spec Event Integration
+
+When `VISIBILITY_CHANGED` is emitted by the Channel Visibility Toggle spec:
+
+| New Visibility | Downstream Action (Guest View Spec) |
+|---------------|--------------------------------------|
+| `PUBLIC_INDEXABLE` | Warm guest view cache for channel |
+| `PUBLIC_NO_INDEX` | Keep guest view cache (public content, but update X-Robots-Tag) |
+| `PRIVATE` | Invalidate guest view cache; return 403/404 |
+
 ---
 
 ## 11. Data Schemas
@@ -1901,7 +2115,7 @@ components:
 
 #### D7.1 ServersTable
 
-**Runtime Class:** CL-E3 Server
+**Runtime Class:** CL-D9 Server
 
 | Column | Database Type | Constraints | Description | Storage Est. |
 |--------|--------------|-------------|-------------|--------------|
@@ -1924,7 +2138,7 @@ CREATE INDEX idx_servers_public ON servers(is_public) WHERE is_public = true;
 
 #### D7.2 ChannelsTable
 
-**Runtime Class:** CL-E1 Channel
+**Runtime Class:** CL-D7 Channel
 
 | Column | Database Type | Constraints | Description | Storage Est. |
 |--------|--------------|-------------|-------------|--------------|
@@ -1935,20 +2149,34 @@ CREATE INDEX idx_servers_public ON servers(is_public) WHERE is_public = true;
 | visibility | visibility_enum | NOT NULL, DEFAULT 'PRIVATE' | Visibility state | 1 byte |
 | topic | TEXT | NULL | Channel topic/description | ~100 bytes |
 | position | INTEGER | NOT NULL, DEFAULT 0 | Sort order | 4 bytes |
-| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | Creation time | 8 bytes |
+| indexed_at | TIMESTAMP WITH TIME ZONE | NULL | When channel was added to sitemap | 8 bytes |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL, DEFAULT NOW() | Creation time | 8 bytes |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL, DEFAULT NOW() | Last modification timestamp | 8 bytes |
 
-**Indexes:**
+> **Note:** `messageCount` (shown in `PublicChannelDTO`) is computed via `COUNT(*)` query on the messages table, not stored as a column. The `visibility` column uses the `visibility_enum` type (not a boolean); see toggle spec for the `is_public` boolean on the `servers` table.
+
+**Indexes (Canonical Set — merged from all specs):**
 ```sql
+-- Composite index for server-scoped visibility queries (from toggle spec)
+CREATE INDEX idx_channels_server_visibility ON channels(server_id, visibility);
+
+-- Unique slug per server
 CREATE UNIQUE INDEX idx_channels_server_slug ON channels(server_id, slug);
+
+-- Partial index for all public channels (guest view queries)
 CREATE INDEX idx_channels_visibility ON channels(visibility)
   WHERE visibility IN ('PUBLIC_INDEXABLE', 'PUBLIC_NO_INDEX');
+
+-- Partial index for indexable channels (sitemap generation, from toggle spec)
+CREATE INDEX idx_channels_visibility_indexed ON channels(visibility, indexed_at)
+  WHERE visibility = 'PUBLIC_INDEXABLE';
 ```
 
-**Storage Estimate:** ~215 bytes per channel
+**Storage Estimate:** ~239 bytes per channel
 
 #### D7.3 MessagesTable
 
-**Runtime Class:** CL-E2 Message
+**Runtime Class:** CL-D8 Message
 
 | Column | Database Type | Constraints | Description | Storage Est. |
 |--------|--------------|-------------|-------------|--------------|
@@ -1971,7 +2199,7 @@ CREATE INDEX idx_messages_channel_not_deleted ON messages(channel_id, created_at
 
 #### D7.4 UsersTable
 
-**Runtime Class:** CL-E4 User
+**Runtime Class:** CL-D10 User
 
 | Column | Database Type | Constraints | Description | Storage Est. |
 |--------|--------------|-------------|-------------|--------------|
@@ -1986,7 +2214,7 @@ CREATE INDEX idx_messages_channel_not_deleted ON messages(channel_id, created_at
 
 #### D7.5 AttachmentsTable
 
-**Runtime Class:** CL-E5 Attachment
+**Runtime Class:** CL-D11 Attachment
 
 | Column | Database Type | Constraints | Description | Storage Est. |
 |--------|--------------|-------------|-------------|--------------|
@@ -2003,8 +2231,8 @@ CREATE INDEX idx_messages_channel_not_deleted ON messages(channel_id, created_at
 
 #### D8.1 ChannelVisibilityCache
 
-**Key Pattern:** `channel:vis:{serverSlug}:{channelSlug}`
-**Value Type:** JSON `{ visibility: string, channelId: string }`
+**Key Pattern:** `channel:{channelId}:visibility`
+**Value Type:** String (enum value: `PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE`)
 **TTL:** 3600 seconds (1 hour)
 **Invalidation:** On visibility change via admin toggle
 
@@ -2017,7 +2245,7 @@ CREATE INDEX idx_messages_channel_not_deleted ON messages(channel_id, created_at
 
 #### D8.3 ServerInfoCache
 
-**Key Pattern:** `server:info:{serverSlug}`
+**Key Pattern:** `server:{serverId}:info`
 **Value Type:** JSON PublicServerDTO
 **TTL:** 300 seconds (5 minutes)
 **Invalidation:** On server info update
@@ -2047,7 +2275,7 @@ CREATE INDEX idx_messages_channel_not_deleted ON messages(channel_id, created_at
 
 | PII Type | Justification | Entry Point | Processing Path | Disposal | Protection |
 |----------|---------------|-------------|-----------------|----------|------------|
-| IP Address | Rate limiting, abuse prevention | HTTP request | RateLimiter -> Redis | TTL expiry (1 hour) | Not logged; hashed for rate limit keys |
+| IP Address | Rate limiting, abuse prevention | HTTP request | RateLimiter -> Redis | TTL expiry (1 hour) | Not logged in plaintext; stored as SHA-256 hash for rate limit bucket keys |
 | User Agent | Bot detection | HTTP request | BotDetector | Not stored | Used only for classification |
 | Search Terms (from referrer) | Feature: highlight matching terms | HTTP Referer header | SearchHighlighter (client-side only) | Not sent to server | Client-side only; not logged |
 
@@ -2136,6 +2364,23 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 - We do not track or store identifying information about anonymous viewers
 - Search engines may cache public content; cached content remains after channel is made private
 
+### 12.8 Guest User Restrictions
+
+| Action | Allowed | Notes |
+|--------|---------|-------|
+| View public channel messages | Yes | Core feature |
+| View public channel attachments | Yes | If attachment is in a public channel |
+| Navigate between public channels | Yes | Via server sidebar |
+| Copy message permalink | Yes | Client-side only |
+| Share message/channel link | Yes | Client-side only |
+| Send messages | No | Requires authentication |
+| React to messages | No | Requires authentication |
+| View private channels | No | Returns 403/404 |
+| View member list | No | Privacy protection |
+| Access user profiles | No | Only public display name and avatar shown inline |
+| Download message history | No | Not exposed to guests |
+| Use search within channel | No | Not available for guests (future feature) |
+
 ---
 
 ## 13. Risks to Completion
@@ -2144,12 +2389,12 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 | Technology | Learning Curve | Design Difficulty | Implementation | Verification | Maintenance |
 |------------|----------------|-------------------|----------------|--------------|-------------|
-| T2: Next.js SSR | Medium | Medium | Medium | Medium | Medium |
-| T8: CloudFlare Edge | Medium | High | Medium | High | Low |
-| T11: DOMPurify | Low | Low | Low | Medium | Low |
-| T12: schema-dts | Low | Medium | Low | Medium | Low |
-| T14: sharp | Low | Low | Low | Low | Low |
-| T17: Lighthouse CI | Medium | Low | Medium | N/A | Low |
+| T3: Next.js SSR | Medium | Medium | Medium | Medium | Medium |
+| T11: CloudFlare Edge | Medium | High | Medium | High | Low |
+| T17: DOMPurify | Low | Low | Low | Medium | Low |
+| T18: schema-dts | Low | Medium | Low | Medium | Low |
+| T20: sharp | Low | Low | Low | Low | Low |
+| T21: Lighthouse CI | Medium | Low | Medium | N/A | Low |
 
 ### 13.2 Component Risks
 
@@ -2234,3 +2479,15 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 | Stale-While-Revalidate | Cache strategy serving stale content while fetching fresh |
 | Edge Worker | Code running at CDN edge locations |
 | Guest User | Anonymous visitor without an account |
+| EventBus | Redis Pub/Sub messaging layer for cross-service event communication |
+| tRPC | End-to-end typesafe API framework for TypeScript; used for authenticated internal APIs |
+| Visibility Enum | `ChannelVisibility` enum with values: `PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE` |
+
+---
+
+## Appendix C: Document References
+
+- Dev Spec: Channel Visibility Toggle (cross-referenced for cache keys, ChannelRepository, EventBus, and `channels` table schema)
+- Dev Spec: SEO Meta Tag Generation (cross-referenced for event integration and MetaTagService)
+- Platform Architecture Overview (separate document)
+- Harmony Security Policy (separate document)
