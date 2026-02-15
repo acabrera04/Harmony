@@ -13,6 +13,7 @@
 | Version | Date       | Description                              |
 |---------|------------|------------------------------------------|
 | 1.0     | 2026-02-12 | Initial development specification        |
+| 2.0     | 2026-02-15 | Update to address comments and fix inconsistencies        |
 
 ### Author and Role
 
@@ -20,6 +21,8 @@
 |---------------|-------------------------|---------|
 | Claude (AI)   | Specification Author    | 1.0     |
 | dblanc        | Project Lead            | 1.0     |
+| acabrera04    | Project Lead            | 2.0     |
+| CoPilot (AI)  | Specification Editor     | 2.0     |
 
 ---
 
@@ -137,7 +140,7 @@
 │  │  │ ─────────────────────────── │    │ onMessageCreated()              │   │  │
 │  │  │ processJob()                │◄───│ onMessageEdited()               │   │  │
 │  │  │ scheduleUpdate()            │    │ onMessageDeleted()              │   │  │
-│  │  │ batchProcess()              │    │ onChannelUpdated()              │   │  │
+│  │  │ batchProcess()              │    │ onVisibilityChanged()           │   │  │
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
 │  │  ┌─────────────────────────────┐                                          │  │
 │  │  │ C4.3 SitemapUpdater         │                                          │  │
@@ -154,10 +157,12 @@
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
 │  │  │ database: DatabaseClient    │    │ database: DatabaseClient        │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
-│  │  │ findBySlug()                │    │ findRecentByChannel()           │   │  │
-│  │  │ getMetadata()               │    │ findFirstMessage()              │   │  │
-│  │  └─────────────────────────────┘    │ getMessageCount()               │   │  │
-│  │  ┌─────────────────────────────┐    └─────────────────────────────────┘   │  │
+│  │  │ findById(), findBySlug(),   │    │ findRecentByChannel()           │   │  │
+│  │  │ update(), findPublicByServer│    │ findFirstMessage()              │   │  │
+│  │  │ Id(), getVisibility(),      │    │ getMessageCount()               │   │  │
+│  │  │ getMetadata()               │    │                                 │   │  │
+│  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
+│  │  ┌─────────────────────────────┐                                          │  │
 │  │  │ C5.3 MetaTagRepository      │                                          │  │
 │  │  │ ─────────────────────────── │                                          │  │
 │  │  │ database: DatabaseClient    │                                          │  │
@@ -180,10 +185,12 @@
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
 │  │  │ id: UUID (PK)               │    │ id: UUID (PK)                   │   │  │
 │  │  │ server_id: UUID (FK)        │    │ channel_id: UUID (FK)           │   │  │
-│  │  │ name: VARCHAR(100)          │    │ author_id: UUID (FK)            │   │  │
+│  │  │ name: VARCHAR(100),         │    │ author_id: UUID (FK)            │   │  │
 │  │  │ slug: VARCHAR(100)          │    │ content: TEXT                   │   │  │
 │  │  │ visibility: ENUM            │    │ created_at: TIMESTAMP           │   │  │
-│  │  │ topic: TEXT                 │    │ attachments: JSONB              │   │  │
+│  │  │ topic: TEXT, position: INT  │    │ attachments: JSONB              │   │  │
+│  │  │ indexed_at / created_at /   │    │                                 │   │  │
+│  │  │ updated_at: TIMESTAMP       │    │                                 │   │  │
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ D6.3 GeneratedMetaTagsTable │    │ D6.4 ServersTable               │   │  │
@@ -207,7 +214,7 @@
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ D7.1 MetaTagCache           │    │ D7.2 ContentAnalysisCache       │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
-│  │  │ key: meta:{channelId}       │    │ key: analysis:{channelId}       │   │  │
+│  │  │ key: meta:channel:{channelId}│    │ key: analysis:channel:{channelId}│   │  │
 │  │  │ value: MetaTagSet           │    │ value: AnalysisResult           │   │  │
 │  │  │ ttl: 3600 seconds           │    │ ttl: 1800 seconds               │   │  │
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
@@ -352,7 +359,7 @@
 
                             ┌───────────────────────────┐
                             │    <<interface>>          │
-                            │  CL1.1 IMetaTagGenerator  │
+                            │   CL-I1 IMetaTagGenerator │
                             ├───────────────────────────┤
                             │ + generate(): MetaTagSet  │
                             │ + validate(): boolean     │
@@ -363,7 +370,7 @@
   - - - ┼ - - -                     - - - ┼ - - -                     - - - ┼ - - -
         │                                 │                                 │
 ┌───────▼───────────────┐   ┌─────────────▼─────────────┐   ┌───────────────▼─────┐
-│ CL1.2 TitleGenerator  │   │ CL1.3 DescriptionGen      │   │ CL1.4 OpenGraphGen  │
+│ CL-C2.2 TitleGenerator│   │ CL-C2.3 DescriptionGenerator│ │ CL-C2.4 OpenGraphGenerator│
 ├───────────────────────┤   ├───────────────────────────┤   ├─────────────────────┤
 │ - maxLength: 60       │   │ - maxLength: 160          │   │ - defaultImage: str │
 │ - templates: Template[]│  │ - minLength: 50           │   ├─────────────────────┤
@@ -376,7 +383,7 @@
 
 
                             ┌───────────────────────────┐
-                            │ CL2.1 MetaTagService      │
+                            │ CL-C2.1 MetaTagService    │
                             │ <<Facade>>                │
                             ├───────────────────────────┤
                             │ - titleGen: ref           │
@@ -396,7 +403,7 @@
                     │                     │                     │
                     ◇                     ◇                     ◇
         ┌───────────▼───────────┐ ┌───────▼───────────┐ ┌───────▼───────────┐
-        │ CL3.1 ContentAnalyzer │ │ CL2.5 Structured  │ │ CL2.6 MetaTagCache│
+        │ CL-C3.1 ContentAnalyzer│ │ CL-C2.5 Structured│ │ CL-C2.6 MetaTagCache│
         ├───────────────────────┤ │ DataGenerator     │ ├───────────────────┤
         │ - keywordExtractor    │ ├───────────────────┤ │ - cache: Redis    │
         │ - summarizer          │ │ + generateForum() │ │ - ttl: number     │
@@ -411,8 +418,8 @@
         │           │                       │
         ◆           ◆                       ◆
 ┌───────▼───────┐ ┌─▼─────────────────┐ ┌───▼───────────────┐
-│ CL3.2 Keyword │ │ CL3.3 Text        │ │ CL3.4 Topic       │
-│ Extractor     │ │ Summarizer        │ │ Classifier        │
+│ CL-C3.2 Keyword │ │ CL-C3.3 Text      │ │ CL-C3.4 Topic      │
+│ Extractor       │ │ Summarizer        │ │ Classifier         │
 ├───────────────┤ ├───────────────────┤ ├───────────────────┤
 │ - stopWords   │ │ - maxSentences    │ │ - categories      │
 ├───────────────┤ ├───────────────────┤ ├───────────────────┤
@@ -427,7 +434,7 @@
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────┐     ┌─────────────────────────┐
-│ CL4.1 MetaTagSet        │     │ CL4.2 OpenGraphTags     │
+│ CL-D1 MetaTagSet        │     │ CL-D2 OpenGraphTags     │
 │ <<DTO>>                 │     │ <<DTO>>                 │
 ├─────────────────────────┤     ├─────────────────────────┤
 │ + title: string         │     │ + ogTitle: string       │
@@ -439,9 +446,9 @@
 │ + structuredData: JSON  │     └─────────────────────────┘
 │ + keywords: string[]    │
 └─────────────────────────┘     ┌─────────────────────────┐
-                                │ CL4.3 TwitterCardTags   │
+                                │ CL-D3 TwitterCardTags   │
 ┌─────────────────────────┐     │ <<DTO>>                 │
-│ CL4.4 StructuredData    │     ├─────────────────────────┤
+│ CL-D4 StructuredData    │     ├─────────────────────────┤
 │ <<DTO>>                 │     │ + card: string          │
 ├─────────────────────────┤     │ + title: string         │
 │ + @context: string      │     │ + description: string   │
@@ -450,7 +457,7 @@
 │ + description: string   │     └─────────────────────────┘
 │ + author: Person        │
 │ + datePublished: string │     ┌─────────────────────────┐
-│ + dateModified: string  │     │ CL4.5 ContentAnalysis   │
+│ + dateModified: string  │     │ CL-D5 ContentAnalysis   │
 │ + mainEntity: object    │     │ <<DTO>>                 │
 │ + breadcrumb: object    │     ├─────────────────────────┤
 └─────────────────────────┘     │ + keywords: string[]    │
@@ -466,7 +473,7 @@
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────┐     ┌─────────────────────────┐
-│ CL5.1 Channel           │     │ CL5.2 Message           │
+│ CL-E1 Channel           │     │ CL-E2 Message           │
 │ <<Entity>>              │     │ <<Entity>>              │
 ├─────────────────────────┤     ├─────────────────────────┤
 │ + id: UUID              │◄────│ + id: UUID              │
@@ -478,7 +485,7 @@
 └─────────────────────────┘     └─────────────────────────┘
 
 ┌─────────────────────────┐
-│ CL5.3 GeneratedMetaTags │
+│ CL-E3 GeneratedMetaTags │
 │ <<Entity>>              │
 ├─────────────────────────┤
 │ + id: UUID              │
@@ -494,11 +501,83 @@
 │ + contentHash: string   │
 │ + version: number       │
 └─────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          Page Rendering (M1)                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────┐      uses      ┌──────────────────────────────┐
+│ CL-C1.1 PublicChannelPage    │───────────────►│ CL-C2.1 MetaTagService       │
+├──────────────────────────────┤                └──────────────────────────────┘
+│ - serverSlug: string         │
+│ - channelSlug: string        │
+│ - messages: Message[]        │
+│ - metaTags: MetaTagSet       │
+├──────────────────────────────┤
+│ + getServerSideProps()       │
+│ + render()                   │
+└───────────────┬──────────────┘
+                │
+                │ ◆
+                ▼
+       ┌──────────────────────────────┐
+       │ CL-C1.2 HeadComponent        │
+       ├──────────────────────────────┤
+       │ - meta: MetaTagSet           │
+       ├──────────────────────────────┤
+       │ + renderMetaTags()           │
+       │ + renderOpenGraph()          │
+       │ + renderTwitterCards()       │
+       │ + renderStructuredData()     │
+       │ + renderCanonical()          │
+       └──────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    Background Processing + Data Access (M4/M5)                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────┐    triggers    ┌──────────────────────────────┐
+│ CL-C4.2 EventListener        │───────────────►│ CL-C4.1 MetaTagUpdateWorker  │
+├──────────────────────────────┤                ├──────────────────────────────┤
+│ - eventBus: EventBus         │                │ - queue: JobQueue            │
+├──────────────────────────────┤                │ - metaTagService: ref        │
+│ + onMessageCreated()         │                ├──────────────────────────────┤
+│ + onMessageEdited()          │                │ + processJob()               │
+│ + onMessageDeleted()         │                │ + scheduleUpdate()           │
+│ + onVisibilityChanged()      │                │ + batchProcess()             │
+└───────────────┬──────────────┘                └───────────────┬──────────────┘
+                │                                                │
+                │ uses                                           │ uses
+                ▼                                                ▼
+      ┌──────────────────────────────┐               ┌──────────────────────────────┐
+      │ CL-C4.3 SitemapUpdater       │               │ CL-C2.1 MetaTagService       │
+      ├──────────────────────────────┤               └───────────────┬──────────────┘
+      │ - searchClients: ref         │                               │
+      ├──────────────────────────────┤                               │
+      │ + updateLastModified()       │                               │
+      │ + notifySearchEngines()      │                               │
+      │ + requestDeindex()           │                               │
+      └──────────────────────────────┘                               │
+                                 ┌────────────────────────────────────┼────────────────────────────────────┐
+                                 ▼                                    ▼                                    ▼
+                  ┌──────────────────────────────┐     ┌──────────────────────────────┐     ┌──────────────────────────────┐
+                   │ CL-C5.1 ChannelRepository    │     │ CL-C5.2 MessageRepository    │     │ CL-C5.3 MetaTagRepository    │
+                   ├──────────────────────────────┤     ├──────────────────────────────┤     ├──────────────────────────────┤
+                   │ - database: DatabaseClient   │     │ - database: DatabaseClient   │     │ - database: DatabaseClient   │
+                   ├──────────────────────────────┤     ├──────────────────────────────┤     ├──────────────────────────────┤
+                   │ + findById(), findBySlug()   │     │ + findRecentByChannel()      │     │ + findByChannelId()          │
+                   │ + getVisibility(), getMetadata()│   │ + findFirstMessage()         │     │ + upsert()                   │
+                   │                              │     │ + getMessageCount()          │     │ + getLastGenerated()         │
+                   └──────────────────────────────┘     └──────────────────────────────┘     └──────────────────────────────┘
 ```
 
 ---
 
 ## 4. List of Classes
+
+Class labels in this section intentionally match Section 3 (`CL-I`, `CL-C`, `CL-D`, `CL-E`) to keep diagram and inventory references consistent.
 
 ### 4.1 Page Rendering Module (M1)
 
@@ -532,7 +611,7 @@
 | Label | Class Name | Type | Purpose |
 |-------|------------|------|---------|
 | CL-C4.1 | MetaTagUpdateWorker | Worker | Processes queued meta tag regeneration jobs |
-| CL-C4.2 | EventListener | Service | Listens to message events and schedules meta tag updates |
+| CL-C4.2 | EventListener | Service | Listens to message + visibility events and schedules meta tag updates |
 | CL-C4.3 | SitemapUpdater | Service | Updates sitemap lastmod and pings search engines |
 
 ### 4.5 Data Access Module (M5)
@@ -560,6 +639,12 @@
 | CL-E1 | Channel | Entity | Channel domain entity |
 | CL-E2 | Message | Entity | Message domain entity |
 | CL-E3 | GeneratedMetaTags | Entity | Persisted generated meta tags |
+
+### 4.8 Shared Interfaces
+
+| Label | Class Name | Type | Purpose |
+|-------|------------|------|---------|
+| CL-I1 | IMetaTagGenerator | Interface | Shared `generate()` / `validate()` contract for meta tag generator classes |
 
 ---
 
@@ -698,7 +783,7 @@ State Transition Table:
 
 ```
                     (( B0: Event Received ))
-                    MESSAGE_CREATED / MESSAGE_EDITED / MESSAGE_DELETED
+                    MESSAGE_CREATED / MESSAGE_EDITED / MESSAGE_DELETED / VISIBILITY_CHANGED
                               │
                               ▼
               ┌───────────────────────────────┐
@@ -770,8 +855,19 @@ State Transition Table:
                                                └───────────────┬───────────────┘
                                                                │
                                                                ▼
-                               [[ B11: Update Complete ]]
+                                [[ B11: Update Complete ]]
 ```
+
+**Additional Event Semantics (de-index + failure paths):**
+
+| Trigger | Transition | Side Effects | Failure Handling |
+|---------|------------|--------------|------------------|
+| `VISIBILITY_CHANGED` where `newVisibility = PUBLIC_INDEXABLE` | `B0 → B3 (Queue) → B11 (Complete)` | Queue high-priority regeneration, invalidate `meta:channel:{channelId}`, keep canonical URL in sitemap with refreshed `lastmod` | Retry queue enqueue with backoff; keep last known tags until regeneration succeeds |
+| `VISIBILITY_CHANGED` where `newVisibility = PUBLIC_NO_INDEX` | `B0 → B3 (Queue) → B11 (Complete)` | Regenerate tags with `robots=noindex`, invalidate `meta:channel:{channelId}`, keep channel public but excluded from indexable sitemap set | Retry queue enqueue with backoff; continue serving public tags with noindex policy |
+| `VISIBILITY_CHANGED` where `newVisibility = PRIVATE` | `B0 → B12 (De-index/Purge) → B13 (Complete)` | Invalidate `meta:channel:{channelId}`, purge CDN URL, remove channel URL from sitemap, request search-engine recrawl/removal | Retry queue with exponential backoff; preserve stale tags in DB but never serve while channel is private |
+| Worker timeout (>30s) | `B7 → B14 (Failed)` | Keep last successful tags active, emit failure metric | Mark job `failed`, set `needs_regeneration=true`, retry up to max attempts |
+| DB upsert failure | `B8 → B14 (Failed)` | Skip cache write to avoid cache/DB drift | Retry with backoff and alert after final failure |
+| CDN/Search ping failure | `B9/B10 → B15 (Partial Success)` | Meta tags remain updated in DB/cache | Continue serving updated tags and retry external notifications asynchronously |
 
 ---
 
@@ -914,7 +1010,8 @@ State Transition Table:
                 │             │  │ Server.OpenGraphGenerator.    │
                 │             │  │   generateTwitterCard()       │
                 │             │  │                               │
-                │             │  │ twitter:card = "summary"      │
+                │             │  │ twitter:card = "summary" or    │
+                │             │  │   "summary_large_image"        │
                 │             │  │ twitter:title                 │
                 │             │  │ twitter:description           │
                 │             │  │ twitter:image                 │
@@ -961,7 +1058,7 @@ State Transition Table:
                     / <meta name="description"      /
                     /   content="Community disc..."/
                     / <meta property="og:title"... /
-                    / <meta property="og:desc"...  /
+                    / <meta property="og:description"... /
                     / <meta name="twitter:card"... /
                     / <script type="application/   /
                     /   ld+json">...</script>      /
@@ -1231,6 +1328,18 @@ State Transition Table:
                                  (( END: Admin manages SEO ))
 ```
 
+### 6.5 Scenario: Channel Visibility Changes to Private (De-Index and Purge)
+
+**Scenario Description:** A channel transitions from `PUBLIC_INDEXABLE` or `PUBLIC_NO_INDEX` to `PRIVATE`. Existing tags must stop being served and search engines must be notified to drop stale indexed content.
+
+1. `EventListener.onVisibilityChanged()` consumes a `VISIBILITY_CHANGED` event.
+2. If new visibility is `PRIVATE`, `MetaTagService.invalidateCache(channelId)` must delete `meta:channel:{channelId}`.
+3. `SitemapUpdater` removes the canonical channel URL from sitemap output and queues search-engine recrawl/removal notification.
+4. Existing `generated_meta_tags` records may be retained for rollback/audit, but `VisibilityGuard` must block serving them while channel visibility is `PRIVATE`.
+5. If the channel later returns to `PUBLIC_INDEXABLE` or `PUBLIC_NO_INDEX`, regeneration runs before tags are served again.
+
+**Ownership Boundary:** De-indexing requests tied to visibility transitions are initiated here; the canonical visibility state remains owned by the channel visibility feature.
+
 ---
 
 ## 7. Development Risks and Failures
@@ -1288,6 +1397,16 @@ State Transition Table:
             └───────────────────────────────────────────────────┘
 ```
 
+### 7.6 Quality Monitoring and Alerts
+
+| Metric | Source | Alert Threshold | Action |
+|--------|--------|-----------------|--------|
+| Duplicate title rate | `generated_meta_tags.title` aggregate query | >10% duplicate titles in 24h | Trigger quality review and template tuning |
+| Average generated title length | Generated records where `custom_title IS NULL` | <30 chars for 24h | Investigate fallback overuse |
+| Fallback generation rate | `needs_regeneration=true` count | >20% in 1h | Check NLP dependencies and worker health |
+| PII filter match count | Content filter logs | Any non-test hit | Immediate security alert and rollback flag |
+| Regeneration job failure rate | Job status telemetry | >5% failed jobs in 30m | Scale workers, inspect queue/backoff errors |
+
 ---
 
 ## 8. Technology Stack
@@ -1305,9 +1424,14 @@ State Transition Table:
 | T9 | compromise | 14.0+ | NLP library | Text parsing, sentence extraction | https://compromise.cool/ |
 | T10 | schema-dts | 1.1+ | Structured data types | Type-safe JSON-LD | https://github.com/google/schema-dts |
 | T11 | DOMPurify | 3.0+ | HTML sanitization | Prevent XSS in tags | https://github.com/cure53/DOMPurify |
-| T12 | CloudFlare | N/A | CDN | Cache invalidation API | https://www.cloudflare.com/ |
+| T12 | Cloudflare | N/A | CDN | Cache invalidation API | https://www.cloudflare.com/ |
 | T13 | Google Search Console API | v1 | Indexing | URL submission, sitemap ping | https://developers.google.com/webmaster-tools |
 | T14 | Jest | 29+ | Testing | Unit tests for generators | https://jestjs.io/ |
+| T15 | Prisma | 5.8+ | ORM | Shared type-safe database access across specs | https://www.prisma.io/ |
+| T16 | Redis Pub/Sub | 7.2+ | EventBus transport | Cross-spec `VISIBILITY_CHANGED` and message event delivery | https://redis.io/docs/interact/pubsub/ |
+| T17 | Bing Webmaster API | v1 | Indexing | URL submission/removal parity with Google | https://www.bing.com/webmasters |
+
+> **Convention:** Authenticated internal APIs may be exposed through a tRPC gateway, while crawler-facing/public and admin integrations in this spec remain REST/HTTP.
 
 ---
 
@@ -1342,14 +1466,27 @@ invalidateCache(
 // Schedule background regeneration
 scheduleRegeneration(
   channelId: string,
-  priority?: 'high' | 'normal' | 'low'
-): Promise<void>
+  priority?: 'high' | 'normal' | 'low',
+  idempotencyKey?: string
+): Promise<{ jobId: string, status: 'queued' | 'deduplicated' }>
 
 // Get meta tags for admin preview
 getMetaTagsForPreview(
   channelId: string
 ): Promise<MetaTagPreview>
+
+// Poll status for a regeneration job
+getRegenerationJobStatus(
+  channelId: string,
+  jobId: string
+): Promise<MetaTagJobStatus>
 ```
+
+**Generation and Override Rules:**
+- Auto-generated values target SEO limits (`title <= 60`, `description <= 160`).
+- Admin overrides (`custom_title`, `custom_description`, `custom_og_image`) always take precedence over generated values when present.
+- Background regeneration updates generated fields only and must not overwrite custom override fields.
+- If NLP analysis fails or times out (>5s), generation falls back to channel/topic-based tags and marks `needs_regeneration=true`.
 
 #### 9.1.2 CL-C2.2 TitleGenerator
 
@@ -1370,7 +1507,7 @@ generateFromMessage(
 
 // Generate title for thread view
 generateFromThread(
-  thread: Thread,
+  messages: Message[],
   channel: Channel
 ): string
 ```
@@ -1392,6 +1529,8 @@ private applyTemplate(
   data: TitleData
 ): string
 ```
+
+**Length Policy:** `TitleGenerator` output is capped at 60 characters. Longer admin overrides are allowed via `MetaTagOverride.customTitle` (max 70).
 
 #### 9.1.3 CL-C2.3 DescriptionGenerator
 
@@ -1415,6 +1554,8 @@ summarizeThread(
   messages: Message[]
 ): string
 ```
+
+**Length Policy:** `DescriptionGenerator` output is capped at 160 characters. Longer admin overrides are allowed via `MetaTagOverride.customDescription` (max 200).
 
 #### 9.1.4 CL-C2.4 OpenGraphGenerator
 
@@ -1441,6 +1582,8 @@ selectPreviewImage(
   messages: Message[]
 ): string | null
 ```
+
+**Twitter Card Rule:** default to `summary`; switch to `summary_large_image` only when a valid large preview image is available.
 
 #### 9.1.5 CL-C2.5 StructuredDataGenerator
 
@@ -1499,6 +1642,12 @@ getReadingLevel(
   content: string
 ): 'basic' | 'intermediate' | 'advanced'
 ```
+
+**Error and Language Handling:**
+- `analyzeThread()` must detect language before NLP processing.
+- Supported languages for NLP templates: English, Spanish, French, German, Japanese.
+- Unsupported languages use deterministic fallback generation (channel/server naming + first meaningful sentence).
+- On analyzer exception/timeout (>5s), return fallback analysis and set `needs_regeneration=true` in persistence metadata.
 
 #### 9.2.2 CL-C3.2 KeywordExtractor
 
@@ -1592,9 +1741,45 @@ onMessageDeleted(
 ): Promise<void>
 
 // Handle channel visibility change
-onChannelUpdated(
-  event: ChannelUpdatedEvent
+onVisibilityChanged(
+  event: VisibilityChangeEvent
 ): Promise<void>
+```
+
+#### 9.3.3 CL-C4.3 SitemapUpdater
+
+**Public Methods:**
+
+```typescript
+// Update or remove URL in sitemap
+updateLastModified(
+  url: string,
+  options?: { remove?: boolean }
+): Promise<void>
+
+// Notify search engines to crawl sitemap changes
+notifySearchEngines(
+  sitemapUrl: string
+): Promise<void>
+
+// Request de-index/removal for a URL after privacy change
+requestDeindex(
+  url: string,
+  reason: 'visibility_private' | 'deleted'
+): Promise<void>
+```
+
+### 9.4 Module M5: Data Access
+
+#### 9.4.1 CL-C5.1 ChannelRepository (Consolidated)
+
+```typescript
+findById(channelId: string): Promise<Channel | null>
+findBySlug(serverSlug: string, channelSlug: string): Promise<Channel | null>
+update(channelId: string, data: Partial<Channel>): Promise<Channel>
+findPublicByServerId(serverId: string): Promise<Channel[]>
+getVisibility(channelId: string): Promise<ChannelVisibility>
+getMetadata(channelId: string): Promise<ChannelMetadata>
 ```
 
 ---
@@ -1622,6 +1807,11 @@ onChannelUpdated(
 
 | Method | Class | Used For |
 |--------|-------|----------|
+| findById() | ChannelRepository | Resolve channel for admin and regeneration paths |
+| findBySlug() | ChannelRepository | Resolve canonical route channel for SSR generation |
+| findPublicByServerId() | ChannelRepository | Enumerate public channels for sitemap/meta refresh sweeps |
+| getVisibility() | ChannelRepository | Visibility gating for serving/de-index decisions |
+| getMetadata() | ChannelRepository | Channel/server metadata for title/description templates |
 | findByChannelId() | MetaTagRepository | Retrieve existing tags |
 | upsert() | MetaTagRepository | Persist new tags |
 | findRecentByChannel() | MessageRepository | Get content for analysis |
@@ -1632,6 +1822,16 @@ onChannelUpdated(
 |--------|-------|----------|
 | generateMetaTags() | MetaTagService | Background regeneration |
 | invalidateCache() | MetaTagService | Cache management |
+
+**Cross-Reference:** The guest public channel view feature's `SEOService` is an adapter that delegates generation to `MetaTagService.getOrGenerateCached()` from this spec.
+
+#### Cross-Spec Visibility Event Contract (`VISIBILITY_CHANGED`)
+
+| New Visibility | Expected Payload Fields | SEO Action |
+|----------------|-------------------------|------------|
+| `PUBLIC_INDEXABLE` | `channelId`, `oldVisibility`, `newVisibility`, `actorId`, `timestamp` | Queue regeneration, refresh tags, keep canonical URL indexable |
+| `PUBLIC_NO_INDEX` | `channelId`, `oldVisibility`, `newVisibility`, `actorId`, `timestamp` | Queue regeneration with `noindex` directives while keeping page publicly accessible |
+| `PRIVATE` | `channelId`, `oldVisibility`, `newVisibility`, `actorId`, `timestamp` | Invalidate cache, remove/purge URL, request de-index/removal |
 
 ### 10.2 Admin API Interface
 
@@ -1661,6 +1861,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetaTagPreview'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (admin role required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Channel not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     put:
       summary: Update meta tags (custom override)
@@ -1674,25 +1892,105 @@ paths:
       responses:
         '200':
           description: Meta tags updated
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (admin role required)
+        '404':
+          description: Channel not found
+        '422':
+          description: Validation error (length, format, sanitization)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     post:
-      summary: Regenerate meta tags
+      summary: Regenerate meta tags asynchronously
       security:
         - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional dedupe key for safe retries
       responses:
         '202':
-          description: Regeneration scheduled
+          description: Regeneration scheduled (or deduplicated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegenerationJobAccepted'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (admin role required)
+        '404':
+          description: Channel not found
+        '409':
+          description: Duplicate active request without valid idempotency key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Queue or scheduling failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/channels/{channelId}/meta-tags/jobs/{jobId}:
+    get:
+      summary: Get regeneration job status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaTagJobStatus'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (admin role required)
+        '404':
+          description: Channel/job not found
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     MetaTagPreview:
       type: object
       properties:
         title:
           type: string
+          description: Effective title served in HTML (generated <=60; custom override <=70)
           maxLength: 70
         description:
           type: string
+          description: Effective description served in HTML (generated <=160; custom override <=200)
           maxLength: 200
         ogTitle:
           type: string
@@ -1728,6 +2026,59 @@ components:
           type: string
           format: uri
 
+    RegenerationJobAccepted:
+      type: object
+      properties:
+        jobId:
+          type: string
+        status:
+          type: string
+          enum: [queued, deduplicated]
+        idempotencyKey:
+          type: string
+          nullable: true
+        pollUrl:
+          type: string
+          format: uri
+
+    MetaTagJobStatus:
+      type: object
+      properties:
+        jobId:
+          type: string
+        channelId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, succeeded, failed]
+        attempts:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+
     SearchPreview:
       type: object
       properties:
@@ -1755,6 +2106,33 @@ components:
 
 ### 11.1 Database Tables
 
+#### D6.1 ChannelsTable (Canonical Shared Schema)
+
+**Runtime Class:** CL-E1 Channel
+
+This feature consumes the canonical `channels` schema maintained by the channel visibility spec (`docs/dev-spec-channel-visibility-toggle.md`, Section 11.1 D7.1) to avoid drift.
+
+| Column | Database Type | Constraints | Description |
+|--------|---------------|-------------|-------------|
+| id | UUID | PRIMARY KEY | Unique channel identifier |
+| server_id | UUID | FOREIGN KEY → servers(id), NOT NULL, INDEX | Parent server reference |
+| name | VARCHAR(100) | NOT NULL | Display name |
+| slug | VARCHAR(100) | NOT NULL, UNIQUE per server | URL-safe identifier |
+| visibility | visibility_enum | NOT NULL, DEFAULT 'PRIVATE' | Canonical visibility state |
+| topic | TEXT | NULL | Channel topic/description |
+| position | INTEGER | NOT NULL, DEFAULT 0 | Display order within server |
+| indexed_at | TIMESTAMP WITH TIME ZONE | NULL | When channel was added to sitemap |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL, DEFAULT NOW() | Creation timestamp |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL, DEFAULT NOW() | Last modification timestamp |
+
+**Visibility Enum:** `PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE`
+
+**Canonical Index Set (shared):** `idx_channels_server_visibility`, `idx_channels_server_slug`, `idx_channels_visibility_indexed`, `idx_channels_visibility`
+
+#### D6.2 MessagesTable and D6.4 ServersTable (Shared References)
+
+Message and server schemas are shared with the guest public channel view spec and must remain source-aligned there to prevent cross-spec schema drift.
+
 #### D6.3 GeneratedMetaTagsTable
 
 **Runtime Class:** CL-E3 GeneratedMetaTags
@@ -1775,6 +2153,7 @@ components:
 | custom_description | VARCHAR(200) | NULL | Admin override description | 200 bytes |
 | custom_og_image | VARCHAR(500) | NULL | Admin override image | 500 bytes |
 | content_hash | VARCHAR(64) | NOT NULL | SHA-256 of source content | 64 bytes |
+| needs_regeneration | BOOLEAN | NOT NULL, DEFAULT false | Set when fallback generation is used and retry is required | 1 byte |
 | generated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | Last generation time | 8 bytes |
 | version | INTEGER | NOT NULL, DEFAULT 1 | Generation version | 4 bytes |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL, DEFAULT NOW() | Record creation | 8 bytes |
@@ -1786,7 +2165,14 @@ CREATE UNIQUE INDEX idx_meta_tags_channel ON generated_meta_tags(channel_id);
 CREATE INDEX idx_meta_tags_generated ON generated_meta_tags(generated_at);
 ```
 
-**Storage Estimate:** ~3.3 KB per channel
+**Length Normalization Policy:**
+- Auto-generated `title` values are limited to 60 chars and auto-generated `description` values to 160 chars.
+- Database/API allow up to 70/200 to support intentional admin overrides.
+- Rendering must always use sanitized effective values and must not exceed schema max lengths.
+
+**Content Hash Calculation:** `content_hash = SHA-256(join(last_100_non_deleted_message_contents, "\n"))`. Author IDs, timestamps, and attachment metadata are excluded so metadata-only updates do not force regeneration.
+
+**Storage Estimate:** ~3.4 KB per channel
 
 ### 11.2 Cache Schemas
 
@@ -1812,15 +2198,20 @@ CREATE INDEX idx_meta_tags_generated ON generated_meta_tags(generated_at);
 **Job Data:**
 ```typescript
 {
+  jobId: string,          // Queue job identifier
   channelId: string,      // UUID
   priority: 'high' | 'normal' | 'low',
-  triggeredBy: 'message' | 'edit' | 'manual' | 'schedule',
-  attemptCount: number
+  triggeredBy: 'message' | 'edit' | 'manual' | 'schedule' | 'visibility',
+  idempotencyKey?: string,
+  status: 'queued' | 'processing' | 'succeeded' | 'failed',
+  attemptCount: number,
+  lastError?: string
 }
 ```
 **Default Delay:** 60 seconds (debounce)
 **Max Attempts:** 3
 **Backoff:** Exponential (1min, 5min, 15min)
+**Deduplication Window:** 60 seconds per `(channelId, idempotencyKey)`
 
 ---
 
@@ -1890,7 +2281,7 @@ Message Content                 Content Analysis              Meta Tag Output
 | Accurate descriptions | Summarize actual content, not clickbait |
 | No cloaking | Same content for bots and users |
 | Unique titles | Template ensures uniqueness per channel |
-| Appropriate length | Title <60, Description <160 chars |
+| Appropriate length | Auto-generated title <=60 and description <=160; effective tags may be up to 70/200 only when admin overrides are explicitly configured |
 
 ---
 
@@ -1932,7 +2323,37 @@ Message Content                 Content Analysis              Meta Tag Output
 | Poor search rankings | CTR <1% | Manual review; algorithm tuning |
 | Generation too slow | >5s per channel | Pre-generate on schedule |
 
+### 13.5 Rollout and Feature Flag Plan
+
+| Phase | Scope | Gate | Rollback Trigger |
+|-------|-------|------|------------------|
+| Phase 1: Shadow | Generate + store tags, do not serve | Manual QA on 100 sampled channels | Any PII/profanity leak |
+| Phase 2: Limited Serve | Serve auto tags for 10% of public channels | CTR/search impressions no worse than control | >5% job failures or quality alerts |
+| Phase 3: Full Serve | Serve for all eligible public channels | Stable metrics for 7 consecutive days | Any Critical alert from §7.6 |
+
+**Feature Flags:**
+- `FEATURE_SEO_META_TAGS`: master switch for serving generated tags.
+- `FEATURE_SEO_META_TAGS_SHADOW_MODE`: generate-only mode with no serving impact.
+- `FEATURE_SEO_DEINDEX_ON_PRIVATE`: enables automatic de-index workflow on privacy transitions.
+
+**Rollback Procedure:** disable `FEATURE_SEO_META_TAGS` to immediately revert to fallback templates while jobs continue in shadow mode for diagnostics.
+
 ---
+
+## 14. Acceptance Criteria
+
+| ID | Criterion | Verification |
+|----|-----------|--------------|
+| AC-1 | Every public channel page serves non-empty `<title>` and `<meta name="description">` tags. | E2E crawler test |
+| AC-2 | Auto-generated title length is <=60 characters; auto-generated description is 50-160 characters. | Unit tests (`TitleGenerator`, `DescriptionGenerator`) |
+| AC-3 | Effective override limits are enforced (`customTitle <=70`, `customDescription <=200`). | API validation test (`PUT /meta-tags`) |
+| AC-4 | `onVisibilityChanged` handling of `VISIBILITY_CHANGED(newVisibility=PRIVATE)` invalidates cache and removes sitemap URL. | Integration test |
+| AC-5 | Regeneration API returns `jobId` and supports status polling to terminal states (`succeeded`/`failed`). | API integration test |
+| AC-6 | Idempotency key deduplicates repeated regenerate requests within 60 seconds. | API integration test |
+| AC-7 | Custom overrides are never overwritten by background regeneration. | Integration test with queued jobs |
+| AC-8 | Generated tags exclude PII and profanity for fixture content. | Security/content filter tests |
+| AC-9 | On NLP failure/timeout, fallback tags are returned and `needs_regeneration=true` is persisted. | Fault-injection unit/integration test |
+| AC-10 | De-index workflow executes when channel visibility changes from public to private. | End-to-end visibility transition test |
 
 ## Appendix A: Meta Tag Templates
 
