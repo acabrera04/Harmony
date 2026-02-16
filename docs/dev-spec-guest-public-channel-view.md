@@ -19,8 +19,9 @@
 
 | Author        | Role                    | Version |
 |---------------|-------------------------|---------|
-| Claude (AI)   | Specification Author    | 1.0     |
+| Claude (AI)   | Specification Author    | 1.0, 2.0 |
 | dblanc        | Project Lead            | 1.0     |
+| Aiden-Barrera | Project Member          | 2.0     |
 
 ---
 
@@ -343,6 +344,10 @@ Guest User                CDN Edge              Next.js SSR           Database
     │                        │                       │                    │
 ```
 
+### 2.4 Rationale
+
+The archtecture diagram is justified because client server split abstracts from the guest the authorization logic the server handles and caching requests significantly helps with performance for storing the same content that will be served to many users. Furthermore, the importance of authorization lies in the fact whether a channel is public or not, to make sure guests can't see private channels. 
+
 ---
 
 ## 3. Class Diagram
@@ -516,6 +521,10 @@ Guest User                CDN Edge              Next.js SSR           Database
     └─────────────────────────┘
 ```
 
+### 3.1 Rationale
+
+The class diagram clearly separates the entities that will be needed for displaying the public channel to the guest user, specifically with only grabbing public entities such as the server, messages and owner of the message to avoid exposing private channel information. 
+
 ---
 
 ## 4. List of Classes
@@ -624,6 +633,10 @@ enum ChannelVisibility {
 | CL-D9 | Server | Entity | Server domain entity |
 | CL-D10 | User | Entity | User domain entity with privacy settings |
 | CL-D11 | Attachment | Entity | Message attachment entity |
+
+### 4.10 Rationale
+
+The list of classes clearly states the moving parts for ensuring guest user can access public channels and their messages, with handling caching. The classes cover all the responsibilities needed for this feature to function from route handling to retrieving the public data to formatting the response to the guest. The inclusion of caching and bot detection justified since retrieval of the same content from multiple guest is unnecessary more work on the server. 
 
 ---
 
@@ -826,6 +839,10 @@ Decision Logic:
 │   server is private    │                        │                        │
 └────────────────────────┴────────────────────────┴────────────────────────┘
 ```
+
+### 5.5 Rationale
+
+These states were chosen to show the phases a guest can be for viewing a public channel, the states handle critical edge cases a guest can experience since the endpoints are publicily accessible such as trying to visit a private channel or channel that isn't cached. The state also has no login redirect due to the fact that this feature is supposed allow anonymous users to access public channels. Importantly each state has a clear end to each phase so the guest ins't stuck in a loop state that they can't get out off.
 
 ---
 
@@ -1286,6 +1303,10 @@ interface VisibilityChangeEvent {
 - `channel:{channelId}:msgs:*` (all pages)
 - `server:{serverId}:info`
 
+### 6.6 Rationale 
+
+The flow charts depict the major flow cases a guest will experience for Harmony. The first flow covers the primary case that the guest visits the public channel from search engine result, which is the primary aim for Harmony, to be able to provide public channel information to guests without the need of logging in. The second flow covers the edge case a guests tries to visit a private channel, safely redirecting them without revealing any sensitive information about the server. The third flow covers the guest loading more messages of the channel, allowing the guest to infinitely scroll older messages. The fourth flow covers the public channels to be crawlable by search engine bots, so guests searching for information related to public channels can see it. 
+
 ---
 
 ## 7. Development Risks and Failures
@@ -1358,6 +1379,10 @@ interface VisibilityChangeEvent {
             └───────────────────────────────────────────────────┘
 ```
 
+### 7.7 Rationale 
+
+The development risks and failures categories were chosen to represent the primary threat this feature can face. The runtime and connectivity failures are catagorized due to the feature being a publicly accessible endpoint that any guest can use, leading to unpredictable traffic volumes. Intruder risks face the highest priorty due to the endpoint having no authentication since guests aren't required to log in. 
+
 ---
 
 ## 8. Technology Stack
@@ -1400,6 +1425,10 @@ Event types consumed by this spec:
 | `MESSAGE_CREATED` | SEO Meta Tag Generation | New message in public channel; invalidate message cache |
 | `MESSAGE_EDITED` | SEO Meta Tag Generation | Message edited; invalidate affected cache pages |
 | `MESSAGE_DELETED` | SEO Meta Tag Generation | Message deleted; invalidate affected cache pages |
+
+### 8.2 Rationale
+
+The technology stack was chosen to align with Harmony's architecture design and meet the needs of this feature. The primary langauge to be used for Harmony is Typescript, the reason is ensuring type safety accross the website, reducing runtime errors. Redis will serve our caching layer, for fast reads and session storage. Next.js was selected for its out of the box tools and capabilities it provide for Harmony such as SSR. 
 
 ---
 
@@ -1789,6 +1818,10 @@ When both cursor and page parameters are provided, cursor-based pagination takes
 2. Otherwise, fall back to offset-based pagination using `page` and `limit`
 3. Default: `page=1`, `limit=50`
 
+### Rationale
+
+The APIs for Guest Public Channel View, clearly handle the usage of the feature for being able to publicily access channels that are from the original search message. The first section APIs' purpose is for handling showing the information for the channel in which was derived from the search query and being able to load further messages in the channel. Next section APIs' purpose is for handling the server information once there, such as showing the server information and other public channels inside that server.
+
 ---
 
 ## 10. Public Interfaces
@@ -2107,6 +2140,10 @@ When `VISIBILITY_CHANGED` is emitted by the Channel Visibility Toggle spec:
 | `PUBLIC_NO_INDEX` | Keep guest view cache (public content, but update X-Robots-Tag) |
 | `PRIVATE` | Invalidate guest view cache; return 403/404 |
 
+### 10.4 Rationale 
+
+The public interfaces categories appropriately define the public method this featur needs for other modules to intercat with. For the public api, the public method serve its purpose for providing the necessary entry points other modules need to allow guests to view public channels without logging in. The access controls purpose is to protect private channels from being accessed by guests, verifying that the channel is public. Content delivery and data access purpose is guest receiving the public information the channel has. 
+
 ---
 
 ## 11. Data Schemas
@@ -2267,6 +2304,10 @@ CREATE INDEX idx_messages_channel_not_deleted ON messages(channel_id, created_at
 | Users | 1,000,000 | 185 bytes | 185 MB | 10,000/month |
 | Attachments | 10,000,000 | 270 bytes | 2.7 GB | 100,000/month |
 
+### 11.4 Rationale 
+
+The data schemas covers the data required for rendering the feature of public channel view. The three important tables needed being server, channels, and messages, all handle the public information that guests will be given, however the schemas clearly denote the information that will be given to guests only, meaning guests that haven't logged in. 
+
 ---
 
 ## 12. Security and Privacy
@@ -2381,6 +2422,10 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 | Download message history | No | Not exposed to guests |
 | Use search within channel | No | Not available for guests (future feature) |
 
+### 12.9 Rationale 
+
+The security and privacy answers obvious concerns for handling messages that are publicily accessible to anyone. The restriction on guest users are enforced for security purposes such as not being able to interact with the channel without verifying who you are, meaning public channels are read only. Privacy purposes users who send messages in public channels can opt out of revealing their profile information and instead have it be anonymous. 
+
 ---
 
 ## 13. Risks to Completion
@@ -2433,6 +2478,10 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 | Cache stampede | Origin overload on cache miss | Stale-while-revalidate; request coalescing |
 | Privacy incident | PII leaked in public view | Immediate hotfix; user notification |
 | SEO ranking drop | > 20% traffic decrease | Audit with Search Console; fix issues |
+
+### 13.6 Rationale 
+
+The risks to completion covers the fact that an assessment was done on the tech stack chosen for learning curve, maintainability, and long term viability. The technology chosen are well documentated and have ongoing support, reducing any future risk for developing Harmony. 
 
 ---
 
