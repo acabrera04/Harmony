@@ -72,9 +72,10 @@ Header with versioning and authors.
 │  │ M4 API Gateway                                            │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C4.1 ChannelCtrl     │  │ C4.2 PublicAccessCtrl      │ │  │
-│  │  │   getSettings()      │  │   getPublicChannel()       │ │  │
-│  │  │   updateVisibility() │  │   getPublicMessages()      │ │  │
-│  │  │   validateAdmin()    │  │   generateSitemap()        │ │  │
+│  │  │   getChannelSettings │  │   getPublicChannel()       │ │  │
+│  │  │   updateChannelVis() │  │   getServerSitemap()       │ │  │
+│  │  │   getVisAuditLog()   │  │   getRobotsTxt()           │ │  │
+│  │  │  -validateAdminAcces │  │   getPublicMessages()      │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────┐  │
@@ -83,13 +84,15 @@ Header with versioning and authors.
 │  │  │ C5.1 VisibilityServ  │  │ C5.2 IndexingService       │ │  │
 │  │  │   setVisibility()    │  │   updateSitemap()          │ │  │
 │  │  │   getVisibility()    │  │   notifySearchEngines()    │ │  │
-│  │  │   validateTransition │  │   generateCanonicalUrl()   │ │  │
-│  │  │   emitChange()       │  │   getRobotsDirectives()    │ │  │
+│  │  │   canChangeVisib()   │  │   generateCanonicalUrl()   │ │  │
+│  │  │  -validateTransition │  │   getRobotsDirectives()    │ │  │
+│  │  │  -emitVisibChange()  │  │                            │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C5.3 PermissionServ  │  │ C5.4 AuditLogService       │ │  │
 │  │  │   canManageChannel() │  │   logVisibilityChange()    │ │  │
 │  │  │   isServerAdmin()    │  │   getAuditHistory()        │ │  │
+│  │  │   getEffectivePerms()│  │   exportAuditLog()         │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────┐  │
@@ -99,10 +102,11 @@ Header with versioning and authors.
 │  │  │   findById()         │  │   create()                 │ │  │
 │  │  │   findBySlug()       │  │   findByChannelId()        │ │  │
 │  │  │   update()           │  │   findByDateRange()        │ │  │
-│  │  │   findPublicByServer │  └────────────────────────────┘ │  │
+│  │  │   findPublicByServerId│  └────────────────────────────┘ │  │
 │  │  │   getVisibility()    │                                 │  │
 │  │  │   getMetadata()      │                                 │  │
-│  │  │   invalidateCache()  │                                 │  │
+│  │  │  -invalidateCache()  │                                 │  │
+│  │  │  -getCacheKey()      │                                 │  │
 │  │  └──────────────────────┘                                 │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
@@ -195,15 +199,16 @@ We had to prompt edits to this to ensure the database columns were not mismatche
   │CL2.1 ChannelRepository  │ │CL2.2 AuditLog    │ │CL2.3 Permission   │
   ├─────────────────────────┤ │      Service     │ │      Service      │
   │ - database              │ ├──────────────────┤ ├───────────────────┤
-  │ - cache                 │ │ + logChange()    │ │ + canManage()     │
-  ├─────────────────────────┤ │ + getHistory()   │ │ + isAdmin()       │
-  │ + findById()            │ │ + export()       │ │ + getPermissions()│
-  │ + findBySlug()          │ └──────────────────┘ └───────────────────┘
-  │ + update()              │
-  │ + findPublicByServer()  │
-  │ + getVisibility()       │
+  │ - cache                 │ │ + logVisibility  │ │ + canManage       │
+  ├─────────────────────────┤ │     Change()     │ │     Channel()     │
+  │ + findById()            │ │ + getAudit       │ │ + isServer        │
+  │ + findBySlug()          │ │     History()    │ │     Admin()       │
+  │ + update()              │ │ + exportAudit    │ │ + getEffective    │
+  │ + findPublicByServerId()│ │     Log()        │ │     Permissions() │
+  │ + getVisibility()       │ └──────────────────┘ └───────────────────┘
   │ + getMetadata()         │
   │ - invalidateCache()     │
+  │ - getCacheKey()         │
   └────────────┬────────────┘
                ◆
   ┌────────────▼────────────┐
@@ -256,8 +261,8 @@ We had to prompt edits to this to ensure the database columns were not mismatche
   │ - searchEngineNotifier  │      ├─────────────────────────┤
   ├─────────────────────────┤      │ + generate()            │
   │ + updateSitemap()       │      │ + getLastModified()     │
-  │ + notifyEngines()       │      └─────────────────────────┘
-  │ + getCanonicalUrl()     │
+  │ + notifySearchEngines() │      └─────────────────────────┘
+  │ + generateCanonicalUrl()│
   │ + getRobotsDirectives() │
   └─────────────────────────┘
 ```
