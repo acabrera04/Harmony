@@ -6,16 +6,16 @@
 
 ---
 
-## 1. Header
+## 1 Header
 
-### Version and Date
+### 1.1 Version and Date
 
 | Version | Date       | Description                              |
 |---------|------------|------------------------------------------|
 | 1.0     | 2026-02-12 | Initial development specification        |
 | 2.0     | 2026-02-15 | Update to address comments and fix inconsistencies        |
 
-### Author and Role
+### 1.2 Author and Role
 
 | Author        | Role                    | Version |
 |---------------|-------------------------|---------|
@@ -25,6 +25,9 @@
 | CoPilot (AI)  | Specification Editor     | 2.0     |
 
 ---
+
+### 1.3 Rationale
+Simple setup to have the version and author, nothing technical here.
 
 ## 2. Architecture Diagram
 
@@ -344,6 +347,7 @@
                                                            │ engines         │
                                                            └─────────────────┘
 ```
+### 2.4 Rationale
 
 ---
 
@@ -714,7 +718,7 @@ Class labels in this section intentionally match Section 3 (`CL-I`, `CL-C`, `CL-
                │ └─────┬──────┘  └──────┬──────┘
                │       │                │
                │       │        ┌───────┴───────────────────┐
-               │       │        │                           │
+               │       │        │ Sync                      │ Async (background)
                │       │        ▼                           ▼
                │       │   ┌─────────────┐           ┌─────────────┐
                │       │   │ S8: Analyze │           │ S9: Use     │
@@ -812,62 +816,133 @@ State Transition Table:
                                │ Lock acquired                 │
                                └───────────────┬───────────────┘
                                                │
-                                               ▼
-                               ┌───────────────────────────────┐
-                               │ B5: Fetch Latest Content      │
-                               │ ───────────────────────────── │
-                               │ Get last 100 messages         │
-                               │ Calculate content hash        │
-                               └───────────────┬───────────────┘
-                                               │
-                                       < Hash Changed? >
-                                      /                \
-                                     / No               \ Yes
-                                    ▼                    ▼
-                    ┌──────────────────────┐   ┌───────────────────────────────┐
-                    │ B6: Skip Update      │   │ B7: Regenerate Tags           │
-                    │ ──────────────────── │   │ ───────────────────────────── │
-                    │ Content unchanged    │   │ Run full generation pipeline  │
-                    │ Release lock         │   └───────────────┬───────────────┘
-                    └──────────────────────┘                   │
-                                                               ▼
-                                               ┌───────────────────────────────┐
-                                               │ B8: Update Database           │
-                                               │ ───────────────────────────── │
-                                               │ Upsert new tags               │
-                                               │ Increment version             │
-                                               └───────────────┬───────────────┘
-                                                               │
-                                                               ▼
-                                               ┌───────────────────────────────┐
-                                               │ B9: Invalidate Caches         │
-                                               │ ───────────────────────────── │
-                                               │ Redis cache invalidate        │
-                                               │ CDN purge for URL             │
-                                               └───────────────┬───────────────┘
-                                                               │
-                                                               ▼
-                                               ┌───────────────────────────────┐
-                                               │ B10: Notify Search Engines    │
-                                               │ ───────────────────────────── │
-                                               │ Update sitemap lastmod        │
-                                               │ Ping Google/Bing              │
-                                               └───────────────┬───────────────┘
-                                                               │
-                                                               ▼
-                                [[ B11: Update Complete ]]
+                                    < VISIBILITY_CHANGED event? >
+                                   /                              \
+                                  / Yes                            \ No (content event)
+                                 ▼                                  ▼
+                    < newVisibility? >                    ┌──────────────────────────────┐
+                   /        |         \                   │ B5: Fetch Latest Content     │
+                  /         |          \                  │ ──────────────────────────── │
+        PRIVATE  /  NO_INDEX|  INDEXABLE\                 │ Get last 100 messages        │
+                ▼           ▼            ▼                │ Calculate content hash       │
+ ┌──────────────────────────┐ ┌──────────────────────────┐└───────────────┬──────────────┘
+ │ B12: De-index / Purge    │ │ B16: Regen (no-index)    │                │
+ │ ──────────────────────── │ │ ──────────────────────── │        < Hash Changed? >
+ │ Invalidate meta cache    │ │ Regen with robots=       │       /                \
+ │ Purge CDN URL            │ │   noindex                │      / No               \ Yes
+ │ Remove URL from sitemap  │ │ Exclude from indexable   │     ▼                    ▼
+ │ Request search-engine    │ │   sitemap set            │ ┌──────────────────────┐ │
+ │   removal                │ │ Invalidate meta cache    │ │ B6: Skip Update      │ │
+ │ Release lock             │ └────────────┬─────────────┘ │ ──────────────────── │ │
+ └────────────┬─────────────┘              │               │ Content unchanged    │ │
+              │               ┌──────────────────────────┐ │ Release lock         │ │
+              ▼               │ B17: Regen (indexable)   │ └──────────────────────┘ │
+ [[ B13: De-index             │ ──────────────────────── │                          │
+    Complete ]]               │ High-priority regen      │                          │
+                              │ Keep URL in sitemap      │                          │
+                              │ Refresh lastmod          │                          │
+                              │ Invalidate meta cache    │                          │
+                              └────────────┬─────────────┘                          │
+                                           │                                        │
+                                           └──────────────┬─────────────────────────┘
+                                                          │
+                                                          ▼
+                                           ┌──────────────────────────────┐
+                                           │ B7: Regenerate Tags          │
+                                           │ ──────────────────────────── │
+                                           │ Run full generation pipeline │
+                                           └──────────────┬───────────────┘
+                                                          │
+                                                   ┌──────┴──────────────┐
+                                                   │                     │ Timeout (>30s)
+                                                   ▼                     ▼
+                                    ┌──────────────────────────┐  ┌──────────────────────┐
+                                    │ B8: Update Database      │  │ B14: Failed          │
+                                    │ ──────────────────────── │  │ ──────────────────── │
+                                    │ Upsert new tags          │  │ Keep last known tags │
+                                    │ Increment version        │  │ needs_regeneration   │
+                                    └────────────┬─────────────┘  │   = true             │
+                                                 │                │ Retry up to max      │
+                                      ┌──────────┴──────────┐     └──────────────────────┘
+                                      │                     │ Upsert failure        ▲
+                                      ▼                     └──────────────────────►│
+                                      │
+                                      ▼
+                                    ┌──────────────────────────────┐
+                                    │ B9: Invalidate Caches        │
+                                    │ ──────────────────────────── │
+                                    │ Redis cache invalidate       │
+                                    │ CDN purge for URL            │
+                                    └──────────────┬───────────────┘
+                                                │
+                                                ▼
+                                ┌───────────────────────────────┐
+                                │ B10: Notify Search Engines    │
+                                │ ───────────────────────────── │
+                                │ Update sitemap lastmod        │
+                                │ Ping Google/Bing              │
+                                └───────────────┬───────────────┘
+                                         ┌──────┴──────────────┐
+                                         │ Success             │ CDN/ping failure
+                                         ▼                     ▼
+                                         │  ┌───────────────────────────────┐
+                                         │  │ B15: Partial Success          │
+                                         │  │ ───────────────────────────── │
+                                         │  │ Tags updated in DB/cache      │
+                                         │  │ Retry external notifications  │
+                                         │  │   asynchronously              │
+                                         │  └───────────────────────────────┘
+                                         ▼
+                [[ B11: Update Complete ]]
+
+
+State Transition Table:
+
+┌────────────────────────┬──────────────────────────────────┬─────────────────────────┬───────────────────────────────────┐
+│ Current State          │ Condition/Action                 │ Next State              │ Side Effects                      │
+├────────────────────────┼──────────────────────────────────┼─────────────────────────┼───────────────────────────────────┤
+│ B0: Event Received     │ Event arrives                    │ B1: Debounce Check      │ Parse event type                  │
+│ B1: Debounce Check     │ Job already queued               │ B2: Extend Delay        │ Reset timer                       │
+│ B1: Debounce Check     │ No existing job                  │ B3: Queue New Job       │ Create job with 60s delay         │
+│ B3: Queue New Job      │ Delay expires                    │ B4: Worker Picks Up     │ Acquire lock                      │
+│ B4: Worker Picks Up    │ VISIBILITY_CHANGED → PRIVATE     │ B12: De-index/Purge     │ Begin de-index flow               │
+│ B4: Worker Picks Up    │ VISIBILITY_CHANGED → NO_INDEX    │ B16: Regen (no-index)   │ Regen with noindex, exclude from  │
+│                        │                                  │                         │ indexable sitemap set              │
+│ B4: Worker Picks Up    │ VISIBILITY_CHANGED → INDEXABLE   │ B17: Regen (indexable)  │ High-pri regen, keep URL in       │
+│                        │                                  │                         │ sitemap, refresh lastmod           │
+│ B4: Worker Picks Up    │ Content event (message ops)      │ B5: Fetch Content       │ Fetch messages, calc hash         │
+│ B5: Fetch Content      │ Hash unchanged                   │ B6: Skip Update         │ Release lock                      │
+│ B5: Fetch Content      │ Hash changed                     │ B7: Regenerate Tags     │ Run generation pipeline           │
+│ B16: Regen (no-index)  │ Cache invalidated                │ B7: Regenerate Tags     │ Invalidate meta cache, regen with │
+│                        │                                  │                         │ robots=noindex                    │
+│ B17: Regen (indexable) │ Cache invalidated                │ B7: Regenerate Tags     │ Invalidate meta cache, high-pri   │
+│                        │                                  │                         │ regen, refresh sitemap lastmod    │
+│ B7: Regenerate Tags    │ Generation succeeds              │ B8: Update Database     │ Upsert tags, increment version    │
+│ B7: Regenerate Tags    │ Worker timeout (>30s)            │ B14: Failed             │ Keep last tags, emit metric       │
+│ B8: Update Database    │ Upsert succeeds                  │ B9: Invalidate Caches   │ Redis invalidate, CDN purge       │
+│ B8: Update Database    │ Upsert failure                   │ B14: Failed             │ Skip cache write, retry/alert     │
+│ B9: Invalidate Caches  │ Invalidation succeeds            │ B10: Notify Engines     │ Update sitemap, ping crawlers     │
+│ B9: Invalidate Caches  │ CDN purge failure                │ B15: Partial Success    │ Retry CDN purge asynchronously    │
+│ B10: Notify Engines    │ Notification succeeds            │ B11: Update Complete    │ Done                              │
+│ B10: Notify Engines    │ Search ping failure              │ B15: Partial Success    │ Retry notifications async         │
+│ B12: De-index/Purge    │ Purge + removal complete         │ B13: De-index Complete  │ Sitemap + CDN + cache cleared,    │
+│                        │                                  │                         │ release lock                      │
+└────────────────────────┴──────────────────────────────────┴─────────────────────────┴───────────────────────────────────┘
 ```
 
 **Additional Event Semantics (de-index + failure paths):**
 
 | Trigger | Transition | Side Effects | Failure Handling |
 |---------|------------|--------------|------------------|
-| `VISIBILITY_CHANGED` where `newVisibility = PUBLIC_INDEXABLE` | `B0 → B3 (Queue) → B11 (Complete)` | Queue high-priority regeneration, invalidate `meta:channel:{channelId}`, keep canonical URL in sitemap with refreshed `lastmod` | Retry queue enqueue with backoff; keep last known tags until regeneration succeeds |
-| `VISIBILITY_CHANGED` where `newVisibility = PUBLIC_NO_INDEX` | `B0 → B3 (Queue) → B11 (Complete)` | Regenerate tags with `robots=noindex`, invalidate `meta:channel:{channelId}`, keep channel public but excluded from indexable sitemap set | Retry queue enqueue with backoff; continue serving public tags with noindex policy |
+| `VISIBILITY_CHANGED` where `newVisibility = PUBLIC_INDEXABLE` | `B0 → B3 (Queue) → B17 (Regen indexable) → B7 → B11 (Complete)` | Queue high-priority regeneration, invalidate `meta:channel:{channelId}`, keep canonical URL in sitemap with refreshed `lastmod` | Retry queue enqueue with backoff; keep last known tags until regeneration succeeds |
+| `VISIBILITY_CHANGED` where `newVisibility = PUBLIC_NO_INDEX` | `B0 → B3 (Queue) → B16 (Regen no-index) → B7 → B11 (Complete)` | Regenerate tags with `robots=noindex`, invalidate `meta:channel:{channelId}`, keep channel public but excluded from indexable sitemap set | Retry queue enqueue with backoff; continue serving public tags with noindex policy |
 | `VISIBILITY_CHANGED` where `newVisibility = PRIVATE` | `B0 → B12 (De-index/Purge) → B13 (Complete)` | Invalidate `meta:channel:{channelId}`, purge CDN URL, remove channel URL from sitemap, request search-engine recrawl/removal | Retry queue with exponential backoff; preserve stale tags in DB but never serve while channel is private |
 | Worker timeout (>30s) | `B7 → B14 (Failed)` | Keep last successful tags active, emit failure metric | Mark job `failed`, set `needs_regeneration=true`, retry up to max attempts |
 | DB upsert failure | `B8 → B14 (Failed)` | Skip cache write to avoid cache/DB drift | Retry with backoff and alert after final failure |
 | CDN/Search ping failure | `B9/B10 → B15 (Partial Success)` | Meta tags remain updated in DB/cache | Continue serving updated tags and retry external notifications asynchronously |
+
+### 5.4 Rationale
+This shows the key part of the full state of the meta tag generation from what happens on the device and what happens in the background asynchronously to get the tags. We prompted for an updated diagrams as some states were missing for the different visbilities in the background process and we also had to add more scenarios such as timeouts and failures. 
 
 ---
 
@@ -1332,13 +1407,443 @@ State Transition Table:
 
 **Scenario Description:** A channel transitions from `PUBLIC_INDEXABLE` or `PUBLIC_NO_INDEX` to `PRIVATE`. Existing tags must stop being served and search engines must be notified to drop stale indexed content.
 
-1. `EventListener.onVisibilityChanged()` consumes a `VISIBILITY_CHANGED` event.
-2. If new visibility is `PRIVATE`, `MetaTagService.invalidateCache(channelId)` must delete `meta:channel:{channelId}`.
-3. `SitemapUpdater` removes the canonical channel URL from sitemap output and queues search-engine recrawl/removal notification.
-4. Existing `generated_meta_tags` records may be retained for rollback/audit, but `VisibilityGuard` must block serving them while channel visibility is `PRIVATE`.
-5. If the channel later returns to `PUBLIC_INDEXABLE` or `PUBLIC_NO_INDEX`, regeneration runs before tags are served again.
+```
+    (( START: Channel visibility changed to PRIVATE ))
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F5.1] EventListener receives │
+            │ VISIBILITY_CHANGED event      │
+            │ Server.EventListener.         │
+            │   onVisibilityChanged()       │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            < F5.2: New visibility is PRIVATE? >
+           /                                    \
+          / No                                Yes \
+         ▼                                         ▼
+    ┌─────────────────────────┐     ┌───────────────────────────────┐
+    │ [F5.3] Handle non-      │     │ [F5.4] Invalidate cached      │
+    │ private transition      │     │ meta tags                     │
+    │ (e.g., PUBLIC_NO_INDEX  │     │ Server.MetaTagService.        │
+    │  to PUBLIC_INDEXABLE;   │     │   invalidateCache(channelId)  │
+    │  regenerate if needed)  │     │ Delete meta:channel:{id}      │
+    └─────────────────────────┘     └───────────────┬───────────────┘
+                                                    │
+                                                    ▼
+                                    ┌───────────────────────────────┐
+                                    │ [F5.5] Remove from sitemap    │
+                                    │ Server.SitemapUpdater.        │
+                                    │   removeUrl(channelUrl)       │
+                                    └───────────────┬───────────────┘
+                                                    │
+                                                    ▼
+                                    ┌───────────────────────────────┐
+                                    │ [F5.6] Queue search-engine    │
+                                    │ removal notification          │
+                                    │ Server.SitemapUpdater.        │
+                                    │   notifyUrlRemoval(           │
+                                    │     channelUrl)               │
+                                    └───────────────┬───────────────┘
+                                                    │
+                                                    ▼
+                                    ┌───────────────────────────────┐
+                                    │ [F5.7] Purge CDN cache        │
+                                    │ Server.CDN.purge(channelUrl)  │
+                                    └───────────────┬───────────────┘
+                                                    │
+                                                    ▼
+                                    ┌───────────────────────────────┐
+                                    │ [F5.8] Retain DB records      │
+                                    │ for rollback/audit            │
+                                    │ generated_meta_tags rows kept │
+                                    │ VisibilityGuard blocks        │
+                                    │ serving while PRIVATE         │
+                                    └───────────────┬───────────────┘
+                                                    │
+                                                    ▼
+                                    < F5.9: Channel later restored  >
+                                    < to PUBLIC_INDEXABLE or        >
+                                    < PUBLIC_NO_INDEX?              >
+                                   /                                \
+                                  / No                            Yes \
+                                 ▼                                     ▼
+                    ┌─────────────────────┐         ┌───────────────────────────────┐
+                    │ [F5.10] Tags remain │         │ [F5.11] Regeneration runs     │
+                    │ blocked from        │         │ before tags are served again  │
+                    │ serving             │         │ Server.MetaTagService.        │
+                    └─────────────────────┘         │   generateMetaTags(channelId, │
+                                                    │     { forceRegenerate: true })│
+                                                    └───────────────┬───────────────┘
+                                                                    │
+                                                                    ▼
+                                                    (( END: Channel de-indexed ))
+                                                    - Cache cleared
+                                                    - Sitemap updated
+                                                    - Search engines notified
+                                                    - Tags blocked until re-public
+```
 
 **Ownership Boundary:** De-indexing requests tied to visibility transitions are initiated here; the canonical visibility state remains owned by the channel visibility feature.
+
+### 6.6 Scenario: User Deletes a Message in a Public Channel
+
+**Scenario Description:** A user deletes a message in a public channel. The system detects the deletion event and schedules a background job to regenerate meta tags so that search engines no longer surface content from the deleted message.
+
+```
+    (( START: User deletes message in public channel ))
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F6.1] Message removed from   │
+            │ database                      │
+            │ Server.MessageRepository.     │
+            │   delete(messageId)           │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F6.2] Event emitted          │
+            │ Server.EventBus.emit(         │
+            │   "MESSAGE_DELETED",          │
+            │   { channelId, messageId })   │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F6.3] EventListener receives │
+            │ Server.EventListener.         │
+            │   onMessageDeleted()          │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F6.4] Check if channel is    │
+            │ public                        │
+            │ Server.VisibilityGuard.       │
+            │   isChannelPublic(channelId)  │
+            └───────────────┬───────────────┘
+                            │
+                    < F6.5: Is public? >
+                   /                    \
+                  / No                   \ Yes
+                 ▼                        ▼
+    ┌─────────────────────────┐    ┌───────────────────────────────┐
+    │ [F6.6] Ignore event     │    │ [F6.7] Check for existing     │
+    │ No meta tag update      │    │ queued job                    │
+    │ needed for private      │    │ Server.JobQueue.exists(       │
+    │ channel                 │    │   `meta-update:${channelId}`) │
+    └─────────────────────────┘    └───────────────┬───────────────┘
+                                                   │
+                                           < F6.8: Job exists? >
+                                          /                      \
+                                         / Yes                    \ No
+                                        ▼                          ▼
+                        ┌───────────────────────────┐  ┌───────────────────────────────┐
+                        │ [F6.9] Extend delay       │  │ [F6.10] Queue new job         │
+                        │ Reset debounce to 60s     │  │ Server.JobQueue.add(          │
+                        │                           │  │   `meta-update:${channelId}`, │
+                        │ (Prevents thrashing when  │  │   { channelId },              │
+                        │  multiple deletes occur)  │  │   { delay: 60000 })           │
+                        └───────────────────────────┘  └───────────────┬───────────────┘
+                                                                       │
+                                                                       │ 60 seconds later...
+                                                                       ▼
+                                                       ┌───────────────────────────────┐
+                                                       │ [F6.11] Worker picks up job   │
+                                                       │ Server.MetaTagUpdateWorker.   │
+                                                       │   processJob()                │
+                                                       └───────────────┬───────────────┘
+                                                                       │
+                                                                       ▼
+                                                       ┌───────────────────────────────┐
+                                                       │ [F6.12] Calculate new content │
+                                                       │ hash (without deleted message)│
+                                                       │ Server.MessageRepository.     │
+                                                       │   getContentHash(channelId)   │
+                                                       └───────────────┬───────────────┘
+                                                                       │
+                                                               < F6.13: Hash changed? >
+                                                              /                        \
+                                                             / No                       \ Yes
+                                                            ▼                            ▼
+                                            ┌───────────────────────────┐  ┌───────────────────────────────┐
+                                            │ [F6.14] Skip update       │  │ [F6.15] Regenerate meta tags  │
+                                            │ Content unchanged         │  │ (Full pipeline from F1.13)    │
+                                            │ (deleted message was not  │  │ Ensures deleted content no    │
+                                            │  reflected in tags)       │  │ longer appears in tags        │
+                                            └───────────────────────────┘  └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F6.16] Update database       │
+                                                                           │ Server.MetaTagRepository.     │
+                                                                           │   upsert(channelId, newTags)  │
+                                                                           │ Increment version             │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F6.17] Invalidate caches     │
+                                                                           │ Server.MetaTagCache.          │
+                                                                           │   invalidate(channelId)       │
+                                                                           │ Server.CDN.purge(channelUrl)  │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F6.18] Update sitemap        │
+                                                                           │ Server.SitemapUpdater.        │
+                                                                           │   updateLastModified(url)     │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F6.19] Ping search engines   │
+                                                                           │ (Async, non-blocking)         │
+                                                                           │ Server.SitemapUpdater.        │
+                                                                           │   notifySearchEngines()       │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                            (( END: Meta tags updated ))
+                                                                            - Deleted content removed
+                                                                            - Fresh tags regenerated
+                                                                            - Search engines notified
+```
+
+### 6.7 Scenario: User Edits a Message in a Public Channel
+
+**Scenario Description:** A user edits an existing message in a public channel. The updated content may change the keywords, title, or description that were derived from that message, so the system schedules a background regeneration job.
+
+```
+    (( START: User edits message in public channel ))
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F7.1] Message updated in     │
+            │ database                      │
+            │ Server.MessageRepository.     │
+            │   update(messageId, content)  │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F7.2] Event emitted          │
+            │ Server.EventBus.emit(         │
+            │   "MESSAGE_UPDATED",          │
+            │   { channelId, messageId })   │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F7.3] EventListener receives │
+            │ Server.EventListener.         │
+            │   onMessageUpdated()          │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F7.4] Check if channel is    │
+            │ public                        │
+            │ Server.VisibilityGuard.       │
+            │   isChannelPublic(channelId)  │
+            └───────────────┬───────────────┘
+                            │
+                    < F7.5: Is public? >
+                   /                    \
+                  / No                   \ Yes
+                 ▼                        ▼
+    ┌─────────────────────────┐    ┌───────────────────────────────┐
+    │ [F7.6] Ignore event     │    │ [F7.7] Check for existing     │
+    │ No meta tag update      │    │ queued job                    │
+    │ needed for private      │    │ Server.JobQueue.exists(       │
+    │ channel                 │    │   `meta-update:${channelId}`) │
+    └─────────────────────────┘    └───────────────┬───────────────┘
+                                                   │
+                                           < F7.8: Job exists? >
+                                          /                      \
+                                         / Yes                    \ No
+                                        ▼                          ▼
+                        ┌───────────────────────────┐  ┌───────────────────────────────┐
+                        │ [F7.9] Extend delay       │  │ [F7.10] Queue new job         │
+                        │ Reset debounce to 60s     │  │ Server.JobQueue.add(          │
+                        │                           │  │   `meta-update:${channelId}`, │
+                        │ (Prevents thrashing when  │  │   { channelId },              │
+                        │  rapid edits occur)       │  │   { delay: 60000 })           │
+                        └───────────────────────────┘  └───────────────┬───────────────┘
+                                                                       │
+                                                                       │ 60 seconds later...
+                                                                       ▼
+                                                       ┌───────────────────────────────┐
+                                                       │ [F7.11] Worker picks up job   │
+                                                       │ Server.MetaTagUpdateWorker.   │
+                                                       │   processJob()                │
+                                                       └───────────────┬───────────────┘
+                                                                       │
+                                                                       ▼
+                                                       ┌───────────────────────────────┐
+                                                       │ [F7.12] Calculate new content │
+                                                       │ hash (with edited message)    │
+                                                       │ Server.MessageRepository.     │
+                                                       │   getContentHash(channelId)   │
+                                                       └───────────────┬───────────────┘
+                                                                       │
+                                                               < F7.13: Hash changed? >
+                                                              /                        \
+                                                             / No                       \ Yes
+                                                            ▼                            ▼
+                                            ┌───────────────────────────┐  ┌───────────────────────────────┐
+                                            │ [F7.14] Skip update       │  │ [F7.15] Regenerate meta tags  │
+                                            │ Content hash unchanged    │  │ (Full pipeline from F1.13)    │
+                                            │ (edit did not affect      │  │ Ensures tags reflect updated  │
+                                            │  tag-relevant content)    │  │ message content               │
+                                            └───────────────────────────┘  └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F7.16] Update database       │
+                                                                           │ Server.MetaTagRepository.     │
+                                                                           │   upsert(channelId, newTags)  │
+                                                                           │ Increment version             │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F7.17] Invalidate caches     │
+                                                                           │ Server.MetaTagCache.          │
+                                                                           │   invalidate(channelId)       │
+                                                                           │ Server.CDN.purge(channelUrl)  │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F7.18] Update sitemap        │
+                                                                           │ Server.SitemapUpdater.        │
+                                                                           │   updateLastModified(url)     │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                           ┌───────────────────────────────┐
+                                                                           │ [F7.19] Ping search engines   │
+                                                                           │ (Async, non-blocking)         │
+                                                                           │ Server.SitemapUpdater.        │
+                                                                           │   notifySearchEngines()       │
+                                                                           └───────────────┬───────────────┘
+                                                                                           │
+                                                                                           ▼
+                                                                            (( END: Meta tags updated ))
+                                                                            - Edited content reflected
+                                                                            - Fresh tags regenerated
+                                                                            - Search engines notified
+```
+
+### 6.8 Scenario: Channel Visibility Changes to Public (Indexable or Non-Indexable)
+
+**Scenario Description:** A channel transitions from `PRIVATE` to `PUBLIC_INDEXABLE` or `PUBLIC_NO_INDEX`, or switches between the two public states. Meta tags must be generated (or re-served), the sitemap updated, and indexing directives set according to the target visibility.
+
+```
+    (( START: Channel visibility changed to a public state ))
+                            │
+                            ▼
+            ┌───────────────────────────────┐
+            │ [F8.1] EventListener receives │
+            │ VISIBILITY_CHANGED event      │
+            │ Server.EventListener.         │
+            │   onVisibilityChanged()       │
+            └───────────────┬───────────────┘
+                            │
+                            ▼
+              < F8.2: Previous visibility was PRIVATE? >
+             /                                          \
+            / Yes                                     No \
+           ▼                                              ▼
+  ┌───────────────────────────────┐            ┌───────────────────────────────┐
+  │ [F8.3] Check for existing    │            │ [F8.4] Switching between      │
+  │ retained meta tag records    │            │ PUBLIC_INDEXABLE and           │
+  │ Server.MetaTagRepository.    │            │ PUBLIC_NO_INDEX                │
+  │   findByChannel(channelId)   │            └───────────────┬───────────────┘
+  └───────────────┬──────────────┘                            │
+                  │                                           ▼
+                  ▼                            ┌───────────────────────────────┐
+   < F8.5: Records exist? >                   │ [F8.6] Update robots meta    │
+  /                        \                   │ tag directive only            │
+ / No                    Yes \                 │                               │
+▼                             ▼                │ PUBLIC_INDEXABLE →            │
+┌──────────────────────┐  ┌──────────────────┐ │   "index, follow"            │
+│ [F8.7] Generate      │  │ [F8.8] Force     │ │ PUBLIC_NO_INDEX →            │
+│ fresh meta tags      │  │ regeneration of  │ │   "noindex, follow"          │
+│ from scratch         │  │ stale retained   │ └───────────────┬───────────────┘
+│                      │  │ records          │                 │
+│ Server.MetaTagSvc.   │  │                  │                 │
+│  .generateMetaTags(  │  │ Server.MetaTagSvc│                 │
+│    channelId)        │  │  .generateMeta(  │                 │
+│                      │  │   channelId,     │                 │
+│                      │  │   {force: true}) │                 │
+└──────────┬───────────┘  └────────┬─────────┘                 │
+           │                       │                           │
+           └───────────┬───────────┘                           │
+                       │                                       │
+                       ▼                                       │
+       ┌───────────────────────────────┐                       │
+       │ [F8.9] Save generated tags    │                       │
+       │ Server.MetaTagRepository.     │                       │
+       │   upsert(channelId, newTags)  │                       │
+       └───────────────┬───────────────┘                       │
+                       │                                       │
+                       └───────────────────┬───────────────────┘
+                                           │
+                                           ▼
+                           ┌───────────────────────────────┐
+                           │ [F8.10] Warm caches           │
+                           │ Server.MetaTagCache.          │
+                           │   set(channelId, tags)        │
+                           └───────────────┬───────────────┘
+                                           │
+                                           ▼
+                           < F8.11: New visibility is      >
+                           < PUBLIC_INDEXABLE?              >
+                          /                                 \
+                         / Yes                            No \
+                        ▼                                     ▼
+        ┌───────────────────────────────┐  ┌───────────────────────────────┐
+        │ [F8.12] Add to sitemap        │  │ [F8.13] Remove from sitemap   │
+        │ Server.SitemapUpdater.         │  │ (or keep removed)             │
+        │   addUrl(channelUrl)           │  │ PUBLIC_NO_INDEX channels      │
+        │                               │  │ should not appear in sitemap  │
+        └───────────────┬───────────────┘  └───────────────┬───────────────┘
+                        │                                  │
+                        └──────────────┬───────────────────┘
+                                       │
+                                       ▼
+                       ┌───────────────────────────────┐
+                       │ [F8.14] Purge CDN to serve    │
+                       │ fresh tags                    │
+                       │ Server.CDN.purge(channelUrl)  │
+                       └───────────────┬───────────────┘
+                                       │
+                                       ▼
+                       ┌───────────────────────────────┐
+                       │ [F8.15] Ping search engines   │
+                       │ (Async, non-blocking)         │
+                       │ Server.SitemapUpdater.        │
+                       │   notifySearchEngines()       │
+                       └───────────────┬───────────────┘
+                                       │
+                                       ▼
+                        (( END: Channel now public ))
+                        - Meta tags generated/refreshed
+                        - Robots directive set
+                        - Sitemap updated per visibility
+                        - Caches warmed
+                        - Search engines notified
+```
+
+**Ownership Boundary:** The canonical visibility state is owned by the channel visibility feature; this flow reacts to the emitted `VISIBILITY_CHANGED` event and manages the SEO/meta tag consequences only.
+
+### 6.9 Rationale
+After having the llm review this section, it was determined that it was missing a critical section to show what would change when a channel is turned to private. The majority of the scenarios here were designed by the LLM, but we also asked the LLM to add edit and deleting messages to ensure that all flows are covered. We also had to add a scenario for when the visibility is changed to a public state. These all describe all the possible flows that this user story will go through.
 
 ---
 
