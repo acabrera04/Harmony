@@ -53,28 +53,70 @@ npm start
 ```
 harmony-frontend/
 ├── src/
-│   ├── app/           # Next.js App Router pages and layouts
-│   ├── hooks/         # Custom React hooks
-│   ├── services/      # API services and business logic
-│   ├── mocks/         # Mock data for development/testing
-│   ├── types/         # TypeScript type definitions
-│   ├── layouts/       # Layout components
-│   ├── context/       # React Context providers
-│   └── assets/        # Static assets (images, fonts, etc.)
-├── public/            # Public static files
-└── .env.example       # Environment variables template
+│   ├── app/                    # Next.js App Router
+│   │   ├── (public)/          # Route group for public pages (future)
+│   │   ├── (authenticated)/   # Route group for authenticated pages (future)
+│   │   ├── api/               # API routes (future)
+│   │   ├── layout.tsx         # Root layout
+│   │   ├── page.tsx           # Home page
+│   │   └── globals.css        # Global styles
+│   ├── components/            # React components
+│   │   ├── ui/               # Basic UI components (Button, Card, etc.)
+│   │   ├── channel/          # Channel-specific components
+│   │   ├── server/           # Server-specific components
+│   │   └── shared/           # Shared components across domains
+│   ├── lib/                   # Core utilities and configurations
+│   │   ├── utils.ts          # Helper functions (cn, formatDate, etc.)
+│   │   ├── constants.ts      # App constants and enums
+│   │   └── api-client.ts     # Configured Axios client
+│   ├── services/              # Business logic & API calls
+│   ├── hooks/                 # Custom React hooks
+│   ├── types/                 # TypeScript type definitions
+│   │   ├── channel.ts        # Channel types
+│   │   ├── message.ts        # Message types
+│   │   └── server.ts         # Server types
+│   ├── context/               # React Context providers
+│   ├── layouts/               # Layout components
+│   ├── mocks/                 # Mock data for development/testing
+│   └── assets/                # Static assets (images, fonts, etc.)
+├── public/                    # Public static files
+└── .env.example               # Environment variables template
 ```
+
+### Directory Purpose
+
+- **`app/`** - Next.js 14 App Router with pages, layouts, and routing
+- **`components/`** - Reusable UI components organized by domain (see [components/README.md](src/components/README.md))
+- **`lib/`** - Shared utilities, constants, and configurations
+- **`services/`** - API service layer and business logic
+- **`types/`** - TypeScript type definitions aligned with dev spec data schemas
+- **`hooks/`** - Custom React hooks for shared logic
+- **`context/`** - React Context providers for global state
+- **`layouts/`** - Shared layout components
+- **`mocks/`** - Mock data for development and testing
 
 ## Path Aliases
 
 TypeScript is configured with path aliases for cleaner imports:
 
 ```typescript
-// Instead of: import { Button } from '../../../app/components/Button'
-import { Button } from '@/app/components/Button'
+// Instead of: import { Button } from '../../../components/ui/Button'
+import { Button } from '@/components/ui/Button'
+import { formatDate } from '@/lib/utils'
+import { apiClient } from '@/lib/api-client'
 ```
 
 The `@/` alias maps to `src/`.
+
+## Example Components
+
+The project includes example components demonstrating the architecture:
+
+- **UI Components**: `Button`, `Card` - Basic reusable components
+- **Channel Components**: `MessageCard`, `MessageList`, `GuestPromoBanner` - From dev spec M1
+- **Server Components**: `ServerSidebar` - Server navigation component
+
+These components align with the dev spec class diagrams (C1.3, C1.4, C1.5, C1.6).
 
 ## Environment Variables
 
