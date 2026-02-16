@@ -27,7 +27,7 @@
 ---
 
 ### 1.3 Rationale
-Simple setup to have the version and author, nothing technical here.
+Header with versioning and authors.
 
 ## 2. Architecture Diagram
 
@@ -35,7 +35,7 @@ Simple setup to have the version and author, nothing technical here.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              LEGEND                                              │
+│                              LEGEND                                             │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  ┌──────┐  Module/Component    ─────►  Data Flow                                │
 │  │      │                      ─ ─ ─►  Async/Background Flow                    │
@@ -45,7 +45,7 @@ Simple setup to have the version and author, nothing technical here.
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           EXTERNAL ACTORS                                        │
+│                           EXTERNAL ACTORS                                       │
 │  ┌─────────────────────────┐  ┌─────────────────────────┐                       │
 │  │ [A1 Search Engine Bot]  │  │ [A2 Social Media        │                       │
 │  │ Googlebot, Bingbot      │  │ Crawler]                │                       │
@@ -57,9 +57,9 @@ Simple setup to have the version and author, nothing technical here.
                │ Request page               │ Request page/OG tags
                ▼                            ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           SERVER LAYER (Application Server)                      │
+│                           SERVER LAYER (Application Server)                     │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M1 Page Rendering Module (Next.js SSR)                                     │  │
+│  │ M1 Page Rendering Module (Next.js SSR)                                    │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ C1.1 PublicChannelPage      │    │ C1.2 HeadComponent              │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
@@ -73,7 +73,7 @@ Simple setup to have the version and author, nothing technical here.
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M2 Meta Tag Generation Module                                              │  │
+│  │ M2 Meta Tag Generation Module                                             │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ C2.1 MetaTagService         │    │ C2.2 TitleGenerator             │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
@@ -82,10 +82,14 @@ Simple setup to have the version and author, nothing technical here.
 │  │  │ openGraphGenerator: ref     │    │ generateFromChannel()           │   │  │
 │  │  │ structuredDataGen: ref      │    │ generateFromMessage()           │   │  │
 │  │  │ cacheService: ref           │    │ generateFromThread()            │   │  │
-│  │  │ ─────────────────────────── │    │ truncateWithEllipsis()          │   │  │
-│  │  │ generateMetaTags()          │◄───│ sanitizeForTitle()              │   │  │
+│  │  │ contentAnalyzer: ref        │    │ truncateWithEllipsis()          │   │  │
+│  │  │ ─────────────────────────── │    │ sanitizeForTitle()              │   │  │
+│  │  │ generateMetaTags()          │◄───│ applyTemplate()                 │   │  │
 │  │  │ getOrGenerateCached()       │    └─────────────────────────────────┘   │  │
 │  │  │ invalidateCache()           │                                          │  │
+│  │  │ scheduleRegeneration()      │                                          │  │
+│  │  │ getMetaTagsForPreview()     │                                          │  │
+│  │  │ getRegenerationJobStatus()  │                                          │  │
 │  │  └─────────────────────────────┘    ┌─────────────────────────────────┐   │  │
 │  │  ┌─────────────────────────────┐    │ C2.4 OpenGraphGenerator         │   │  │
 │  │  │ C2.3 DescriptionGenerator   │    │ ─────────────────────────────── │   │  │
@@ -94,47 +98,45 @@ Simple setup to have the version and author, nothing technical here.
 │  │  │ minLength: 50               │    │ generateOGTags()                │   │  │
 │  │  │ ─────────────────────────── │    │ generateTwitterCard()           │   │  │
 │  │  │ generateFromMessages()      │    │ selectPreviewImage()            │   │  │
-│  │  │ extractKeyPhrases()         │    │ generateSiteName()              │   │  │
-│  │  │ summarizeThread()           │    └─────────────────────────────────┘   │  │
-│  │  │ sanitizeForDescription()    │                                          │  │
+│  │  │ extractKeyPhrases()         │    └─────────────────────────────────┘   │  │
+│  │  │ summarizeThread()           │                                          │  │
 │  │  └─────────────────────────────┘    ┌─────────────────────────────────┐   │  │
 │  │  ┌─────────────────────────────┐    │ C2.6 MetaTagCache               │   │  │
 │  │  │ C2.5 StructuredDataGen      │    │ ─────────────────────────────── │   │  │
-│  │  │ ─────────────────────────── │    │ cache: CacheClient              │   │  │
+│  │  │ ─────────────────────────── │    │ cache: Redis                    │   │  │
 │  │  │ ─────────────────────────── │    │ ttl: number                     │   │  │
 │  │  │ generateDiscussionForum()   │    │ ─────────────────────────────── │   │  │
 │  │  │ generateBreadcrumbList()    │    │ get()                           │   │  │
 │  │  │ generateOrganization()      │    │ set()                           │   │  │
 │  │  │ generateWebPage()           │    │ invalidate()                    │   │  │
-│  │  └─────────────────────────────┘    │ warmup()                        │   │  │
-│  │                                     └─────────────────────────────────┘   │  │
+│  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M3 Content Analysis Module                                                 │  │
+│  │ M3 Content Analysis Module                                                │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ C3.1 ContentAnalyzer        │    │ C3.2 KeywordExtractor           │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
 │  │  │ keywordExtractor: ref       │    │ stopWords: Set<string>          │   │  │
-│  │  │ sentimentAnalyzer: ref      │    │ ─────────────────────────────── │   │  │
-│  │  │ topicClassifier: ref        │    │ extractKeywords()               │   │  │
+│  │  │ summarizer: ref             │    │ ─────────────────────────────── │   │  │
+│  │  │ topicClassifier: ref         │    │ extractKeywords()               │   │  │
 │  │  │ ─────────────────────────── │    │ extractPhrases()                │   │  │
 │  │  │ analyzeThread()             │───►│ scoreByFrequency()              │   │  │
-│  │  │ getTopicCategory()          │    │ filterStopWords()               │   │  │
-│  │  │ getSentiment()              │    └─────────────────────────────────┘   │  │
+│  │  │ getTopicCategory()          │    └─────────────────────────────────┘   │  │
+│  │  │ getSentiment()              │                                          │  │
 │  │  │ getReadingLevel()           │                                          │  │
 │  │  └─────────────────────────────┘    ┌─────────────────────────────────┐   │  │
-│  │  ┌─────────────────────────────┐    │ C3.4 TopicClassifier            │   │  │
+│  │  ┌─────────────────────────────┐    │ C3.4 TopicClassifier             │   │  │
 │  │  │ C3.3 TextSummarizer         │    │ ─────────────────────────────── │   │  │
 │  │  │ ─────────────────────────── │    │ categories: Category[]          │   │  │
 │  │  │ maxSentences: number        │    │ ─────────────────────────────── │   │  │
 │  │  │ ─────────────────────────── │    │ classify()                      │   │  │
-│  │  │ summarize()                 │    │ getTopCategories()              │   │  │
-│  │  │ extractFirstSentence()      │    │ getCategoryKeywords()           │   │  │
+│  │  │ summarize()                 │    │ getTop()                        │   │  │
+│  │  │ extractFirstSentence()      │    │ getKeywords()                   │   │  │
 │  │  │ extractKeySentences()       │    └─────────────────────────────────┘   │  │
 │  │  └─────────────────────────────┘                                          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M4 Background Processing Module                                            │  │
+│  │ M4 Background Processing Module                                           │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ C4.1 MetaTagUpdateWorker    │    │ C4.2 EventListener              │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
@@ -149,19 +151,20 @@ Simple setup to have the version and author, nothing technical here.
 │  │  │ C4.3 SitemapUpdater         │                                          │  │
 │  │  │ ─────────────────────────── │                                          │  │
 │  │  │ ─────────────────────────── │                                          │  │
-│  │  │ updateLastModified()        │                                          │  │
+│  │  │ updateLastModified()         │                                          │  │
 │  │  │ notifySearchEngines()       │                                          │  │
+│  │  │ requestDeindex()            │                                          │  │
 │  │  └─────────────────────────────┘                                          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M5 Data Access Module                                                      │  │
+│  │ M5 Data Access Module                                                     │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ C5.1 ChannelRepository      │    │ C5.2 MessageRepository          │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
 │  │  │ database: DatabaseClient    │    │ database: DatabaseClient        │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
-│  │  │ findById(), findBySlug(),   │    │ findRecentByChannel()           │   │  │
-│  │  │ update(), findPublicByServer│    │ findFirstMessage()              │   │  │
+│  │  │ findById(), findBySlug(),     │    │ findRecentByChannel()            │   │  │
+│  │  │ update(), findPublicByServer │    │ findFirstMessage()               │   │  │
 │  │  │ Id(), getVisibility(),      │    │ getMessageCount()               │   │  │
 │  │  │ getMetadata()               │    │                                 │   │  │
 │  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
@@ -170,7 +173,7 @@ Simple setup to have the version and author, nothing technical here.
 │  │  │ ─────────────────────────── │                                          │  │
 │  │  │ database: DatabaseClient    │                                          │  │
 │  │  │ ─────────────────────────── │                                          │  │
-│  │  │ findByChannelId()           │                                          │  │
+│  │  │ findByChannelId()            │                                          │  │
 │  │  │ upsert()                    │                                          │  │
 │  │  │ getLastGenerated()          │                                          │  │
 │  │  └─────────────────────────────┘                                          │  │
@@ -180,9 +183,9 @@ Simple setup to have the version and author, nothing technical here.
                                         │ Database Protocol
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           DATA LAYER (Cloud Infrastructure)                      │
+│                           DATA LAYER (Cloud Infrastructure)                     │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M6 Persistence Module                                                      │  │
+│  │ M6 Persistence Module                                                     │  │
 │  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
 │  │  │ D6.1 ChannelsTable          │    │ D6.2 MessagesTable              │   │  │
 │  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
@@ -205,38 +208,52 @@ Simple setup to have the version and author, nothing technical here.
 │  │  │ og_title: VARCHAR(95)       │    │ icon_url: VARCHAR(500)          │   │  │
 │  │  │ og_description: VARCHAR(300)│    └─────────────────────────────────┘   │  │
 │  │  │ og_image: VARCHAR(500)      │                                          │  │
+│  │  │ twitter_card: VARCHAR(20)   │                                          │  │
 │  │  │ keywords: TEXT[]            │                                          │  │
 │  │  │ structured_data: JSONB      │                                          │  │
-│  │  │ generated_at: TIMESTAMP     │                                          │  │
+│  │  │ custom_title: VARCHAR(70)   │                                          │  │
+│  │  │ custom_description:         │                                          │  │
+│  │  │   VARCHAR(200)              │                                          │  │
+│  │  │ custom_og_image:            │                                          │  │
+│  │  │   VARCHAR(500)              │                                          │  │
 │  │  │ content_hash: VARCHAR(64)   │                                          │  │
+│  │  │ needs_regeneration: BOOLEAN │                                          │  │
+│  │  │ generated_at: TIMESTAMP     │                                          │  │
 │  │  │ version: INTEGER            │                                          │  │
+│  │  │ created_at / updated_at:    │                                          │  │
+│  │  │   TIMESTAMP                 │                                          │  │
 │  │  └─────────────────────────────┘                                          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M7 Cache Module                                                            │  │
-│  │  ┌─────────────────────────────┐    ┌─────────────────────────────────┐   │  │
-│  │  │ D7.1 MetaTagCache           │    │ D7.2 ContentAnalysisCache       │   │  │
-│  │  │ ─────────────────────────── │    │ ─────────────────────────────── │   │  │
-│  │  │ key: meta:channel:{channelId}│    │ key: analysis:channel:{channelId}│   │  │
-│  │  │ value: MetaTagSet           │    │ value: AnalysisResult           │   │  │
-│  │  │ ttl: 3600 seconds           │    │ ttl: 1800 seconds               │   │  │
-│  │  └─────────────────────────────┘    └─────────────────────────────────┘   │  │
+│  │ M7 Cache Module                                                           │  │
+│  │  ┌──────────────────────────────┐    ┌──────────────────────────────────┐ │  │
+│  │  │ D7.1 MetaTagCache            │    │ D7.2 ContentAnalysisCache        │ │  │
+│  │  │ ───────────────────────────  │    │ ───────────────────────────────  │ │  │
+│  │  │ key: meta:channel:{channelId}│    │ key: analysis:channel:{channelId}│ │  │
+│  │  │ value: MetaTagSet            │    │ value: ContentAnalysis           │ │  │
+│  │  │ ttl: 3600 seconds            │    │ ttl: 1800 seconds                │ │  │
+│  │  └──────────────────────────────┘    └──────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │ M8 Job Queue Module                                                        │  │
+│  │ M8 Job Queue Module                                                       │  │
 │  │  ┌─────────────────────────────┐                                          │  │
 │  │  │ D8.1 MetaTagUpdateQueue     │                                          │  │
 │  │  │ ─────────────────────────── │                                          │  │
 │  │  │ queue: meta-tag-updates     │                                          │  │
-│  │  │ job: { channelId, priority }│                                          │  │
+│  │  │ job: { jobId, channelId,    │                                          │  │
+│  │  │   priority, triggeredBy,    │                                          │  │
+│  │  │   idempotencyKey?, status,  │                                          │  │
+│  │  │   attemptCount, lastError? }│                                          │  │
 │  │  │ delay: 60 seconds (debounce)│                                          │  │
+│  │  │ maxAttempts: 3              │                                          │  │
+│  │  │ backoff: exponential        │                                          │  │
 │  │  └─────────────────────────────┘                                          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                         │
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           EXTERNAL SYSTEMS                                       │
+│                           EXTERNAL SYSTEMS                                      │
 │  ┌─────────────────────────────┐  ┌─────────────────────────────────┐           │
 │  │ [E1 Google Search Console]  │  │ [E2 Bing Webmaster Tools]       │           │
 │  │ Indexing API                │  │ URL Submission API              │           │
@@ -348,6 +365,9 @@ Simple setup to have the version and author, nothing technical here.
                                                            └─────────────────┘
 ```
 ### 2.4 Rationale
+This gives us our overarching view of the spec. This feature is entirely behind the scenes which is why we are doing server side rendering since we are only interfacing with the search engine crawlers. 
+We also have the clear seperation between the server and data layer which the LLM did a good job at creating the proper components.
+We did have to reprompt to ensure that the diagram was aligned with the rest of the specification.
 
 ---
 
@@ -367,74 +387,79 @@ Simple setup to have the version and author, nothing technical here.
                             ├───────────────────────────┤
                             │ + generate(): MetaTagSet  │
                             │ + validate(): boolean     │
-                            └─────────────┬─────────────┘
-                                          │
-        ┌─────────────────────────────────┼─────────────────────────────────┐
-        │                                 │                                 │
-  - - - ┼ - - -                     - - - ┼ - - -                     - - - ┼ - - -
-        │                                 │                                 │
-┌───────▼───────────────┐   ┌─────────────▼─────────────┐   ┌───────────────▼─────┐
-│ CL-C2.2 TitleGenerator│   │ CL-C2.3 DescriptionGenerator│ │ CL-C2.4 OpenGraphGenerator│
-├───────────────────────┤   ├───────────────────────────┤   ├─────────────────────┤
-│ - maxLength: 60       │   │ - maxLength: 160          │   │ - defaultImage: str │
-│ - templates: Template[]│  │ - minLength: 50           │   ├─────────────────────┤
-├───────────────────────┤   ├───────────────────────────┤   │ + generateOGTags()  │
-│ + generate()          │   │ + generate()              │   │ + generateTwitter() │
-│ + validate()          │   │ + validate()              │   │ + selectImage()     │
-│ - truncate()          │   │ - summarize()             │   │ + validate()        │
-│ - sanitize()          │   │ - extractKeyPhrases()     │   └─────────────────────┘
-└───────────────────────┘   └───────────────────────────┘
+                            └──────────────┬────────────┘
+                                           │
+        ┌──────────────────────────────────┼───────────────────────────────────┐
+        │                                  │                                   │
+  - - - ┼ - - -                      - - - ┼ - - -                       - - - ┼ - - -
+        │                                  │                                   │
+┌───────▼─────────────────┐  ┌─────────────▼───────────────┐   ┌───────────────▼───────────┐
+│ CL-C2.2 TitleGenerator. │  │ CL-C2.3 DescriptionGenerator│   │ CL-C2.4 OpenGraphGenerator│
+├─────────────────────────┤  ├─────────────────────────────┤   ├───────────────────────────┤
+│ - maxLength: 60         │  │ - maxLength: 160          │     │ - defaultImage: str       │
+│ - templates: Template[] │  │ - minLength: 50           │     ├───────────────────────────┤
+├─────────────────────────┤  ├─────────────────────────────┤   │ + generateOGTags()        │
+│ + generateFromChannel() │  │ + generateFromMessages()  │     │ + generateTwitterCard()   │
+│ + generateFromMessage() │  │ + extractKeyPhrases()     │     │ + selectPreviewImage()    │
+│ + generateFromThread()  │  │ + summarizeThread()       │     └───────────────────────────┘
+│ - truncateWithEllipsis()│  └─────────────────────────────┘
+│ - sanitizeForTitle()    │
+│ - applyTemplate()       │
+└─────────────────────────┘
 
 
-                            ┌───────────────────────────┐
-                            │ CL-C2.1 MetaTagService    │
-                            │ <<Facade>>                │
-                            ├───────────────────────────┤
-                            │ - titleGen: ref           │
-                            │ - descGen: ref            │
-                            │ - ogGen: ref              │
-                            │ - structuredGen: ref      │
-                            │ - cache: ref              │
-                            │ - analyzer: ref           │
-                            ├───────────────────────────┤
-                            │ + generateMetaTags()      │
-                            │ + getOrGenerateCached()   │
-                            │ + invalidateCache()       │
-                            │ + scheduleRegeneration()  │
-                            └─────────────┬─────────────┘
+                            ┌─────────────────────────────┐
+                            │ CL-C2.1 MetaTagService      │
+                            │ <<Facade>>                  │
+                            ├─────────────────────────────┤
+                            │ - titleGen: ref             │
+                            │ - descGen: ref              │
+                            │ - ogGen: ref                │
+                            │ - structuredGen: ref        │
+                            │ - cache: ref                │
+                            │ - analyzer: ref             │
+                            ├─────────────────────────────┤
+                            │ + generateMetaTags()        │
+                            │ + getOrGenerateCached()     │
+                            │ + invalidateCache()         │
+                            │ + scheduleRegeneration()    │
+                            │ + getMetaTagsForPreview()   │
+                            │ + getRegenerationJobStatus()│
+                            └─────────────┬───────────────┘
                                           │
                     ┌─────────────────────┼─────────────────────┐
                     │                     │                     │
                     ◇                     ◇                     ◇
-        ┌───────────▼───────────┐ ┌───────▼───────────┐ ┌───────▼───────────┐
-        │ CL-C3.1 ContentAnalyzer│ │ CL-C2.5 Structured│ │ CL-C2.6 MetaTagCache│
-        ├───────────────────────┤ │ DataGenerator     │ ├───────────────────┤
-        │ - keywordExtractor    │ ├───────────────────┤ │ - cache: Redis    │
-        │ - summarizer          │ │ + generateForum() │ │ - ttl: number     │
-        │ - topicClassifier     │ │ + generateBread() │ ├───────────────────┤
-        ├───────────────────────┤ │ + generateOrg()   │ │ + get()           │
-        │ + analyzeThread()     │ │ + generatePage()  │ │ + set()           │
-        │ + getTopicCategory()  │ └───────────────────┘ │ + invalidate()    │
-        │ + getSentiment()      │                       └───────────────────┘
-        └───────────┬───────────┘
+        ┌───────────▼────────────┐ ┌───────▼────────────────────┐ ┌───────▼─────────────┐
+        │ CL-C3.1 ContentAnalyzer│ │ CL-C2.5 Structured         │ │ CL-C2.6 MetaTagCache│
+        ├────────────────────────┤ │ DataGenerator              │ ├─────────────────────┤
+        │ - keywordExtractor     │ ├────────────────────────────┤ │ - cache: Redis      │
+        │ - summarizer           │ │ + generateDiscussionForum()│ │ - ttl: number       │
+        │ - topicClassifier      │ │ + generateBreadcrumbList() │ ├─────────────────────┤
+        ├────────────────────────┤ │ + generateOrganization()   │ │ + get()             │
+        │ + analyzeThread()      │ │ + generateWebPage()        │ │ + set()             │
+        │ + getTopicCategory()   │ └────────────────────────────┘ │ + invalidate()      │
+        │ + getSentiment()       │                                └─────────────────────┘
+        │ + getReadingLevel()    │
+        └───────────┬────────────┘
                     │
-        ┌───────────┼───────────────────────┐
-        │           │                       │
-        ◆           ◆                       ◆
-┌───────▼───────┐ ┌─▼─────────────────┐ ┌───▼───────────────┐
-│ CL-C3.2 Keyword │ │ CL-C3.3 Text      │ │ CL-C3.4 Topic      │
-│ Extractor       │ │ Summarizer        │ │ Classifier         │
-├───────────────┤ ├───────────────────┤ ├───────────────────┤
-│ - stopWords   │ │ - maxSentences    │ │ - categories      │
-├───────────────┤ ├───────────────────┤ ├───────────────────┤
-│ + extract()   │ │ + summarize()     │ │ + classify()      │
-│ + score()     │ │ + extractFirst()  │ │ + getTop()        │
-│ + filter()    │ │ + extractKey()    │ │ + getKeywords()   │
-└───────────────┘ └───────────────────┘ └───────────────────┘
+        ┌───────────┼───────────────────────────────────┐
+        │                 │                             │
+        ◆                 ◆                             ◆
+┌───────▼─────────────┐ ┌─▼───────────────────────┐ ┌───▼───────────────┐
+│ CL-C3.2 Keyword     │ │ CL-C3.3 Text            │ │ CL-C3.4 Topic     │
+│ Extractor           │ │ Summarizer              │ │ Classifier        │
+├─────────────────────┤ ├─────────────────────────┤ ├───────────────────┤
+│ - stopWords         │ │ - maxSentences          │ │ - categories      │
+├─────────────────────┤ ├─────────────────────────┤ ├───────────────────┤
+│ + extractKeywords() │ │ + summarize()           │ │ + classify()      │
+│ + extractPhrases()  │ │ + extractFirstSentence()│ │ + getTop()        │
+│ + scoreByFrequency()│ │ + extractKeySentences() │ │ + getKeywords()   │
+└─────────────────────┘ └─────────────────────────┘ └───────────────────┘
 
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          Data Transfer Objects                                   │
+│                          Data Transfer Objects                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────┐     ┌─────────────────────────┐
@@ -473,7 +498,7 @@ Simple setup to have the version and author, nothing technical here.
 
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          Domain Entities                                         │
+│                          Domain Entities                                        │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────┐     ┌─────────────────────────┐
@@ -564,18 +589,22 @@ Simple setup to have the version and author, nothing technical here.
       │ + notifySearchEngines()      │                               │
       │ + requestDeindex()           │                               │
       └──────────────────────────────┘                               │
-                                 ┌────────────────────────────────────┼────────────────────────────────────┐
-                                 ▼                                    ▼                                    ▼
-                  ┌──────────────────────────────┐     ┌──────────────────────────────┐     ┌──────────────────────────────┐
-                   │ CL-C5.1 ChannelRepository    │     │ CL-C5.2 MessageRepository    │     │ CL-C5.3 MetaTagRepository    │
-                   ├──────────────────────────────┤     ├──────────────────────────────┤     ├──────────────────────────────┤
-                   │ - database: DatabaseClient   │     │ - database: DatabaseClient   │     │ - database: DatabaseClient   │
-                   ├──────────────────────────────┤     ├──────────────────────────────┤     ├──────────────────────────────┤
-                   │ + findById(), findBySlug()   │     │ + findRecentByChannel()      │     │ + findByChannelId()          │
-                   │ + getVisibility(), getMetadata()│   │ + findFirstMessage()         │     │ + upsert()                   │
-                   │                              │     │ + getMessageCount()          │     │ + getLastGenerated()         │
-                   └──────────────────────────────┘     └──────────────────────────────┘     └──────────────────────────────┘
+                                 ┌───────────────────────────────────┼────────────────────────────────────┐
+                                 ▼                                   ▼                                    ▼
+            ┌─────────────────────────────────┐     ┌──────────────────────────────┐     ┌──────────────────────────────┐
+            │ CL-C5.1 ChannelRepository       │     │ CL-C5.2 MessageRepository    │     │ CL-C5.3 MetaTagRepository    │
+            ├─────────────────────────────────┤     ├──────────────────────────────┤     ├──────────────────────────────┤
+            │ - database: DatabaseClient      │     │ - database: DatabaseClient   │     │ - database: DatabaseClient   │
+            ├─────────────────────────────────┤     ├──────────────────────────────┤     ├──────────────────────────────┤
+            │ + findById(), findBySlug()      │     │ + findRecentByChannel()      │     │ + findByChannelId()          │
+            │ + update()                      │     │ + findFirstMessage()         │     │ + upsert()                   │
+            │ + findPublicByServerId()        │     │ + getMessageCount()          │     │ + getLastGenerated()         │
+            │ + getVisibility(), getMetadata()│     │                              │     │                              │
+            └─────────────────────────────────┘     └──────────────────────────────┘     └──────────────────────────────┘
 ```
+
+### 3.1 Rationale
+This gave us a great insight into how the class structure for the rest of the specification would turn out. The LLM did a good job keeping everything decoupled and modular. We had to reprompt to ensure that classes and methods were aligned with rest of specification.
 
 ---
 
@@ -650,6 +679,9 @@ Class labels in this section intentionally match Section 3 (`CL-I`, `CL-C`, `CL-
 |-------|------------|------|---------|
 | CL-I1 | IMetaTagGenerator | Interface | Shared `generate()` / `validate()` contract for meta tag generator classes |
 
+### 4.9 Rationale
+This lists all of the classes created and used for this spec. Everything is modularized well and we only needed reprompting to ensure that this was consistent with the other sections.
+
 ---
 
 ## 5. State Diagrams
@@ -668,7 +700,7 @@ Class labels in this section intentionally match Section 3 (`CL-I`, `CL-C`, `CL-
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              LEGEND                                              │
+│                              LEGEND                                             │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  (( ))  Initial State        [ ]  State         < >  Decision                   │
 │  ─────► Transition           [[ ]] Final State                                  │
@@ -680,7 +712,7 @@ Class labels in this section intentionally match Section 3 (`CL-I`, `CL-C`, `CL-
                               ▼
               ┌───────────────────────────────┐
               │ S1: Check Cache               │
-              │ ─────────────────────────────│
+              │ ──────────────────────────────│
               │ cache.checking = true         │
               │ channelId = resolved          │
               └───────────────┬───────────────┘
@@ -907,9 +939,9 @@ State Transition Table:
 │ B3: Queue New Job      │ Delay expires                    │ B4: Worker Picks Up     │ Acquire lock                      │
 │ B4: Worker Picks Up    │ VISIBILITY_CHANGED → PRIVATE     │ B12: De-index/Purge     │ Begin de-index flow               │
 │ B4: Worker Picks Up    │ VISIBILITY_CHANGED → NO_INDEX    │ B16: Regen (no-index)   │ Regen with noindex, exclude from  │
-│                        │                                  │                         │ indexable sitemap set              │
+│                        │                                  │                         │ indexable sitemap set             │
 │ B4: Worker Picks Up    │ VISIBILITY_CHANGED → INDEXABLE   │ B17: Regen (indexable)  │ High-pri regen, keep URL in       │
-│                        │                                  │                         │ sitemap, refresh lastmod           │
+│                        │                                  │                         │ sitemap, refresh lastmod          │
 │ B4: Worker Picks Up    │ Content event (message ops)      │ B5: Fetch Content       │ Fetch messages, calc hash         │
 │ B5: Fetch Content      │ Hash unchanged                   │ B6: Skip Update         │ Release lock                      │
 │ B5: Fetch Content      │ Hash changed                     │ B7: Regenerate Tags     │ Run generation pipeline           │
@@ -954,7 +986,7 @@ This shows the key part of the full state of the meta tag generation from what h
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              LEGEND                                              │
+│                              LEGEND                                             │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  (( ))   Start/End (Terminal)        [ ]  Process        < >  Decision          │
 │  /   /   Input/Output                [===]  Predefined Process (Subroutine)     │
@@ -1093,15 +1125,15 @@ This shows the key part of the full state of the meta tag generation from what h
                 │             │  └───────────────┬───────────────┘
                 │             │                  │
                 │             │                  ▼
-                │             │  ┌───────────────────────────────┐
-                │             │  │ [F1.19] Generate JSON-LD      │
-                │             │  │ Server.StructuredDataGen.     │
-                │             │  │   generateDiscussionForum()   │
-                │             │  │                               │
+                │             │  ┌────────────────────────────────┐
+                │             │  │ [F1.19] Generate JSON-LD       │
+                │             │  │ Server.StructuredDataGen.      │
+                │             │  │   generateDiscussionForum()    │
+                │             │  │                                │
                 │             │  │ @type: "DiscussionForumPosting"│
-                │             │  │ headline, datePublished,      │
-                │             │  │ author, interactionStatistic  │
-                │             │  └───────────────┬───────────────┘
+                │             │  │ headline, datePublished,       │
+                │             │  │ author, interactionStatistic   │
+                │             │  └───────────────┬────────────────┘
                 │             │                  │
                 │             │                  ▼
                 │             │  ┌───────────────────────────────┐
@@ -1124,21 +1156,21 @@ This shows the key part of the full state of the meta tag generation from what h
                     └───────────────┬───────────────┘
                                     │
                                     ▼
-                    /───────────────────────────────/
-                    / HTML Response with <head>:    /
-                    /                               /
-                    / <title>Unity Physics          /
-                    /   Troubleshooting - GameDev   /
-                    / </title>                      /
-                    / <meta name="description"      /
-                    /   content="Community disc..."/
-                    / <meta property="og:title"... /
+                    /────────────────────────────────────/
+                    / HTML Response with <head>:         /
+                    /                                    /
+                    / <title>Unity Physics               /
+                    /   Troubleshooting - GameDev        /
+                    / </title>                           /
+                    / <meta name="description"           /
+                    /   content="Community disc"...      /
+                    / <meta property="og:title"...       /
                     / <meta property="og:description"... /
-                    / <meta name="twitter:card"... /
-                    / <script type="application/   /
-                    /   ld+json">...</script>      /
-                    /                               /
-                    /───────────────────────────────/
+                    / <meta name="twitter:card"...       /
+                    / <script type="application/         /
+                    /   ld+json">...</script>            /
+                    /                                    /
+                    /────────────────────────────────────/
                                     │
                                     ▼
                     (( END: Googlebot receives page ))  [State: S13]
@@ -1202,7 +1234,7 @@ This shows the key part of the full state of the meta tag generation from what h
                                         ▼                          ▼
                         ┌───────────────────────────┐  ┌───────────────────────────────┐
                         │ [F2.9] Extend delay       │  │ [F2.10] Queue new job         │  [State: B3]
-                        │ Reset debounce to 60s    │  │ Server.JobQueue.add(          │
+                        │ Reset debounce to 60s     │  │ Server.JobQueue.add(          │
                         │ [State: B2]               │  │   `meta-update:${channelId}`, │
                         │                           │  │   { channelId },              │
                         │ (Prevents thrashing when  │  │   { delay: 60000 })           │
@@ -1385,19 +1417,19 @@ This shows the key part of the full state of the meta tag generation from what h
            /                                  \
           / No                              Yes \
          ▼                                       ▼
-    ┌─────────────┐              ┌───────────────────────────────┐
-    │ [F4.5] Done │              │ [F4.6] Show custom override   │
-    │             │              │ form                          │
-    └─────────────┘              │                               │
-                                 │ Custom Title: [____________]  │
-                                 │ Custom Desc:  [____________]  │
-                                 │ Preview Image: [Select...]    │
-                                 │                               │
-                                 │ Note: Custom tags override    │
-                                 │ auto-generated content        │
-                                 │                               │
+    ┌─────────────┐              ┌────────────────────────────────┐
+    │ [F4.5] Done │              │ [F4.6] Show custom override    │
+    │             │              │ form                           │
+    └─────────────┘              │                                │
+                                 │ Custom Title: [____________]   │
+                                 │ Custom Desc:  [____________]   │
+                                 │ Preview Image: [Select...]     │
+                                 │                                │
+                                 │ Note: Custom tags override     │
+                                 │ auto-generated content         │
+                                 │                                │
                                  │ [Save] [Cancel] [Reset to Auto]│
-                                 └───────────────────────────────┘
+                                 └────────────────────────────────┘
                                                 │
                                                 ▼
                                  (( END: Admin manages SEO ))
@@ -1759,22 +1791,22 @@ This shows the key part of the full state of the meta tag generation from what h
              /                                          \
             / Yes                                     No \
            ▼                                              ▼
-  ┌───────────────────────────────┐            ┌───────────────────────────────┐
+  ┌──────────────────────────────┐            ┌───────────────────────────────┐
   │ [F8.3] Check for existing    │            │ [F8.4] Switching between      │
-  │ retained meta tag records    │            │ PUBLIC_INDEXABLE and           │
-  │ Server.MetaTagRepository.    │            │ PUBLIC_NO_INDEX                │
+  │ retained meta tag records    │            │ PUBLIC_INDEXABLE and          │
+  │ Server.MetaTagRepository.    │            │ PUBLIC_NO_INDEX               │
   │   findByChannel(channelId)   │            └───────────────┬───────────────┘
   └───────────────┬──────────────┘                            │
                   │                                           ▼
-                  ▼                            ┌───────────────────────────────┐
-   < F8.5: Records exist? >                   │ [F8.6] Update robots meta    │
-  /                        \                   │ tag directive only            │
- / No                    Yes \                 │                               │
-▼                             ▼                │ PUBLIC_INDEXABLE →            │
+                  ▼                            ┌──────────────────────────────┐
+   < F8.5: Records exist? >                    │ [F8.6] Update robots meta    │
+  /                        \                   │ tag directive only           │
+ / No                    Yes \                 │                              │
+▼                             ▼                │ PUBLIC_INDEXABLE →           │
 ┌──────────────────────┐  ┌──────────────────┐ │   "index, follow"            │
 │ [F8.7] Generate      │  │ [F8.8] Force     │ │ PUBLIC_NO_INDEX →            │
 │ fresh meta tags      │  │ regeneration of  │ │   "noindex, follow"          │
-│ from scratch         │  │ stale retained   │ └───────────────┬───────────────┘
+│ from scratch         │  │ stale retained   │ └───────────────┬──────────────┘
 │                      │  │ records          │                 │
 │ Server.MetaTagSvc.   │  │                  │                 │
 │  .generateMetaTags(  │  │ Server.MetaTagSvc│                 │
@@ -1809,8 +1841,8 @@ This shows the key part of the full state of the meta tag generation from what h
                         ▼                                     ▼
         ┌───────────────────────────────┐  ┌───────────────────────────────┐
         │ [F8.12] Add to sitemap        │  │ [F8.13] Remove from sitemap   │
-        │ Server.SitemapUpdater.         │  │ (or keep removed)             │
-        │   addUrl(channelUrl)           │  │ PUBLIC_NO_INDEX channels      │
+        │ Server.SitemapUpdater.        │  │ (or keep removed)             │
+        │   addUrl(channelUrl)          │  │ PUBLIC_NO_INDEX channels      │
         │                               │  │ should not appear in sitemap  │
         └───────────────┬───────────────┘  └───────────────┬───────────────┘
                         │                                  │
@@ -1843,7 +1875,7 @@ This shows the key part of the full state of the meta tag generation from what h
 **Ownership Boundary:** The canonical visibility state is owned by the channel visibility feature; this flow reacts to the emitted `VISIBILITY_CHANGED` event and manages the SEO/meta tag consequences only.
 
 ### 6.9 Rationale
-After having the llm review this section, it was determined that it was missing a critical section to show what would change when a channel is turned to private. The majority of the scenarios here were designed by the LLM, but we also asked the LLM to add edit and deleting messages to ensure that all flows are covered. We also had to add a scenario for when the visibility is changed to a public state. These all describe all the possible flows that this user story will go through.
+After having the LLM review this section, it was determined that it was missing a critical section to show what would change when a channel is turned to private. The majority of the scenarios here were designed by the LLM, but we also asked the LLM to add edit and deleting messages to ensure that all flows are covered. We also had to add a scenario for when the visibility is changed to a public state. These all describe all the possible flows that this user story will go through.
 
 ---
 
@@ -1912,6 +1944,9 @@ After having the llm review this section, it was determined that it was missing 
 | PII filter match count | Content filter logs | Any non-test hit | Immediate security alert and rollback flag |
 | Regeneration job failure rate | Job status telemetry | >5% failed jobs in 30m | Scale workers, inspect queue/backoff errors |
 
+### 7.7 Rationale
+This section goes over the risks that this feature may have and goes into detail about what can cause it and how it would impact the service. This only needed reprompting to add a section for how we can monitor the content to ensure that we can mitigate these risks quickly.
+
 ---
 
 ## 8. Technology Stack
@@ -1919,8 +1954,8 @@ After having the llm review this section, it was determined that it was missing 
 | Label | Technology | Version | Purpose | Rationale | Source/Documentation |
 |-------|------------|---------|---------|-----------|---------------------|
 | T1 | TypeScript | 5.3+ | Primary language | Type safety | https://www.typescriptlang.org/ |
-| T2 | Next.js | 14.0+ | SSR framework | Meta tag injection in <head> | https://nextjs.org/ |
-| T3 | React | 18.2+ | UI framework | Head component | https://react.dev/ |
+| T2 | React | 18.2+ | UI framework | Head component | https://react.dev/ |
+| T3 | Next.js | 14.0+ | SSR framework | Meta tag injection in <head> | https://nextjs.org/ |
 | T4 | Node.js | 20 LTS | Server runtime | Background workers | https://nodejs.org/ |
 | T5 | PostgreSQL | 16+ | Primary database | Store generated tags | https://www.postgresql.org/ |
 | T6 | Redis | 7.2+ | Caching | Fast meta tag retrieval | https://redis.io/ |
@@ -1937,6 +1972,23 @@ After having the llm review this section, it was determined that it was missing 
 | T17 | Bing Webmaster API | v1 | Indexing | URL submission/removal parity with Google | https://www.bing.com/webmasters |
 
 > **Convention:** Authenticated internal APIs may be exposed through a tRPC gateway, while crawler-facing/public and admin integrations in this spec remain REST/HTTP.
+
+### 8.1 EventBus
+
+**Technology:** Redis Pub/Sub (T16)
+
+Event types produced/consumed by this spec:
+
+| Event | Direction | Source Spec | Description |
+|-------|-----------|-------------|-------------|
+| `VISIBILITY_CHANGED` | Consumed | Channel Visibility Toggle | Channel visibility state changed; trigger meta tag generation or purge |
+| `MESSAGE_CREATED` | Produced | SEO Meta Tag Generation (this spec) | New message in a public channel |
+| `MESSAGE_EDITED` | Produced | SEO Meta Tag Generation (this spec) | Message edited in a public channel |
+| `MESSAGE_DELETED` | Produced | SEO Meta Tag Generation (this spec) | Message deleted from a public channel |
+| `META_TAGS_UPDATED` | Produced | SEO Meta Tag Generation (this spec) | Meta tags regenerated for a channel |
+
+### 8.2 Rationale
+The LLM chose this stack and it makes sense for this type of application. Our primary language of choice is Typescript for its type safety and we will store all of our data in a PostgresSQL database with a Redis caching layer. We did have to reprompt to get the EventBus section so that this was aligned with the other specs.
 
 ---
 
@@ -2201,6 +2253,28 @@ extractKeySentences(
 ): string[]
 ```
 
+#### 9.2.4 CL-C3.4 TopicClassifier
+
+**Public Methods:**
+
+```typescript
+// Classify content into topic categories
+classify(
+  content: string
+): string[]
+
+// Get top N topic categories
+getTop(
+  content: string,
+  count: number
+): string[]
+
+// Get topic-related keywords
+getKeywords(
+  content: string
+): string[]
+```
+
 ### 9.3 Module M4: Background Processing
 
 #### 9.3.1 CL-C4.1 MetaTagUpdateWorker
@@ -2276,16 +2350,207 @@ requestDeindex(
 
 ### 9.4 Module M5: Data Access
 
-#### 9.4.1 CL-C5.1 ChannelRepository (Consolidated)
+#### 9.4.1 CL-C5.1 ChannelRepository
+
+**Public Methods:**
 
 ```typescript
-findById(channelId: string): Promise<Channel | null>
-findBySlug(serverSlug: string, channelSlug: string): Promise<Channel | null>
-update(channelId: string, data: Partial<Channel>): Promise<Channel>
-findPublicByServerId(serverId: string): Promise<Channel[]>
-getVisibility(channelId: string): Promise<ChannelVisibility>
-getMetadata(channelId: string): Promise<ChannelMetadata>
+// Find channel by ID
+findById(
+  channelId: string
+): Promise<Channel | null>
+
+// Find channel by server and channel slugs
+findBySlug(
+  serverSlug: string,
+  channelSlug: string
+): Promise<Channel | null>
+
+// Update channel data
+update(
+  channelId: string,
+  data: Partial<Channel>
+): Promise<Channel>
+
+// Find all public channels for a server
+findPublicByServerId(
+  serverId: string
+): Promise<Channel[]>
+
+// Get channel visibility state
+getVisibility(
+  channelId: string
+): Promise<ChannelVisibility>
+
+// Get channel metadata
+getMetadata(
+  channelId: string
+): Promise<ChannelMetadata>
 ```
+
+#### 9.4.2 CL-C5.2 MessageRepository
+
+**Public Methods:**
+
+```typescript
+// Find recent messages for a channel
+findRecentByChannel(
+  channelId: string,
+  limit: number
+): Promise<Message[]>
+
+// Find first message in a channel
+findFirstMessage(
+  channelId: string
+): Promise<Message | null>
+
+// Get total message count for a channel
+getMessageCount(
+  channelId: string
+): Promise<number>
+```
+
+#### 9.4.3 CL-C5.3 MetaTagRepository
+
+**Public Methods:**
+
+```typescript
+// Find generated meta tags by channel ID
+findByChannelId(
+  channelId: string
+): Promise<GeneratedMetaTags | null>
+
+// Insert or update generated meta tags
+upsert(
+  channelId: string,
+  metaTags: Partial<GeneratedMetaTags>
+): Promise<GeneratedMetaTags>
+
+// Get last generation timestamp for a channel
+getLastGenerated(
+  channelId: string
+): Promise<DateTime | null>
+```
+
+### 9.5 Data Transfer Objects
+
+#### 9.5.1 CL-D1 MetaTagSet
+
+```typescript
+interface MetaTagSet {
+  title: string;
+  description: string;
+  canonical: string;
+  robots: string;
+  openGraph: OpenGraphTags;
+  twitter: TwitterCardTags;
+  structuredData: JSON;
+  keywords: string[];
+}
+```
+
+#### 9.5.2 CL-D2 OpenGraphTags
+
+```typescript
+interface OpenGraphTags {
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  ogType: string;
+  ogUrl: string;
+  ogSiteName: string;
+}
+```
+
+#### 9.5.3 CL-D3 TwitterCardTags
+
+```typescript
+interface TwitterCardTags {
+  card: string;
+  title: string;
+  description: string;
+  image: string;
+  site: string;
+}
+```
+
+#### 9.5.4 CL-D4 StructuredData
+
+```typescript
+interface StructuredData {
+  '@context': string;
+  '@type': string;
+  headline: string;
+  description: string;
+  author: Person;
+  datePublished: string;
+  dateModified: string;
+  mainEntity: object;
+  breadcrumb: object;
+}
+```
+
+#### 9.5.5 CL-D5 ContentAnalysis
+
+```typescript
+interface ContentAnalysis {
+  keywords: string[];
+  topics: string[];
+  summary: string;
+  sentiment: string;
+  readingLevel: string;
+}
+```
+
+### 9.6 Domain Entities
+
+#### 9.6.1 CL-E1 Channel
+
+```typescript
+interface Channel {
+  id: UUID;
+  serverId: UUID;
+  name: string;
+  slug: string;
+  topic: string;
+  visibility: ChannelVisibility;
+}
+```
+
+#### 9.6.2 CL-E2 Message
+
+```typescript
+interface Message {
+  id: UUID;
+  channelId: UUID;
+  authorId: UUID;
+  content: string;
+  createdAt: DateTime;
+  attachments: Attachment[];
+}
+```
+
+#### 9.6.3 CL-E3 GeneratedMetaTags
+
+```typescript
+interface GeneratedMetaTags {
+  id: UUID;
+  channelId: UUID;
+  title: string;
+  description: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  keywords: string[];
+  structuredData: JSON;
+  generatedAt: DateTime;
+  contentHash: string;
+  version: number;
+}
+```
+
+### 9.7 Rationale
+This gives us good APIs to utilize in our implementation. Everything is kept seperate and is modularized which makes for good development practice. We did need to reprompt to ensure that all classes and methods mentioned previoiusly in section 3 were present in this section and vice versa. 
 
 ---
 
@@ -2305,8 +2570,18 @@ getMetadata(channelId: string): Promise<ChannelMetadata>
 | Method | Class | Used For |
 |--------|-------|----------|
 | analyzeThread() | ContentAnalyzer | Content understanding |
+| getTopicCategory() | ContentAnalyzer | Topic categorization |
+| getSentiment() | ContentAnalyzer | Sentiment analysis |
+| getReadingLevel() | ContentAnalyzer | Reading level assessment |
 | extractKeywords() | KeywordExtractor | Keyword meta tag |
+| extractPhrases() | KeywordExtractor | Multi-word keyword extraction |
+| scoreByFrequency() | KeywordExtractor | Keyword relevance scoring |
 | summarize() | TextSummarizer | Description generation |
+| extractFirstSentence() | TextSummarizer | Fallback description extraction |
+| extractKeySentences() | TextSummarizer | Key sentence extraction |
+| classify() | TopicClassifier | Topic classification |
+| getTop() | TopicClassifier | Top category selection |
+| getKeywords() | TopicClassifier | Topic-related keyword extraction |
 
 #### Used by Meta Tag Generation (M2) from Data Access (M5):
 
@@ -2319,7 +2594,10 @@ getMetadata(channelId: string): Promise<ChannelMetadata>
 | getMetadata() | ChannelRepository | Channel/server metadata for title/description templates |
 | findByChannelId() | MetaTagRepository | Retrieve existing tags |
 | upsert() | MetaTagRepository | Persist new tags |
+| getLastGenerated() | MetaTagRepository | Check tag freshness |
 | findRecentByChannel() | MessageRepository | Get content for analysis |
+| findFirstMessage() | MessageRepository | Get first message for fallback description |
+| getMessageCount() | MessageRepository | Get message count for structured data |
 
 #### Used by Background Processing (M4) from Meta Tag Generation (M2):
 
@@ -2327,6 +2605,7 @@ getMetadata(channelId: string): Promise<ChannelMetadata>
 |--------|-------|----------|
 | generateMetaTags() | MetaTagService | Background regeneration |
 | invalidateCache() | MetaTagService | Cache management |
+| scheduleRegeneration() | MetaTagService | Queue background meta tag updates |
 
 **Cross-Reference:** The guest public channel view feature's `SEOService` is an adapter that delegates generation to `MetaTagService.getOrGenerateCached()` from this spec.
 
@@ -2605,6 +2884,9 @@ components:
           type: string
 ```
 
+### 10.3 Rationale
+The LLM did a good job of generating the correct interface and APIs for the feature. It went into depth on how the API can be called and the different responses it needed to have. We only reprompted to ensure that this section was consistent with the classes made in previous sections.
+
 ---
 
 ## 11. Data Schemas
@@ -2718,6 +3000,9 @@ CREATE INDEX idx_meta_tags_generated ON generated_meta_tags(generated_at);
 **Backoff:** Exponential (1min, 5min, 15min)
 **Deduplication Window:** 60 seconds per `(channelId, idempotencyKey)`
 
+### 11.4 Rationale
+This section needed reprompting to ensure alignment across the data schemas in each spec. Besides that, these are valid schemas to use for our app and provides us a good way to store our data. The database tables will be stored in a PostgreSQL database adn the caching layer will be in a Redis service. This allows us to have quick access to recent meta tag generations and to easily serve the search engine.
+
 ---
 
 ## 12. Security and Privacy
@@ -2788,6 +3073,9 @@ Message Content                 Content Analysis              Meta Tag Output
 | Unique titles | Template ensures uniqueness per channel |
 | Appropriate length | Auto-generated title <=60 and description <=160; effective tags may be up to 70/200 only when admin overrides are explicitly configured |
 
+### 12.5 Rationale
+Security is an absolute need for this kind of product and this flow provides for us a way to keep our users data secure while still allowing search engines to index our public servers. No changes were needed from the LLM's response.
+
 ---
 
 ## 13. Risks to Completion
@@ -2843,6 +3131,9 @@ Message Content                 Content Analysis              Meta Tag Output
 
 **Rollback Procedure:** disable `FEATURE_SEO_META_TAGS` to immediately revert to fallback templates while jobs continue in shadow mode for diagnostics.
 
+### 13.6 Rationale
+This is a large application so these are some of the valid risks to complete this feature. The LLM is justified in all of these risks for maintain this platform for a long period of time. The only addition was adding a rollout plan so that we can test the meta tags and see how the system responds.
+
 ---
 
 ## 14. Acceptance Criteria
@@ -2859,6 +3150,9 @@ Message Content                 Content Analysis              Meta Tag Output
 | AC-8 | Generated tags exclude PII and profanity for fixture content. | Security/content filter tests |
 | AC-9 | On NLP failure/timeout, fallback tags are returned and `needs_regeneration=true` is persisted. | Fault-injection unit/integration test |
 | AC-10 | De-index workflow executes when channel visibility changes from public to private. | End-to-end visibility transition test |
+
+### 14.1 Rationale
+This is something extra that the LLM added after a review of the spec. This will be helpful for the LLM to know that this feature is finished and fully working.
 
 ## Appendix A: Meta Tag Templates
 
