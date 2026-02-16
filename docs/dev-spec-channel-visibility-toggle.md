@@ -8,20 +8,23 @@
 
 ## 1. Header
 
-### Version and Date
+### 1.1 Version and Date
 
 | Version | Date       | Description                              |
 |---------|------------|------------------------------------------|
 | 1.0     | 2026-02-12 | Initial development specification        |
 | 2.0     | 2026-02-12 | Cross-spec consolidation and fixes       |
 
-### Author and Role
+### 1.2 Author and Role
 
 | Author        | Role                    | Version |
 |---------------|-------------------------|---------|
 | Claude (AI)   | Specification Author    | 2.0     |
 | dblanc        | Project Lead            | 1.0     |
 | AvanishKulkarni | Project Lead | 2.0 |
+
+### 1.3 Rationale
+Header with versioning and authors.
 
 ---
 
@@ -30,9 +33,9 @@
 ### 2.1 System Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         CLIENT LAYER                             │
-│  ┌────────────────────────────────────────────────────────────┐  │
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                            │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M1 Admin Dashboard                                        │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C1.1 ChannelSettings │  │ C1.2 VisibilityToggle      │ │  │
@@ -41,8 +44,8 @@
 │  │  │   render()           │  │   onToggle()               │ │  │
 │  │  │   loadSettings()     │  │   validatePermissions()    │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────────────┐  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M2 Public Channel Viewer                                  │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C2.1 PublicChannel   │  │ C2.2 MessageList           │ │  │
@@ -50,8 +53,8 @@
 │  │  │   isAuthenticated    │◄─│   isAnonymous: boolean     │ │  │
 │  │  │   render()           │  │   render(), loadMore()     │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────────────┐  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M3 Client Services                                        │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C3.1 ChannelService  │  │ C3.2 AuthService           │ │  │
@@ -59,13 +62,13 @@
 │  │  │   updateVisibility() │  │   hasPermission()          │ │  │
 │  │  │   getPublicChannels()│  └────────────────────────────┘ │  │
 │  │  └──────────────────────┘                                 │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
                               │ HTTPS/WebSocket
                               ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                        SERVER LAYER                               │
-│  ┌────────────────────────────────────────────────────────────┐  │
+┌─────────────────────────────────────────────────────────────────┐
+│                        SERVER LAYER                             │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M4 API Gateway                                            │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C4.1 ChannelCtrl     │  │ C4.2 PublicAccessCtrl      │ │  │
@@ -73,8 +76,8 @@
 │  │  │   updateVisibility() │  │   getPublicMessages()      │ │  │
 │  │  │   validateAdmin()    │  │   generateSitemap()        │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────────────┐  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M5 Business Logic                                         │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C5.1 VisibilityServ  │  │ C5.2 IndexingService       │ │  │
@@ -88,8 +91,8 @@
 │  │  │   canManageChannel() │  │   logVisibilityChange()    │ │  │
 │  │  │   isServerAdmin()    │  │   getAuditHistory()        │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────────────┐  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M6 Data Access                                            │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ C6.1 ChannelRepo     │  │ C6.2 AuditLogRepo          │ │  │
@@ -101,13 +104,13 @@
 │  │  │   getMetadata()      │                                 │  │
 │  │  │   invalidateCache()  │                                 │  │
 │  │  └──────────────────────┘                                 │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
                               │ Database Protocol
                               ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                         DATA LAYER                                │
-│  ┌────────────────────────────────────────────────────────────┐  │
+┌─────────────────────────────────────────────────────────────────┐
+│                         DATA LAYER                              │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M7 Persistence                                            │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ D7.1 channels        │  │ D7.2 visibility_audit_log  │ │  │
@@ -116,20 +119,20 @@
 │  │  │  topic, position     │  │  timestamp, ip_address     │ │  │
 │  │  │  indexed_at, ts cols │  └────────────────────────────┘ │  │
 │  │  └──────────────────────┘                                 │  │
-│  └────────────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────────────┐  │
+│  └───────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
 │  │ M8 Cache (Redis)                                          │  │
 │  │  ┌──────────────────────┐  ┌────────────────────────────┐ │  │
 │  │  │ D8.1 Visibility      │  │ D8.2 PublicChannelList     │ │  │
 │  │  │ channel:{id}:visib.  │  │ server:{id}:public_channels│ │  │
 │  │  │ TTL: 3600s           │  │ TTL: 300s                  │ │  │
 │  │  └──────────────────────┘  └────────────────────────────┘ │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
                               │ HTTP/API
                               ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                       EXTERNAL SYSTEMS                            │
+│                       EXTERNAL SYSTEMS                           │
 │  [E1 Search Engines]  [E2 Sitemap Consumers]  [E3 CDN/CloudFlare]│
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -148,46 +151,54 @@
 | F6 | C4.2 PublicAccessCtrl | E3 CDN | Cached Public Content | HTTPS |
 | F7 | C5.1 VisibilityService | C5.4 AuditLogService | AuditEntry | Internal Call |
 
+### 2.3 Rationale
+
+This follows a clear model-view-controller architecture, where the client can view channels and control their visibility state with the M1 Admin Dashboard controller. The underlying model is represented by the server layer, which handles get/set operations and any necessary side-effects for search engine indexing. 
+
+The underlying data layer uses a short-term caching layer to reduce database accesses and syncs with external systems. 
+
+We had to prompt edits to this to ensure the database columns were not mismatched across each architecture diagram. The Redis cache key pattern was also inconsistent across specs, so we had to prompt fixes for that as well.
+
 ---
 
 ## 3. Class Diagram
 
 ```
                           ┌───────────────────────────┐
-                          │    <<interface>>           │
-                          │  CL1.1 IVisibilityToggle   │
+                          │    <<interface>>          │
+                          │  CL1.1 IVisibilityToggle  │
                           ├───────────────────────────┤
-                          │ + setVisibility()          │
-                          │ + getVisibility()          │
-                          │ + canChangeVisibility()    │
+                          │ + setVisibility()         │
+                          │ + getVisibility()         │
+                          │ + canChangeVisibility()   │
                           └─────────────┬─────────────┘
                                         │ implements
                           ┌─────────────▼─────────────┐
-                          │ CL1.2 ChannelVisibility    │
-                          │        Service             │
+                          │ CL1.2 ChannelVisibility   │
+                          │        Service            │
                           ├───────────────────────────┤
-                          │ - channelRepository        │
-                          │ - auditLogger              │
-                          │ - eventBus                 │
-                          │ - permissionService        │
+                          │ - channelRepository       │
+                          │ - auditLogger             │
+                          │ - eventBus                │
+                          │ - permissionService       │
                           ├───────────────────────────┤
-                          │ + setVisibility()          │
-                          │ + getVisibility()          │
-                          │ + canChangeVisibility()    │
-                          │ - validateTransition()     │
-                          │ - emitVisibilityChange()   │
+                          │ + setVisibility()         │
+                          │ + getVisibility()         │
+                          │ + canChangeVisibility()   │
+                          │ - validateTransition()    │
+                          │ - emitVisibilityChange()  │
                           └───────────┬───────────────┘
                                       │
                ┌──────────────────────┼──────────────────────┐
-               ◇                      ◇                      ◇
-  ┌────────────▼────────────┐ ┌───────▼──────────┐ ┌────────▼─────────┐
-  │CL2.1 ChannelRepository  │ │CL2.2 AuditLog    │ │CL2.3 Permission  │
-  ├─────────────────────────┤ │      Service      │ │      Service     │
-  │ - database              │ ├──────────────────┤ ├──────────────────┤
-  │ - cache                 │ │ + logChange()    │ │ + canManage()    │
-  ├─────────────────────────┤ │ + getHistory()   │ │ + isAdmin()      │
+               ◇                     ◇                     ◇
+  ┌────────────▼────────────┐ ┌───────▼──────────┐ ┌────────▼──────────┐
+  │CL2.1 ChannelRepository  │ │CL2.2 AuditLog    │ │CL2.3 Permission   │
+  ├─────────────────────────┤ │      Service     │ │      Service      │
+  │ - database              │ ├──────────────────┤ ├───────────────────┤
+  │ - cache                 │ │ + logChange()    │ │ + canManage()     │
+  ├─────────────────────────┤ │ + getHistory()   │ │ + isAdmin()       │
   │ + findById()            │ │ + export()       │ │ + getPermissions()│
-  │ + findBySlug()          │ └──────────────────┘ └──────────────────┘
+  │ + findBySlug()          │ └──────────────────┘ └───────────────────┘
   │ + update()              │
   │ + findPublicByServer()  │
   │ + getVisibility()       │
@@ -197,45 +208,45 @@
                ◆
   ┌────────────▼────────────┐
   │  CL3.1 Channel          │
-  │  <<Entity>>              │
+  │  <<Entity>>             │
   ├─────────────────────────┤
-  │ + id: UUID               │
-  │ + serverId: UUID         │
-  │ + name: string           │
-  │ + slug: string           │
-  │ + visibility: Enum       │
-  │ + topic: string | null   │
-  │ + position: number       │
-  │ + indexedAt: DateTime    │
-  │ + createdAt: DateTime    │
-  │ + updatedAt: DateTime    │
+  │ + id: UUID              │
+  │ + serverId: UUID        │
+  │ + name: string          │
+  │ + slug: string          │
+  │ + visibility: Enum      │
+  │ + topic: string | null  │
+  │ + position: number      │
+  │ + indexedAt: DateTime   │
+  │ + createdAt: DateTime   │
+  │ + updatedAt: DateTime   │
   ├─────────────────────────┤
-  │ + isPublic()             │
-  │ + isIndexable()          │
-  │ + setVisibility()        │
+  │ + isPublic()            │
+  │ + isIndexable()         │
+  │ + setVisibility()       │
   └─────────────────────────┘
 
   ┌───────────────────────────┐
   │ CL4.1 ChannelVisibility   │
   │ <<Enumeration>>           │
   ├───────────────────────────┤
-  │ PUBLIC_INDEXABLE           │
-  │ PUBLIC_NO_INDEX            │
-  │ PRIVATE                    │
+  │ PUBLIC_INDEXABLE          │
+  │ PUBLIC_NO_INDEX           │
+  │ PRIVATE                   │
   └───────────────────────────┘
 
   ┌─────────────────────────┐      ┌─────────────────────────┐
   │  CL5.1 VisibilityChange │      │  CL5.2 AuditLogEntry    │
-  │  <<Event>>              │      │  <<Entity>>              │
+  │  <<Event>>              │      │  <<Entity>>             │
   ├─────────────────────────┤      ├─────────────────────────┤
-  │ + channelId: UUID       │      │ + id: UUID               │
-  │ + oldVisibility: Enum   │      │ + channelId: UUID        │
-  │ + newVisibility: Enum   │      │ + actorId: UUID          │
-  │ + actorId: UUID         │      │ + action: string         │
-  │ + timestamp: DateTime   │      │ + oldValue: JSON         │
-  └─────────────────────────┘      │ + newValue: JSON         │
-                                   │ + timestamp: DateTime    │
-                                   │ + ipAddress: string      │
+  │ + channelId: UUID       │      │ + id: UUID              │
+  │ + oldVisibility: Enum   │      │ + channelId: UUID       │
+  │ + newVisibility: Enum   │      │ + actorId: UUID         │
+  │ + actorId: UUID         │      │ + action: string        │
+  │ + timestamp: DateTime   │      │ + oldValue: JSON        │
+  └─────────────────────────┘      │ + newValue: JSON        │
+                                   │ + timestamp: DateTime   │
+                                   │ + ipAddress: string     │
                                    └─────────────────────────┘
 
   ┌─────────────────────────┐      ┌─────────────────────────┐
@@ -252,6 +263,10 @@
 ```
 
 > **Sitemap Ownership:** `IndexingService` (CL6.1 / C5.2) is the canonical owner of sitemap generation and search engine notification across all Harmony specs. Other features (e.g., SEO Meta Tag Generation) emit events that this service consumes to trigger sitemap updates.
+
+### 3.1 Rationale
+
+After having an LLM review this spec, the canonical owner of the sitemap generation should be the IndexingService. There was a discrepancy between this spec and the seo-meta-tag-generation spec on what would consume server updates and generate new sitemaps for external services. 
 
 ---
 
@@ -316,6 +331,10 @@ interface PublicChannelDTO {
 }
 ```
 
+### 4.7 Rationale
+
+Like the previous section, I had to reprompt to fix inconsistencies. The LLM also noticed that the ChannelRepository interface/class has discrepancies across each spec, so it consolidated each of them together. The class diagrams correctly display the interactions between each class, so no update was needed there. 
+
 ---
 
 ## 5. State Diagrams
@@ -338,31 +357,31 @@ interface PublicChannelDTO {
                                       ▼
                       ┌───────────────────────────────┐
                       │         S1: PRIVATE           │
-                      │ indexedAt = null               │
-                      │ robots = "noindex, nofollow"   │
+                      │ indexedAt = null              │
+                      │ robots = "noindex, nofollow"  │
                       └───────────────┬───────────────┘
                                       │
-      ┌───────────────────────────────┼───────────────────────────────┐
+      ┌───────────────────────────────┼────────────────────────────────┐
       │ setVisibility(PUBLIC_NO_INDEX)│ setVisibility(PUBLIC_INDEXABLE)│
-      ▼                               │                               ▼
-┌─────────────────────┐               │             ┌─────────────────────┐
-│ S2: PUBLIC_NO_INDEX │               │             │ S3: PUBLIC_INDEXABLE │
-│ indexedAt = null    │◄──────────────┘             │ indexedAt = now()    │
-│ robots = "noindex"  │                             │ robots = "index,     │
-│                     │  setVisibility              │          follow"     │
-│                     │  (PUBLIC_INDEXABLE)          │                     │
-│                     ├────────────────────────────►│                     │
-│                     │◄────────────────────────────┤                     │
-│                     │  setVisibility              │                     │
-│                     │  (PUBLIC_NO_INDEX)           │                     │
-└─────────┬───────────┘                             └─────────┬───────────┘
-          │              setVisibility(PRIVATE)                │
-          └──────────────────────┬─────────────────────────────┘
-                                 ▼
+      ▼                               │                                ▼
+┌─────────────────────┐               │                ┌─────────────────────┐
+│ S2: PUBLIC_NO_INDEX │               │                │ S3: PUBLIC_INDEXABLE│
+│ indexedAt = null    │◄──────────────┘                │ indexedAt = now()   │
+│ robots = "noindex"  │                                │ robots = "index,    │
+│                     │  setVisibility                 │          follow"    │
+│                     │  (PUBLIC_INDEXABLE)            │                     │
+│                     ├───────────────────────────────►│                     │
+│                     │◄───────────────────────────────┤                     │
+│                     │  setVisibility                 │                     │
+│                     │  (PUBLIC_NO_INDEX)             │                     │
+└─────────┬───────────┘                                └─────────┬───────────┘
+          │              setVisibility(PRIVATE)                  │
+          └─────────────────────────┬────────────────────────────┘
+                                    ▼
                       ┌───────────────────────────────┐
                       │         S1: PRIVATE           │
-                      │ + Request removal from index   │
-                      │ + Update sitemap               │
+                      │ + Request removal from index  │
+                      │ + Update sitemap              │
                       └───────────────────────────────┘
 
 State Transition Table:
@@ -386,13 +405,13 @@ State Transition Table:
                                       ▼
                       ┌───────────────────────────────┐
                       │ A1: Settings Page Loaded      │
-                      │ isLoading = false              │
+                      │ isLoading = false             │
                       └───────────────┬───────────────┘
                                       │ Admin clicks toggle
                                       ▼
                       ┌───────────────────────────────┐
                       │ A2: Confirmation Dialog       │
-                      │ pendingVisibility = new        │
+                      │ pendingVisibility = new       │
                       └───────────────┬───────────────┘
                       ┌───────────────┴───────────────┐
                       │ Cancel                        │ Confirm
@@ -400,9 +419,9 @@ State Transition Table:
       ┌───────────────────────┐   ┌───────────────────────────────┐
       │ A1 (Return)           │   │ A3: Updating (isLoading=true) │
       └───────────────────────┘   └───────────────┬───────────────┘
-                                  ┌───────────────┴───────────────┐
-                                  │ Error                         │ Success
-                                  ▼                               ▼
+                            ┌─────────────────────┴───────┐
+                            │ Error                       │ Success
+                            ▼                             ▼
                   ┌─────────────────────┐   ┌───────────────────────────┐
                   │ A4: Error State     │   │ A5: Success State         │
                   │ errorMessage = msg  │   │ visibility = updated      │
@@ -414,6 +433,12 @@ State Transition Table:
                       │ A1: Settings Page (clean)     │
                       └───────────────────────────────┘
 ```
+
+### 5.4 Rationale
+
+The first diagram correctly tracks the state changes for all possible channel states. No changes or reprompting the LLM was necessary for this section. The channel will be public, public & indexable, or private. A simplification of the roles-based access control in Discord, but covers the general idea. 
+
+The second diagram correctly tracks the state transitions for the channel visibility permission. It is quite simple so the model did not need to the reprompted for any changes.
 
 ---
 
@@ -586,6 +611,12 @@ When visibility changes to `PRIVATE`:
 3. **Guest Public Channel View spec** consumes event → invalidates guest view cache
 
 ---
+
+### 6.4 Rationale
+
+The LLM had to be reprompted here to clarify which protocols (RPC vs REST) would be used for communications. This was an issue across the this whole dev spec. It was determined REST protocols would be used for public APIs and RPC for internal communications. 
+
+The LLM also had to be reprompted to finalize what the event bus would be. It chose Redis Pub/Sub to allow for visibility change updates to propagate. The cache keying also needed to be updated to match earlier updates. 
 
 ## 7. Development Risks and Failures
 
