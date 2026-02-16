@@ -148,9 +148,9 @@
 │  │  │ channelService: ref         │    │ serverService: ref              │   │  │
 │  │  │ messageService: ref         │    │ ─────────────────────────────── │   │  │
 │  │  │ ─────────────────────────── │    │ getPublicServerInfo()           │   │  │
-│  │  │ getPublicChannel()          │    │ getPublicChannelList()          │   │  │
-│  │  │ getPublicMessages()         │    │ getServerMetadata()             │   │  │
-│  │  │ getMessage()                │    └─────────────────────────────────┘   │  │
+│  │  │ getPublicChannelPage()      │    │ getPublicChannelList()          │   │  │
+│  │  │ getPublicMessages()         │    │ getServerLandingPage()          │   │  │
+│  │  │ getPublicMessage()          │    └─────────────────────────────────┘   │  │
 │  │  └─────────────────────────────┘                                          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
@@ -396,10 +396,15 @@ The archtecture diagram is justified because client server split abstracts from 
     ├───────────────────┤       ├───────────────────┤
     │ - channelRepo     │       │ - patterns        │
     │ - cache           │       ├───────────────────┤
-    ├───────────────────┤       │ + filter()        │
-    │ + isPublic()      │       │ + redact()        │
-    │ + getStatus()     │       │ + sanitize()      │
-    └───────────────────┘       └───────────────────┘
+    ├───────────────────┤       │ + filterSensitive │
+    │ + isChannelPublic │       │   Content()       │
+    │   ()              │       │ + redactUser      │
+    │ + isServerPublic  │       │   Mentions()      │
+    │   ()              │       │ + sanitizeFor     │
+    │ + getVisibility   │       │   Display()       │
+    │   Status()        │       │ + sanitize        │
+    └───────────────────┘       │   Attachments()   │
+                                └───────────────────┘
 
 
     ┌───────────────────────────────────────────────────────────────────────────┐
@@ -422,17 +427,21 @@ The archtecture diagram is justified because client server split abstracts from 
     ┌────────────┴────────────────────────────────────────────┐
     │            │                │                │          │
     ▼            ▼                ▼                ▼          ▼
-┌─────────┐ ┌─────────────┐ ┌───────────────┐ ┌────────┐ ┌─────────┐
-│CL3.2 SEO│ │CL3.3 Server │ │CL3.4 Message  │ │CL3.5   │ │CL3.6    │
-│Metadata │ │Sidebar      │ │List           │ │Guest   │ │Message  │
-│Component│ │             │ │               │ │Promo   │ │Card     │
-├─────────┤ ├─────────────┤ ├───────────────┤ │Banner  │ ├─────────┤
-│ + title │ │ + server    │ │ + messages    │ ├────────┤ │ + msg   │
-│ + desc  │ │ + channels  │ │ + hasMore     │ │ + name │ │ + author│
-│ + url   │ ├─────────────┤ ├───────────────┤ ├────────┤ ├─────────┤
-├─────────┤ │ + render()  │ │ + render()    │ │+render │ │+render()│
-│+generate│ │ + navigate()│ │ + loadMore()  │ │+onJoin │ │+format()│
-│ Tags()  │ └─────────────┘ └───────────────┘ └────────┘ └─────────┘
+┌─────────┐ ┌─────────────┐ ┌───────────────┐ ┌────────────┐ ┌─────────────┐
+│CL3.2 SEO│ │CL3.3 Server │ │CL3.4 Message  │ │CL3.5       │ │CL3.6        │
+│Metadata │ │Sidebar      │ │List           │ │Guest       │ │Message      │
+│Component│ │             │ │               │ │PromoBanner │ │Card         │
+├─────────┤ ├─────────────┤ ├───────────────┤ ├────────────┤ ├─────────────┤
+│ + title │ │ + server    │ │ + messages    │ │ + name     │ │ + msg       │
+│ + desc  │ │ + channels  │ │ + hasMore     │ │ + channel  │ │ + author    │
+│ + url   │ ├─────────────┤ ├───────────────┤ │ + members  │ ├─────────────┤
+├─────────┤ │ + render()  │ │ + render()    │ ├────────────┤ │+render()    │
+│+generate│ │+navigateTo  │ │+loadMore      │ │+render()   │ │+formatTime  │
+│MetaTags │ │ Channel()   │ │ Messages()    │ │+onJoinClick│ │ stamp()     │
+│  ()     │ └─────────────┘ │+scrollTo      │ │  ()        │ │+renderAtt   │
+│+generate│                 │ Message()     │ │+onDismiss()│ │ achments()  │
+│Structured│                └───────────────┘ └────────────┘ └─────────────┘
+│Data()   │
 └─────────┘
 
 
@@ -448,9 +457,10 @@ The archtecture diagram is justified because client server split abstracts from 
     │ + name: string          │         │ + content: string       │
     │ + slug: string          │         │ + author: PublicAuthorDTO│
     │ + topic: string         │         │ + timestamp: DateTime   │
-    │ + messageCount: number  │         │ + attachments: []       │
-    │ + serverSlug: string    │         │ + permalink: string     │
-    └─────────────────────────┘         └─────────────────────────┘
+    │ + messageCount: number  │         │ + editedAt: DateTime    │
+    │ + serverSlug: string    │         │ + attachments: []       │
+    └─────────────────────────┘         │ + permalink: string     │
+                                        └─────────────────────────┘
 
     ┌─────────────────────────┐         ┌─────────────────────────┐
     │ CL4.3 PublicAuthorDTO   │         │ CL4.4 PublicServerDTO   │
@@ -461,7 +471,8 @@ The archtecture diagram is justified because client server split abstracts from 
     │ + isBot: boolean        │         │ + description: string   │
     │ (No userId exposed)     │         │ + iconUrl: string       │
     └─────────────────────────┘         │ + memberCount: number   │
-                                        │ + publicChannels: []    │
+                                        │ + publicChannelCount:   │
+                                        │     number              │
                                         └─────────────────────────┘
 
     ┌─────────────────────────┐         ┌─────────────────────────┐
@@ -1834,8 +1845,10 @@ The APIs for Guest Public Channel View, clearly handle the usage of the feature 
 |--------|-------|----------|
 | getPublicChannelPage() | PublicChannelController | SSR page rendering |
 | getPublicMessages() | PublicChannelController | Infinite scroll API |
+| getPublicMessage() | PublicChannelController | Deep link to single message |
 | getPublicServerInfo() | PublicServerController | Server sidebar |
 | getPublicChannelList() | PublicServerController | Channel navigation |
+| getServerLandingPage() | PublicServerController | Server landing page SSR |
 
 #### Used by Public API (M3) from Access Control (M4):
 
@@ -1845,25 +1858,44 @@ The APIs for Guest Public Channel View, clearly handle the usage of the feature 
 | getVisibilityStatus() | VisibilityGuard | Detailed visibility info |
 | filterSensitiveContent() | ContentFilter | Message sanitization |
 | redactUserMentions() | ContentFilter | Privacy protection |
+| sanitizeForDisplay() | ContentFilter | HTML sanitization for safe display |
+| sanitizeAttachments() | ContentFilter | Attachment visibility filtering |
 | checkLimit() | RateLimiter | Abuse prevention |
+| incrementCounter() | RateLimiter | Recording requests for rate limiting |
+| getOrCreateSession() | AnonymousSessionManager | Guest session management |
+| storePreference() | AnonymousSessionManager | Storing guest preferences |
+| getPreferences() | AnonymousSessionManager | Retrieving guest preferences |
 
 #### Used by Public API (M3) from Content Delivery (M5):
 
 | Method | Class | Used For |
 |--------|-------|----------|
 | getMessagesForPublicView() | MessageService | Fetching messages |
+| getMessageById() | MessageService | Fetching single message for deep links |
 | getPublicAuthorInfo() | AuthorService | Author display data |
+| anonymizeAuthor() | AuthorService | Anonymizing opted-out authors |
+| getDisplayName() | AuthorService | Privacy-respecting display names |
 | generatePageTitle() | SEOService | SEO metadata |
+| generateDescription() | SEOService | Meta description generation |
 | generateStructuredData() | SEOService | JSON-LD |
+| generateBreadcrumbs() | SEOService | Breadcrumb schema data |
+| getCanonicalUrl() | SEOService | Canonical URL generation |
 | getPublicAttachmentUrl() | AttachmentService | Attachment URLs |
+| generateThumbnail() | AttachmentService | Image thumbnail generation |
+| isAttachmentPublic() | AttachmentService | Attachment visibility check |
 
 #### Used by Content Delivery (M5) from Data Access (M6):
 
 | Method | Class | Used For |
 |--------|-------|----------|
 | findBySlug() | ChannelRepository | Channel lookup |
-| findByChannelPaginated() | MessageRepository | Message fetching |
+| findPublicByServerId() | ChannelRepository | Public channel listing for server |
+| getVisibility() | ChannelRepository | Channel visibility check |
+| findByChannelPaginated() | MessageRepository | Paginated message fetching |
+| findById() | MessageRepository | Single message lookup |
+| countByChannel() | MessageRepository | Message count for channel |
 | getPublicProfile() | UserRepository | Author info |
+| findById() | UserRepository | User lookup by ID |
 
 ### 10.2 REST API Interface
 
