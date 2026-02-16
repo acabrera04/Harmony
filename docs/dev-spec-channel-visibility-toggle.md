@@ -665,7 +665,7 @@ The LLM also had to be reprompted to finalize what the event bus would be. It ch
 
 ```
                 Impact:  Low       Medium      High        Critical
-           ┌─────────────────────────────────────────────────────┐
+           ┌────────────────────────────────────────────────────┐
   High     │           │ CF-1      │ IF-1      │                │
   Medium   │           │ RF-1,RF-5 │           │                │
            │           │ RF-6,CF-3 │           │                │
@@ -673,8 +673,12 @@ The LLM also had to be reprompted to finalize what the event bus would be. It ch
            │           │           │ CF-2,HF-1 │                │
            │           │           │ HF-2,IF-6 │                │
   Very Low │           │           │           │ IF-2,IF-3      │
-           └─────────────────────────────────────────────────────┘
+           └────────────────────────────────────────────────────┘
 ```
+
+### 7.6 Rationale
+
+Minor reprompting was needed to standardize the rate-limiting policy. It did not affect this section, but other specs mentioned rate-limiting so it had to be added to this one as a failure. Otherwise the failure modes and resolutions make sense, and there are no obvious gaps in errors.
 
 ---
 
@@ -715,6 +719,12 @@ Event types consumed/produced across specs:
 | `MESSAGE_EDITED` | SEO Meta Tag Generation | Message edited in a public channel |
 | `MESSAGE_DELETED` | SEO Meta Tag Generation | Message deleted from a public channel |
 | `META_TAGS_UPDATED` | SEO Meta Tag Generation | Meta tags regenerated for a channel |
+
+### 8.2 Rationale
+
+Significant reprompting was necessary here because of conflicting tech stacks across each spec. This spec was missing DOMPurify, which would be needed to sanitize and generate sitemaps with other public content. The communication APIs being a mix of RPC and REST was also detected by the LLM here, requiring prompting to fix it. The LLM then determined to use RPC for authenticated internal APIs, while public endpoints would be REST for compatibility with web indexers.
+
+Finally, the LLM made a shared tech-stack document that would be used across each spec. 
 
 ---
 
@@ -846,6 +856,12 @@ private getCacheKey(channelId: string): string
 
 Rate limits apply to all API endpoints. Exceeding limits returns `429 Too Many Requests` with `Retry-After` header.
 
+### 9.5 Rationale
+
+The LLM had generated mismatched class methods and variables from before and now. It had to be reprompted to recouncile the differences and create missing functions both here and in previous sections. Like mentioned before, it also had to be reprompted to standardize a ratelimiting policy here instead of arbitrary values elsewhere.
+
+The separation of public APIs, business logic, and data access layers is good practice in large systems, so I agree with the LLM's decisions here.
+
 ---
 
 ## 10. Public Interfaces
@@ -967,6 +983,10 @@ When `VISIBILITY_CHANGED` is emitted:
 | `PUBLIC_NO_INDEX` | Update meta tags (add noindex) | Keep guest view cache (public content) |
 | `PRIVATE` | Delete meta tags for channel | Invalidate guest view cache |
 
+### 10.4 Rationale
+
+The LLM correctly generated the public API specification. It did not need to be reprompted for any fixes here. The generated API specification is correct and exposes the endpoints necessary for this specific user story. 
+
 ---
 
 ## 11. Data Schemas
@@ -1075,6 +1095,12 @@ CREATE INDEX idx_audit_actor ON visibility_audit_log(actor_id, timestamp DESC);
 | object (audit values) | JSONB | Flexible schema |
 | string (IP) | INET | Supports IPv4/IPv6 |
 
+### 11.4 Rationale
+
+This section needed significant reprompting due to database schema and index mismatches across all specs. Beyond that, the architecture is justified because it provides unique mappings for all (server, channel) pairs, allowing for indexers to access them consistently for updates. 
+
+Cache schemas and keys needed reprompting to fix issues with inconsistent keying. 
+
 ---
 
 ## 12. Security and Privacy
@@ -1142,6 +1168,12 @@ Platform requires 13+ (COPPA). No specific minor PII collection beyond standard 
 
 All public-facing content (public channel pages, sitemap entries, PublicChannelDTO fields) is sanitized using DOMPurify (T17) before rendering to prevent XSS attacks from user-generated content.
 
+### 12.10 Rationale
+
+The LLM did not have issues with generating security and privacy requirements. This architecture is justified because it creates an audit trail for any actions. All actions are tagged by the user doing the action. IP addresses are also stored for audits. 
+
+Visibility rules and search indexing is also handled with the appropriate care needed for making channels publically indexable. 
+
 ---
 
 ## 13. Risks to Completion
@@ -1202,6 +1234,16 @@ All public-facing content (public channel pages, sitemap entries, PublicChannelD
 | DB performance degradation | p99 > 500ms | Read replicas; query plan review; add indexes |
 | CDN issues | Cache hit rate < 80% | Increase origin capacity; review cache rules |
 | Security breach | Unauthorized access | Incident response; notify users; rotate credentials |
+
+### 13.6 Rationale
+
+This set of risks is justified since the product will be a public facing chat client with many frequently updated libraries. No reprompting was necessary here. 
+
+Component risks make sense, primarily external API changes and growing storage/bandwidth costs. These are common issues which the LLM caught and documented well. 
+
+The LLM is justified in determining the cost of operation as well, figuring out what finanical risks are present in creating this software. 
+
+Contingency plans and thresholds to activate them match industry standards for API, database, and caching failures. Therefore the LLM is justified in making these decisions.
 
 ---
 
