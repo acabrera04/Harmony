@@ -19,8 +19,9 @@
 
 | Author        | Role                    | Version |
 |---------------|-------------------------|---------|
-| Claude (AI)   | Specification Author    | 1.0     |
+| Claude (AI)   | Specification Author    | 2.0     |
 | dblanc        | Project Lead            | 1.0     |
+| AvanishKulkarni | Project Lead | 2.0 |
 
 ---
 
