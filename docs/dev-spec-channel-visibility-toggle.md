@@ -273,6 +273,8 @@ We had to prompt edits to this to ensure the database columns were not mismatche
 
 After having an LLM review this spec, the canonical owner of the sitemap generation should be the IndexingService. There was a discrepancy between this spec and the seo-meta-tag-generation spec on what would consume server updates and generate new sitemaps for external services. 
 
+Significant inconsistencies existed between section 2, 3, 9, and 10, so a verification pass was necessary after the document was generated to fix them. 
+
 ---
 
 ## 4. List of Classes
@@ -991,6 +993,8 @@ When `VISIBILITY_CHANGED` is emitted:
 ### 10.4 Rationale
 
 The LLM correctly generated the public API specification. It did not need to be reprompted for any fixes here. The generated API specification is correct and exposes the endpoints necessary for this specific user story. 
+
+Significant inconsistencies in classes existed between sections 2, 3, 9, and 10, so a verification pass was necessary after the document was generated to fix them. 
 
 ---
 
