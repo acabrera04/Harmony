@@ -1,12 +1,17 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./constants";
 
+type AuthChangeHandler = () => void;
+
 /**
  * API Client for Harmony backend
- * Configured with defaults and interceptors
+ * Client-only — must not be imported in Server Components.
+ * Auth tokens are read from cookies (httpOnly preferred) by the server;
+ * on the client side, credentials are sent via cookies automatically.
  */
 class ApiClient {
   private client: AxiosInstance;
+  private onUnauthorized: AuthChangeHandler | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -15,37 +20,29 @@ class ApiClient {
       headers: {
         "Content-Type": "application/json",
       },
+      // Send cookies automatically so httpOnly auth cookies are included
+      withCredentials: true,
     });
 
     this.setupInterceptors();
   }
 
-  private setupInterceptors() {
-    // Request interceptor - add auth token if available
-    this.client.interceptors.request.use(
-      (config) => {
-        // Add authentication token from localStorage/cookies
-        const token = typeof window !== "undefined" 
-          ? localStorage.getItem("auth_token") 
-          : null;
-        
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
+  /**
+   * Register a callback for 401 responses instead of hard-redirecting.
+   * The app shell can use this to redirect or show a login modal.
+   */
+  setOnUnauthorized(handler: AuthChangeHandler) {
+    this.onUnauthorized = handler;
+  }
 
+  private setupInterceptors() {
     // Response interceptor - handle errors globally
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          // Handle unauthorized - redirect to login
-          if (typeof window !== "undefined") {
-            window.location.href = "/auth/login";
+          if (this.onUnauthorized) {
+            this.onUnauthorized();
           }
         }
         return Promise.reject(error);
@@ -74,5 +71,21 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
-export const apiClient = new ApiClient();
+/**
+ * Lazily-created singleton — only instantiated on first access.
+ * Throws if accidentally imported during SSR.
+ */
+let _instance: ApiClient | null = null;
+
+export function getApiClient(): ApiClient {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "apiClient must not be used on the server. " +
+      "Use fetch() with cookies from the request instead."
+    );
+  }
+  if (!_instance) {
+    _instance = new ApiClient();
+  }
+  return _instance;
+}
