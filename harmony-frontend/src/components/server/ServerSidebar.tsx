@@ -5,13 +5,9 @@
  */
 
 import Link from "next/link";
+import type { Channel } from "@/types/channel";
 
-interface Channel {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-}
+type SidebarChannel = Pick<Channel, "id" | "name" | "slug" | "description">;
 
 interface ServerSidebarProps {
   serverInfo: {
@@ -20,7 +16,7 @@ interface ServerSidebarProps {
     slug: string;
     description?: string;
   };
-  publicChannels: Channel[];
+  publicChannels: SidebarChannel[];
   currentChannelId?: string;
 }
 
@@ -48,7 +44,7 @@ export function ServerSidebar({
           {publicChannels.map((channel) => (
             <Link
               key={channel.id}
-              href={`/c/${serverInfo.slug}/${channel.slug}`}
+              href={`/c/${encodeURIComponent(serverInfo.slug)}/${encodeURIComponent(channel.slug)}`}
               className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${
                 channel.id === currentChannelId
                   ? "bg-blue-100 font-medium text-blue-700"

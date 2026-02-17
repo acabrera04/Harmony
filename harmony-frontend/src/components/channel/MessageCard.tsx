@@ -4,22 +4,16 @@
  * Based on dev spec C1.5 MessageCard
  */
 
+import Image from "next/image";
 import { formatRelativeTime } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/Card";
+import type { Author, Attachment } from "@/types/message";
 
 interface MessageCardProps {
-  author: {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-  };
+  author: Pick<Author, "id" | "username" | "avatarUrl">;
   content: string;
-  timestamp: Date | string;
-  attachments?: Array<{
-    id: string;
-    url: string;
-    type: string;
-  }>;
+  timestamp: string;
+  attachments?: Pick<Attachment, "id" | "url" | "filename" | "type">[];
 }
 
 export function MessageCard({
@@ -35,10 +29,12 @@ export function MessageCard({
           {/* Avatar */}
           <div className="flex-shrink-0">
             {author.avatarUrl ? (
-              <img
+              <Image
                 src={author.avatarUrl}
                 alt={author.username}
-                className="h-10 w-10 rounded-full"
+                width={40}
+                height={40}
+                className="rounded-full"
               />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300">
@@ -62,7 +58,7 @@ export function MessageCard({
               <div className="mt-2 space-y-2">
                 {attachments.map((attachment) => (
                   <div key={attachment.id} className="text-sm text-blue-600">
-                    📎 {attachment.url}
+                    {attachment.filename}
                   </div>
                 ))}
               </div>

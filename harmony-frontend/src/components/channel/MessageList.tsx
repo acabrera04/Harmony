@@ -5,22 +5,7 @@
  */
 
 import { MessageCard } from "./MessageCard";
-
-interface Message {
-  id: string;
-  author: {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-  };
-  content: string;
-  timestamp: Date | string;
-  attachments?: Array<{
-    id: string;
-    url: string;
-    type: string;
-  }>;
-}
+import type { Message } from "@/types/message";
 
 interface MessageListProps {
   messages: Message[];
@@ -47,8 +32,8 @@ export function MessageList({
         />
       ))}
 
-      {/* Load more button */}
-      {hasMore && (
+      {/* Load more button — only render when there is a handler */}
+      {hasMore && onLoadMore && (
         <div className="flex justify-center py-4">
           <button
             onClick={onLoadMore}

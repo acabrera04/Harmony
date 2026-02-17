@@ -30,7 +30,7 @@ export function GuestPromoBanner({
           </h3>
           <p className="text-sm text-gray-600">
             Join <span className="font-medium">{serverName}</span>
-            {memberCount && ` with ${memberCount.toLocaleString()} members`} to
+            {memberCount != null && memberCount > 0 && ` with ${memberCount.toLocaleString()} members`} to
             participate in the conversation.
           </p>
         </div>
