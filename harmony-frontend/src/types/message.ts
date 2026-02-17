@@ -9,9 +9,9 @@ export interface Message {
   authorId: string;
   author: Author;
   content: string;
-  timestamp: Date | string;
+  timestamp: string;
   attachments?: Attachment[];
-  editedAt?: Date | string;
+  editedAt?: string;
 }
 
 export interface Author {

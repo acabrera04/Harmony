@@ -10,8 +10,8 @@ export interface Channel {
   slug: string;
   description?: string;
   visibility: ChannelVisibility;
-  createdAt: Date | string;
-  updatedAt: Date | string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export enum ChannelVisibility {

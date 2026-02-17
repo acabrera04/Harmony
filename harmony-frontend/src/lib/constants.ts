@@ -3,6 +3,9 @@
  * Aligned with dev spec requirements
  */
 
+// Re-export ChannelVisibility from canonical source to avoid duplicate enums
+export { ChannelVisibility } from "@/types/channel";
+
 export const APP_NAME = "Harmony";
 export const APP_DESCRIPTION = "Search-engine-indexable chat platform";
 
@@ -42,16 +45,6 @@ export const ROUTES = {
   LOGIN: "/auth/login",
   SIGNUP: "/auth/signup",
 } as const;
-
-/**
- * Visibility states from dev spec
- * Section 5: State Diagrams
- */
-export enum ChannelVisibility {
-  PUBLIC_INDEXABLE = "PUBLIC_INDEXABLE",
-  PUBLIC_NO_INDEX = "PUBLIC_NO_INDEX",
-  PRIVATE = "PRIVATE",
-}
 
 /**
  * Event types for EventBus (Redis Pub/Sub)
