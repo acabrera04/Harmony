@@ -12,8 +12,8 @@ This file provides context and guidelines for AI coding agents (GitHub Copilot, 
 
 ## Project structure
 - **`docs/`** - Development specifications (design documents)
-- **`harmony-frontend/`** - Next.js 14+ frontend application
-  - Built with TypeScript, React 18.2+, Tailwind CSS
+- **`harmony-frontend/`** - Next.js 16+ frontend application
+  - Built with TypeScript, React 19+, Tailwind CSS
   - Uses App Router (not Pages Router)
   - Path aliases: `@/` maps to `src/`
 
@@ -55,7 +55,7 @@ This file provides context and guidelines for AI coding agents (GitHub Copilot, 
   - `components/server/` - Server components (ServerSidebar)
   - `components/shared/` - Shared components across domains
 - **Utilities:** All helper functions in `lib/utils.ts`, constants in `lib/constants.ts`
-- **API calls:** Use `apiClient` from `lib/api-client.ts` (configured Axios instance)
+- **API calls:** Use `getApiClient()` from `lib/api-client.ts` (client-only, cookie-based auth)
 - **Type definitions:** Keep types in `types/` folder, aligned with dev spec data schemas
 - **Naming conventions:**
   - Components: PascalCase (e.g., `MessageCard.tsx`)
@@ -67,8 +67,8 @@ This file provides context and guidelines for AI coding agents (GitHub Copilot, 
 
 ## Technology stack (Section 8 across all dev specs)
 - **T1:** TypeScript 5.3+ (primary language, strict mode enabled)
-- **T2:** React 18.2+ (UI framework)
-- **T3:** Next.js 14.0+ (SSR/SSG framework - critical for SEO)
+- **T2:** React 19+ (UI framework)
+- **T3:** Next.js 16+ (SSR/SSG framework - critical for SEO)
 - **T4:** Node.js 20 LTS (server runtime)
 - **T5:** PostgreSQL 16+ (primary database - future)
 - **T6:** Redis 7.2+ (caching, session storage, EventBus - future)
