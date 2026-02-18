@@ -22,7 +22,7 @@ const STATUS_COLOR: Record<UserStatus, string> = {
 function StatusDot({ status }: { status: UserStatus }) {
   return (
     <span
-      className={cn("block h-2.5 w-2.5 rounded-full ring-2 ring-white", STATUS_COLOR[status])}
+      className={cn("block h-2.5 w-2.5 rounded-full ring-2 ring-[#2f3136]", STATUS_COLOR[status])}
       aria-label={status}
     />
   );
@@ -78,8 +78,8 @@ function MemberRow({ user }: { user: User }) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-gray-100",
-        isOffline && "opacity-50"
+        "flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/10 cursor-pointer",
+        isOffline && "opacity-40"
       )}
     >
       {/* Avatar + status dot */}
@@ -91,7 +91,7 @@ function MemberRow({ user }: { user: User }) {
             className="h-8 w-8 rounded-full"
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-gray-600">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-semibold text-white">
             {user.username.charAt(0).toUpperCase()}
           </div>
         )}
@@ -101,7 +101,7 @@ function MemberRow({ user }: { user: User }) {
       </div>
 
       {/* Name */}
-      <span className="truncate text-sm font-medium text-gray-800">
+      <span className="truncate text-sm font-medium text-gray-300">
         {user.displayName ?? user.username}
       </span>
     </div>
@@ -137,25 +137,20 @@ export function MembersSidebar({ members, isOpen, onClose }: MembersSidebarProps
       <aside
         aria-label="Members list"
         className={cn(
-          // Base styles
-          "flex w-60 flex-col border-l border-gray-200 bg-gray-50",
-          // Desktop: static in layout flow, toggle via display
-          "hidden sm:flex",
-          isOpen && "sm:flex",
-          // Mobile: fixed overlay sliding in from right
+          "flex w-60 flex-col bg-[#2f3136]",
+          // Hidden when closed, visible when open
+          !isOpen && "hidden",
+          // Mobile: fixed overlay from right; desktop: static in layout flow
           isOpen && "fixed inset-y-0 right-0 z-30 flex sm:static sm:z-auto"
         )}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Members
-          </h2>
-          {/* Close button — visible on mobile */}
+        {/* Close button — mobile only */}
+        <div className="flex items-center justify-between border-b border-black/20 px-4 py-3 sm:hidden">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400">Members</h2>
           <button
             onClick={onClose}
             aria-label="Close members list"
-            className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700 sm:hidden"
+            className="rounded p-1 text-gray-400 hover:bg-white/10 hover:text-gray-200"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path d="M18 6L6 18M6 6l12 12" />
@@ -167,7 +162,7 @@ export function MembersSidebar({ members, isOpen, onClose }: MembersSidebarProps
         <div className="flex-1 overflow-y-auto p-3">
           {groups.map(({ role, users }) => (
             <div key={role} className="mb-4">
-              <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                 {ROLE_LABEL[role]} — {users.length}
               </p>
               <div className="space-y-0.5">

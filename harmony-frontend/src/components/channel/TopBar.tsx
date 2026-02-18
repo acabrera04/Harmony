@@ -95,8 +95,8 @@ function IconButton({
       className={cn(
         "rounded p-1.5 transition-colors",
         active
-          ? "text-blue-600 bg-blue-50"
-          : "text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+          ? "text-white bg-white/10"
+          : "text-gray-400 hover:bg-white/10 hover:text-gray-200"
       )}
     >
       {children}
@@ -139,12 +139,12 @@ export function TopBar({
   const settingsHref = `/settings/${serverSlug}/${channel.slug}`;
 
   return (
-    <header className="flex h-12 items-center gap-2 border-b border-gray-200 bg-white px-4 shadow-sm">
+    <header className="flex h-12 items-center gap-2 border-b border-black/20 bg-[#36393f] px-4 shadow-sm">
       {/* ── Hamburger (mobile only) ── */}
       <button
         onClick={onMenuToggle}
         aria-label="Open channel list"
-        className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 sm:hidden"
+        className="rounded p-1.5 text-gray-400 hover:bg-white/10 hover:text-gray-200 sm:hidden"
       >
         <MenuIcon />
       </button>
@@ -152,12 +152,12 @@ export function TopBar({
       {/* ── Left: channel identity ── */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <HashIcon className="flex-shrink-0 text-gray-400" />
-        <span className="truncate font-semibold text-gray-900">{channel.name}</span>
+        <span className="truncate font-semibold text-white">{channel.name}</span>
 
         {channel.topic && (
           <>
-            <span className="hidden select-none text-gray-300 sm:inline">|</span>
-            <span className="hidden min-w-0 truncate text-sm text-gray-500 sm:block">
+            <span className="hidden select-none text-gray-600 sm:inline">|</span>
+            <span className="hidden min-w-0 truncate text-sm text-gray-400 sm:block">
               {truncate(channel.topic, 80)}
             </span>
           </>
@@ -191,7 +191,7 @@ export function TopBar({
             href={settingsHref}
             title="Channel settings"
             aria-label="Channel settings"
-            className="rounded p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+            className="rounded p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200"
           >
             <GearIcon />
           </Link>
