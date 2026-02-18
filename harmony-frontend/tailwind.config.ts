@@ -17,7 +17,7 @@ const config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "Open Sans", "Arial", "Helvetica", "sans-serif"],
+        sans: ["var(--font-inter)", "Open Sans", "Arial", "Helvetica", "sans-serif"],
       },
     },
   },

@@ -6,9 +6,7 @@
 
 export function TailwindTest() {
   return (
-    <div className="min-h-screen bg-discord-bg-tertiary font-sans">
-      {/* Server sidebar */}
-      <div className="flex h-screen">
+    <div className="flex min-h-screen bg-discord-bg-tertiary font-sans">
         <aside className="w-16 bg-discord-bg-tertiary flex flex-col items-center py-3 gap-2">
           <div className="w-12 h-12 rounded-full bg-discord-accent flex items-center justify-center text-white font-bold text-lg">
             H
@@ -23,6 +21,7 @@ export function TailwindTest() {
           {["general", "introductions", "off-topic"].map((channel) => (
             <button
               key={channel}
+              type="button"
               className="flex items-center gap-1.5 px-2 py-1 rounded text-discord-text-muted hover:bg-discord-bg-primary hover:text-discord-text transition-colors text-sm text-left"
             >
               <span>#</span>
@@ -68,12 +67,11 @@ export function TailwindTest() {
             </div>
 
             {/* Accent button */}
-            <button className="mt-2 self-start px-4 py-2 rounded bg-discord-accent text-white font-medium text-sm hover:opacity-90 transition-opacity">
+            <button type="button" className="mt-2 self-start px-4 py-2 rounded bg-discord-accent text-white font-medium text-sm hover:opacity-90 transition-opacity">
               Accent Button
             </button>
           </div>
         </main>
-      </div>
     </div>
   );
 }
