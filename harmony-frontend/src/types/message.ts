@@ -3,6 +3,12 @@
  * Based on dev spec data schemas
  */
 
+export interface Reaction {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface Message {
   id: string;
   channelId: string;
@@ -12,6 +18,7 @@ export interface Message {
   timestamp: Date | string;
   attachments?: Attachment[];
   editedAt?: Date | string;
+  reactions?: Reaction[];
 }
 
 export interface Author {
