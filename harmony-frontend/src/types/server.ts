@@ -7,12 +7,13 @@ export interface Server {
   id: string;
   name: string;
   slug: string;
+  icon?: string;
+  ownerId: string;
   description?: string;
-  iconUrl?: string;
   bannerUrl?: string;
-  memberCount: number;
+  memberCount?: number;
   createdAt: Date | string;
-  updatedAt: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface ServerDTO {
