@@ -4,6 +4,7 @@ import { mockChannels } from "@/mocks/channels";
 import { mockMessages } from "@/mocks/messages";
 import { mockUsers } from "@/mocks/users";
 import { HarmonyShell } from "@/components/layout/HarmonyShell";
+import { VisibilityGuard } from "@/components/channel/VisibilityGuard";
 
 interface PageProps {
   params: Promise<{ serverSlug: string; channelSlug: string }>;
@@ -24,13 +25,15 @@ export default async function ChannelPage({ params }: PageProps) {
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   return (
-    <HarmonyShell
-      servers={mockServers}
-      currentServer={server}
-      channels={serverChannels}
-      currentChannel={channel}
-      messages={messages}
-      members={mockUsers}
-    />
+    <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+      <HarmonyShell
+        servers={mockServers}
+        currentServer={server}
+        channels={serverChannels}
+        currentChannel={channel}
+        messages={messages}
+        members={mockUsers}
+      />
+    </VisibilityGuard>
   );
 }
