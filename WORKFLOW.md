@@ -39,7 +39,7 @@
 This project uses a **hybrid approach**: `tasks/todo.md` for AI context, GitHub Issues as the canonical tracker on the Harmony Project Board (course requirement).
 
 1. **Plan First**: Write plan to `tasks/todo.md` with checkable items (local scratch pad for AI context)
-2. **Ident  ify the Issue**: If the task maps to an existing GitHub Issue, note the issue number at the top of `tasks/todo.md`
+2. **Identify the Issue**: If the task maps to an existing GitHub Issue, note the issue number at the top of `tasks/todo.md`
 3. **Announce Start**: Post an opening comment to the issue — `gh issue comment <number> --body "..."` — describing what will be done
 4. **Track Progress**: Mark items complete in `tasks/todo.md` as you go; post a comment to the issue at meaningful milestones (e.g., after a major step or when blocked)
 5. **Explain Changes**: High-level summary at each step
