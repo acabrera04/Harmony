@@ -2,6 +2,9 @@
 
 This file provides context and guidelines for AI coding agents (GitHub Copilot, Cursor, etc.) working on the Harmony project.
 
+## Agent Workflow Guidelines
+Before starting any task, read and follow the rules in [`WORKFLOW.md`](./WORKFLOW.md). It defines workflow orchestration, task management, and core principles all agents must follow.
+
 ## Repository scope
 - Harmony is a **search engine indexable chat application** (`README.md`).
 - Repository contains **development specifications** in `docs/` and **frontend implementation** in `harmony-frontend/`.
