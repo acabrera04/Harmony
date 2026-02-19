@@ -14,7 +14,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Message } from "@/types";
@@ -118,7 +118,8 @@ export function SearchModal({
     return () => clearTimeout(timer);
   }, [query]);
 
-  const results = filterMessages(messages, debouncedQuery);
+  // #c40: memoize to avoid re-filtering on unrelated re-renders
+  const results = useMemo(() => filterMessages(messages, debouncedQuery), [messages, debouncedQuery]);
 
   // Focus input when opening
   useEffect(() => {

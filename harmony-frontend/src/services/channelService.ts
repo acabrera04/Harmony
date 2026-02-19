@@ -16,7 +16,10 @@ function delay(ms?: number): Promise<void> {
 }
 
 // ─── In-memory store (mutated by write operations) ────────────────────────────
-
+// #c37: This is a module-scoped, process-wide mutable store shared across requests.
+// In a real implementation concurrent writes would require proper locking/transactions
+// or a database to avoid race conditions. For this mock/demo layer the trade-off is
+// acceptable — state is only intended to persist for the lifetime of the server process.
 const channels: Channel[] = [...mockChannels];
 
 // ─── Service ──────────────────────────────────────────────────────────────────

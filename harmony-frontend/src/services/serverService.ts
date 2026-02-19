@@ -40,9 +40,8 @@ export async function getServer(slug: string): Promise<Server | null> {
  * Returns all members (users) of a server by server ID.
  * In the mock layer, all users belong to every server for simplicity.
  */
-export async function getServerMembers(serverId: string): Promise<User[]> {
+export async function getServerMembers(_serverId: string): Promise<User[]> {
   await delay();
-  // Simulate membership — real API would filter by serverId
-  void serverId;
+  // Simulate membership — real API would filter by _serverId
   return [...mockUsers];
 }

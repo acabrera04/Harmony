@@ -300,8 +300,9 @@ function MessageBubble({ message, showHeader = true }: { message: Message; showH
           <p className="text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
           {message.reactions && message.reactions.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
-              {message.reactions.map((r, i) => (
-                <button key={i} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
+              {/* #c38: use stable emoji+id key instead of array index */}
+              {message.reactions.map((r) => (
+                <button key={`${r.emoji}-${message.id}`} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
                   <span>{r.emoji}</span>
                   <span>{r.count}</span>
                 </button>
@@ -334,8 +335,9 @@ function MessageBubble({ message, showHeader = true }: { message: Message; showH
         <p className="mt-0.5 text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
         {message.reactions && message.reactions.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
-            {message.reactions.map((r, i) => (
-              <button key={i} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
+            {/* #c39: use stable emoji+id key instead of array index */}
+            {message.reactions.map((r) => (
+              <button key={`${r.emoji}-${message.id}`} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
                 <span>{r.emoji}</span>
                 <span>{r.count}</span>
               </button>
@@ -440,15 +442,15 @@ function MessageArea({ channel, messages }: { channel: Channel; messages: Messag
       {/* Message input — #c2: read-only demo indicator */}
       <div className="flex-shrink-0 px-4 pb-6 pt-2">
         <div className="flex items-center gap-2 rounded-lg bg-[#40444b] px-4 py-3">
-          {/* #c28: aria-disabled is correct for a visually disabled field;
-               aria-readonly would imply the value is selectable/submittable */}
+          {/* #c28/#c41: disabled prevents focus and form submission, which is
+               correct for a non-functional demo input */}
           <input
             type="text"
             placeholder={`Message #${channel.name} (read-only demo)`}
             title="Sending messages is disabled in this demo"
             aria-disabled="true"
             className="flex-1 cursor-not-allowed bg-transparent text-sm text-[#dcddde] placeholder-gray-500 outline-none opacity-70"
-            readOnly
+            disabled
           />
           <button className="flex-shrink-0 text-gray-400 hover:text-gray-200" title="Emoji">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
