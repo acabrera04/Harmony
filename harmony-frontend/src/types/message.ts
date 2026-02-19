@@ -21,6 +21,12 @@ export interface Message {
   reactions?: Reaction[];
 }
 
+/**
+ * Author is the message-embedded snapshot of a user.
+ * Uses `avatarUrl` (full URL string) to match API response shape,
+ * while the User entity uses `avatar` for the same field.
+ * messageService maps User.avatar → Author.avatarUrl when constructing messages.
+ */
 export interface Author {
   id: string;
   username: string;
