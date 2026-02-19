@@ -60,6 +60,8 @@ export async function updateVisibility(
   if (index === -1) {
     throw new Error(`Channel not found: ${channelId}`);
   }
+  // updatedAt is optional in Channel; mock data omits it initially.
+  // We set it here on every mutation so callers always get a fresh timestamp.
   channels[index] = {
     ...channels[index],
     visibility,

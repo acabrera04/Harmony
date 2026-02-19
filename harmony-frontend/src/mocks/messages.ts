@@ -7,6 +7,10 @@
 import type { Message } from "@/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+// #c20: These helpers produce ISO strings relative to "now" using the local
+// system clock. Displayed relative times ("2 hours ago") are therefore
+// correct regardless of timezone, since both the timestamp and the viewer's
+// clock share the same local time. toISOString() always serialises to UTC.
 
 function hoursAgo(hours: number, minutesOffset = 0): string {
   const d = new Date();

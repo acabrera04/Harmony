@@ -67,7 +67,7 @@ function ResultItem({
         />
       ) : (
         <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-gray-600">
-          {message.author.username.charAt(0).toUpperCase() || "?"}
+          {message.author.username?.charAt(0).toUpperCase() || "?"}
         </div>
       )}
 
@@ -129,19 +129,12 @@ export function SearchModal({
     }
   }, [isOpen]);
 
-  // Keyboard shortcuts: Escape to close, Ctrl+K / Cmd+K to toggle
+  // #c23: Ctrl+K/Cmd+K toggling is handled exclusively by HarmonyShell to avoid
+  // duplicate listeners. SearchModal only handles Escape to close.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape" && isOpen) {
         onClose();
-        return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        if (isOpen) {
-          onClose();
-        }
-        // Opening is handled by the parent via TopBar
       }
     }
 
@@ -149,8 +142,10 @@ export function SearchModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Trap focus inside the modal
-  // #c13: also redirect focus into the modal if activeElement is currently outside
+  // Trap focus inside the modal.
+  // #c29: onKeyDown on the modal panel only fires when focus is already inside
+  // it, so we don't need to check whether activeElement is outside. We simply
+  // wrap Tab at the first/last boundary.
   const handleKeyDownModal = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== "Tab" || !modalRef.current) return;
 
@@ -159,22 +154,14 @@ export function SearchModal({
     );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-
-    // If focus escaped the modal, pull it back to the first element
-    if (!modalRef.current.contains(active)) {
-      e.preventDefault();
-      first?.focus();
-      return;
-    }
 
     if (e.shiftKey) {
-      if (active === first) {
+      if (document.activeElement === first) {
         e.preventDefault();
         last?.focus();
       }
     } else {
-      if (active === last) {
+      if (document.activeElement === last) {
         e.preventDefault();
         first?.focus();
       }

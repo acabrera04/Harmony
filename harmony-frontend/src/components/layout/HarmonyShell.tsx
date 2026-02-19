@@ -13,6 +13,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
 import { SearchModal } from "@/components/channel/SearchModal";
+import { mockCurrentUser } from "@/mocks";
 import { ChannelVisibility, ChannelType } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
 
@@ -36,11 +37,11 @@ function ServerPill({
   defaultChannelSlug: string;
   isActive: boolean;
 }) {
-  // #c17: filter empty words before taking initials
+  // #c17/#c22: filter empty words explicitly before taking initials
   const initials = server.name
     .split(" ")
+    .filter((w) => w.length > 0)
     .map((w) => w[0])
-    .filter(Boolean)
     .join("")
     .slice(0, 2)
     .toUpperCase();
@@ -109,6 +110,7 @@ function ServerList({
             c.serverId === server.id &&
             (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
         );
+        // #c26: "general" is an assumption — all current mock servers have this channel
         const defaultChannelSlug = defaultChannel?.slug ?? "general";
 
         return (
@@ -331,9 +333,15 @@ function groupMessages(messages: Message[]) {
     const msg = messages[i];
     const prev = messages[i - 1];
     const sameAuthor = prev && prev.author.id === msg.author.id;
+    // #c31: guard against invalid timestamps — NaN comparisons always return false,
+    // which would silently break grouping; we treat NaN as "not within time".
+    const msgTime = new Date(msg.timestamp).getTime();
+    const prevTime = prev ? new Date(prev.timestamp).getTime() : NaN;
     const withinTime =
       prev &&
-      new Date(msg.timestamp).getTime() - new Date(prev.timestamp).getTime() < 5 * 60 * 1000;
+      !isNaN(msgTime) &&
+      !isNaN(prevTime) &&
+      msgTime - prevTime < 5 * 60 * 1000;
 
     if (sameAuthor && withinTime) {
       groups[groups.length - 1].messages.push(msg);
@@ -410,11 +418,13 @@ function MessageArea({ channel, messages }: { channel: Channel; messages: Messag
       {/* Message input — #c2: read-only demo indicator */}
       <div className="flex-shrink-0 px-4 pb-6 pt-2">
         <div className="flex items-center gap-2 rounded-lg bg-[#40444b] px-4 py-3">
+          {/* #c28: aria-disabled is correct for a visually disabled field;
+               aria-readonly would imply the value is selectable/submittable */}
           <input
             type="text"
             placeholder={`Message #${channel.name} (read-only demo)`}
             title="Sending messages is disabled in this demo"
-            aria-readonly="true"
+            aria-disabled="true"
             className="flex-1 cursor-not-allowed bg-transparent text-sm text-[#dcddde] placeholder-gray-500 outline-none opacity-70"
             readOnly
           />
@@ -453,10 +463,13 @@ export function HarmonyShell({
 }: HarmonyShellProps) {
   const [isMembersOpen, setIsMembersOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const currentUser = members.find((m) => m.role === "owner") ?? members[0];
+  // #c24: use mockCurrentUser for consistency with the auth layer (authService also uses it)
+  const currentUser = mockCurrentUser;
 
-  // #c10: global Ctrl+K / Cmd+K listener to OPEN the search modal
+  // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
@@ -494,7 +507,8 @@ export function HarmonyShell({
           isMembersOpen={isMembersOpen}
           onMembersToggle={() => setIsMembersOpen((v) => !v)}
           onSearchOpen={() => setIsSearchOpen(true)}
-          onMenuToggle={() => {}}
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen((v) => !v)}
         />
 
         <div className="flex flex-1 overflow-hidden">

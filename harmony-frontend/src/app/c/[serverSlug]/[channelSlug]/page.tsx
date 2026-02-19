@@ -24,6 +24,8 @@ export default async function ChannelPage({ params }: PageProps) {
     .filter((m) => m.channelId === channel.id)
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
+  // #c30: isLoading is hardcoded false because mock data is resolved synchronously.
+  // When real async service calls are introduced, pass a proper loading/error state here.
   return (
     <VisibilityGuard visibility={channel.visibility} isLoading={false}>
       <HarmonyShell
