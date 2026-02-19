@@ -6,7 +6,7 @@
  */
 
 import { ChannelVisibility, type Channel } from "@/types";
-import { mockChannels } from "@/mocks";
+import { mockChannels, mockServers } from "@/mocks";
 
 // ─── Simulated delay ──────────────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ export async function getChannel(
   channelSlug: string
 ): Promise<Channel | null> {
   await delay();
-  const { mockServers } = await import("@/mocks");
+  // #c36: mockServers is now a static import at module scope — no dynamic import needed
   const server = mockServers.find((s) => s.slug === serverSlug);
   if (!server) return null;
   return (

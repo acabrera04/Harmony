@@ -146,8 +146,14 @@ export function VisibilityGuard({
     return <VisibilityLoading />;
   }
 
-  if (error || visibility === null) {
-    return <VisibilityError message={error ?? undefined} />;
+  // #c35: explicit errors go to VisibilityError; null visibility (still unknown)
+  // falls through to VisibilityLoading rather than showing "Channel not found".
+  if (error) {
+    return <VisibilityError message={error} />;
+  }
+
+  if (visibility === null) {
+    return <VisibilityLoading />;
   }
 
   if (visibility === ChannelVisibility.PRIVATE) {

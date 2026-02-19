@@ -267,7 +267,7 @@ export function SearchModal({
                 <ResultItem
                   key={message.id}
                   message={message}
-                  query={query}
+                  query={debouncedQuery}
                   onClick={handleResultClick}
                 />
               ))}

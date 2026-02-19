@@ -32,6 +32,7 @@ export default async function ChannelPage({ params }: PageProps) {
         servers={mockServers}
         currentServer={server}
         channels={serverChannels}
+        allChannels={mockChannels}
         currentChannel={channel}
         messages={messages}
         members={mockUsers}

@@ -162,11 +162,16 @@ function ChannelSidebar({
   channels,
   currentChannelId,
   currentUser,
+  isOpen,
+  onClose,
 }: {
   server: Server;
   channels: Channel[];
   currentChannelId: string;
   currentUser: User;
+  /** #c33: controls mobile visibility — desktop is always visible */
+  isOpen: boolean;
+  onClose: () => void;
 }) {
   const textChannels = channels.filter(
     (c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT
@@ -177,10 +182,26 @@ function ChannelSidebar({
   const userInitial = currentUser.username?.[0]?.toUpperCase() ?? "?";
 
   return (
-    <nav
-      aria-label="Channels"
-      className={cn("flex w-60 flex-shrink-0 flex-col overflow-hidden", BG.secondary)}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/40 sm:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <nav
+        aria-label="Channels"
+        className={cn(
+          "flex w-60 flex-shrink-0 flex-col overflow-hidden",
+          BG.secondary,
+          // Desktop: always visible in layout flow
+          // Mobile: hidden by default, fixed overlay from left when open
+          "hidden sm:flex",
+          isOpen && "fixed inset-y-0 left-[72px] z-30 flex sm:static sm:z-auto"
+        )}
+      >
       <div className="flex h-12 flex-shrink-0 items-center border-b border-black/20 px-4 font-semibold text-white shadow-sm">
         <span className="truncate">{server.name}</span>
         <svg className="ml-auto h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -254,6 +275,7 @@ function ChannelSidebar({
         </div>
       </div>
     </nav>
+    </>
   );
 }
 
@@ -447,7 +469,15 @@ function MessageArea({ channel, messages }: { channel: Channel; messages: Messag
 export interface HarmonyShellProps {
   servers: Server[];
   currentServer: Server;
+  /** Channels belonging to the current server — used by ChannelSidebar */
   channels: Channel[];
+  /**
+   * All channels across every server — used by ServerList to derive the
+   * correct default channel slug when navigating to another server.
+   * #c32: passing only serverChannels here caused other server icons to link
+   * to a non-existent route because their channels weren't in the list.
+   */
+  allChannels: Channel[];
   currentChannel: Channel;
   messages: Message[];
   members: User[];
@@ -457,6 +487,7 @@ export function HarmonyShell({
   servers,
   currentServer,
   channels,
+  allChannels,
   currentChannel,
   messages,
   members,
@@ -483,19 +514,21 @@ export function HarmonyShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#202225] font-sans">
-      {/* 1. Server list */}
+      {/* 1. Server list — uses allChannels (full set) to derive default slug per server */}
       <ServerList
         servers={servers}
-        allChannels={channels}
+        allChannels={allChannels}
         currentServerId={currentServer.id}
       />
 
-      {/* 2. Channel sidebar */}
+      {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
       <ChannelSidebar
         server={currentServer}
         channels={channels}
         currentChannelId={currentChannel.id}
         currentUser={currentUser}
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
       />
 
       {/* 3. Main column */}
