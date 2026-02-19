@@ -80,11 +80,14 @@ function IconButton({
   onClick,
   title,
   active,
+  ariaPressed,
   children,
 }: {
   onClick?: () => void;
   title: string;
   active?: boolean;
+  /** Set for toggle buttons so screen readers announce pressed state */
+  ariaPressed?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -92,6 +95,7 @@ function IconButton({
       onClick={onClick}
       title={title}
       aria-label={title}
+      aria-pressed={ariaPressed}
       className={cn(
         "rounded p-1.5 transition-colors",
         active
@@ -117,6 +121,8 @@ export interface TopBarProps {
   isMembersOpen?: boolean;
   /** Callback to toggle the members sidebar */
   onMembersToggle?: () => void;
+  /** Whether the channel sidebar drawer is currently open (mobile) */
+  isMenuOpen?: boolean;
   /** Callback to toggle the channel sidebar drawer (mobile) */
   onMenuToggle?: () => void;
   /** Callback fired when the search icon is clicked */
@@ -131,6 +137,7 @@ export function TopBar({
   userRole,
   isMembersOpen,
   onMembersToggle,
+  isMenuOpen,
   onMenuToggle,
   onSearchOpen,
   onPinsOpen,
@@ -144,6 +151,7 @@ export function TopBar({
       <button
         onClick={onMenuToggle}
         aria-label="Open channel list"
+        aria-expanded={isMenuOpen ?? false}
         className="rounded p-1.5 text-gray-400 hover:bg-white/10 hover:text-gray-200 sm:hidden"
       >
         <MenuIcon />
@@ -181,6 +189,7 @@ export function TopBar({
           onClick={onMembersToggle}
           title="Show member list"
           active={isMembersOpen}
+          ariaPressed={isMembersOpen}
         >
           <MembersIcon />
         </IconButton>

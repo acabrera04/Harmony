@@ -20,7 +20,7 @@ import { ChannelVisibility } from "@/types";
 
 function VisibilityLoading() {
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
+    <div className="flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8">
       <div className="flex flex-col items-center gap-3 text-gray-400">
         <svg
           className="h-8 w-8 animate-spin"
@@ -41,12 +41,12 @@ function VisibilityLoading() {
 
 function VisibilityError({ message }: { message?: string }) {
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
+    <div className="flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         {/* Icon */}
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f04747]/20">
           <svg
-            className="h-7 w-7 text-red-500"
+            className="h-7 w-7 text-red-400"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -58,15 +58,15 @@ function VisibilityError({ message }: { message?: string }) {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Channel not found</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-white">Channel not found</h2>
+          <p className="mt-1 text-sm text-gray-400">
             {message ?? "This channel doesn't exist or could not be loaded."}
           </p>
         </div>
 
         <Link
           href="/"
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
+          className="rounded-md bg-[#5865f2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4]"
         >
           Go home
         </Link>
@@ -79,12 +79,12 @@ function VisibilityError({ message }: { message?: string }) {
 
 function AccessDeniedPage() {
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
+    <div className="flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8">
       <div className="flex max-w-sm flex-col items-center gap-5 text-center">
         {/* Lock icon */}
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#40444b]">
           <svg
-            className="h-8 w-8 text-gray-500"
+            className="h-8 w-8 text-gray-300"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -97,8 +97,8 @@ function AccessDeniedPage() {
 
         {/* Copy */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">This channel is private</h2>
-          <p className="mt-2 text-sm text-gray-500">
+          <h2 className="text-xl font-semibold text-white">This channel is private</h2>
+          <p className="mt-2 text-sm text-gray-400">
             Sign up or log in to request access to this channel.
           </p>
         </div>
@@ -107,13 +107,13 @@ function AccessDeniedPage() {
         <div className="flex w-full flex-col gap-2">
           <Link
             href="/auth/register"
-            className="flex w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+            className="flex w-full items-center justify-center rounded-md bg-[#5865f2] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#4752c4]"
           >
             Create Account
           </Link>
           <Link
             href="/auth/login"
-            className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+            className="flex w-full items-center justify-center rounded-md border border-white/20 bg-[#40444b] px-4 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:bg-[#3d4148]"
           >
             Log In
           </Link>

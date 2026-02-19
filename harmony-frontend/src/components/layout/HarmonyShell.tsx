@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
@@ -17,39 +17,40 @@ import { ChannelVisibility, ChannelType } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
-// Matches tailwind.config.ts discord.* palette
 
 const BG = {
-  tertiary: "bg-[#202225]",   // server list
-  secondary: "bg-[#2f3136]",  // channel list / members sidebar
-  primary: "bg-[#36393f]",    // main chat
-  hover: "hover:bg-[#393c43]",
+  tertiary: "bg-[#202225]",
+  secondary: "bg-[#2f3136]",
+  primary: "bg-[#36393f]",
   active: "bg-[#3d4148]",
 };
 
-// ─── Server List (far-left 72px column) ──────────────────────────────────────
+// ─── Server List ──────────────────────────────────────────────────────────────
 
 function ServerPill({
   server,
+  defaultChannelSlug,
   isActive,
 }: {
   server: Server;
+  defaultChannelSlug: string;
   isActive: boolean;
 }) {
+  // #c17: filter empty words before taking initials
   const initials = server.name
     .split(" ")
     .map((w) => w[0])
+    .filter(Boolean)
     .join("")
     .slice(0, 2)
     .toUpperCase();
 
   return (
     <Link
-      href={`/c/${server.slug}/${server.slug === "harmony-hq" ? "general" : server.slug === "open-source-hub" ? "welcome" : "design-general"}`}
+      href={`/c/${server.slug}/${defaultChannelSlug}`}
       title={server.name}
       className="group relative flex items-center"
     >
-      {/* Active indicator pill */}
       <span
         className={cn(
           "absolute -left-1 w-1 rounded-r-full bg-white transition-all",
@@ -72,9 +73,11 @@ function ServerPill({
 
 function ServerList({
   servers,
+  allChannels,
   currentServerId,
 }: {
   servers: Server[];
+  allChannels: Channel[];   // #c9: used to derive first text channel per server
   currentServerId: string;
 }) {
   return (
@@ -85,7 +88,6 @@ function ServerList({
         BG.tertiary
       )}
     >
-      {/* Harmony logo / home button */}
       <Link
         href="/c/harmony-hq/general"
         className="group relative mb-2 flex items-center"
@@ -98,17 +100,26 @@ function ServerList({
         </div>
       </Link>
 
-      {/* Divider */}
       <div className="mx-auto h-0.5 w-8 rounded-full bg-[#36393f]" />
 
-      {/* Server icons */}
-      {servers.map((server) => (
-        <ServerPill
-          key={server.id}
-          server={server}
-          isActive={server.id === currentServerId}
-        />
-      ))}
+      {servers.map((server) => {
+        // #c9: dynamically pick the first text/announcement channel for the server
+        const defaultChannel = allChannels.find(
+          (c) =>
+            c.serverId === server.id &&
+            (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
+        );
+        const defaultChannelSlug = defaultChannel?.slug ?? "general";
+
+        return (
+          <ServerPill
+            key={server.id}
+            server={server}
+            defaultChannelSlug={defaultChannelSlug}
+            isActive={server.id === currentServerId}
+          />
+        );
+      })}
     </nav>
   );
 }
@@ -131,7 +142,6 @@ function ChannelIcon({ type }: { type: ChannelType }) {
       </svg>
     );
   }
-  // TEXT — hash
   return (
     <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
       <path d="M5.88657 21C5.57547 21 5.3399 20.7189 5.39427 20.4126L6.00001 17H2.59511C2.28449 17 2.04905 16.7198 2.10259 16.4138L2.27759 15.4138C2.31946 15.1746 2.52722 15 2.77011 15H6.35001L7.41001 9H4.00511C3.69449 9 3.45905 8.71977 3.51259 8.41381L3.68759 7.41381C3.72946 7.17456 3.93722 7 4.18011 7H7.76001L8.39677 3.41262C8.43914 3.17391 8.64664 3 8.88907 3H9.87344C10.1845 3 10.4201 3.28107 10.3657 3.58738L9.76001 7H15.76L16.3968 3.41262C16.4391 3.17391 16.6466 3 16.8891 3H17.8734C18.1845 3 18.4201 3.28107 18.3657 3.58738L17.76 7H21.1649C21.4755 7 21.711 7.28023 21.6574 7.58619L21.4824 8.58619C21.4406 8.82544 21.2328 9 20.9899 9H17.41L16.35 15H19.7549C20.0655 15 20.301 15.2802 20.2474 15.5862L20.0724 16.5862C20.0306 16.8254 19.8228 17 19.5799 17H16L15.3632 20.5874C15.3209 20.8261 15.1134 21 14.871 21H13.8866C13.5755 21 13.3399 20.7189 13.3943 20.4126L14 17H8.00001L7.36325 20.5874C7.32088 20.8261 7.11337 21 6.87094 21H5.88657ZM9.41001 9L8.35001 15H14.35L15.41 9H9.41001Z" />
@@ -139,9 +149,9 @@ function ChannelIcon({ type }: { type: ChannelType }) {
   );
 }
 
-const VISIBILITY_BADGE: Record<ChannelVisibility, { label: string; color: string } | null> = {
-  [ChannelVisibility.PRIVATE]: { label: "🔒", color: "text-gray-400" },
-  [ChannelVisibility.PUBLIC_NO_INDEX]: { label: "👁", color: "text-gray-400" },
+const VISIBILITY_BADGE: Record<ChannelVisibility, string | null> = {
+  [ChannelVisibility.PRIVATE]: "🔒",
+  [ChannelVisibility.PUBLIC_NO_INDEX]: "👁",
   [ChannelVisibility.PUBLIC_INDEXABLE]: null,
 };
 
@@ -156,15 +166,19 @@ function ChannelSidebar({
   currentChannelId: string;
   currentUser: User;
 }) {
-  const textChannels = channels.filter((c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT);
+  const textChannels = channels.filter(
+    (c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT
+  );
   const voiceChannels = channels.filter((c) => c.type === ChannelType.VOICE);
+
+  // #c3: safe initial for empty usernames
+  const userInitial = currentUser.username?.[0]?.toUpperCase() ?? "?";
 
   return (
     <nav
       aria-label="Channels"
       className={cn("flex w-60 flex-shrink-0 flex-col overflow-hidden", BG.secondary)}
     >
-      {/* Server name header */}
       <div className="flex h-12 flex-shrink-0 items-center border-b border-black/20 px-4 font-semibold text-white shadow-sm">
         <span className="truncate">{server.name}</span>
         <svg className="ml-auto h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -172,9 +186,7 @@ function ChannelSidebar({
         </svg>
       </div>
 
-      {/* Channel list */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        {/* Text / Announcement channels */}
         {textChannels.length > 0 && (
           <div className="mb-2">
             <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
@@ -196,14 +208,13 @@ function ChannelSidebar({
                 >
                   <ChannelIcon type={channel.type} />
                   <span className="flex-1 truncate">{channel.name}</span>
-                  {badge && <span className="text-xs opacity-60">{badge.label}</span>}
+                  {badge && <span className="text-xs opacity-60">{badge}</span>}
                 </Link>
               );
             })}
           </div>
         )}
 
-        {/* Voice channels */}
         {voiceChannels.length > 0 && (
           <div className="mb-2">
             <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
@@ -222,18 +233,13 @@ function ChannelSidebar({
         )}
       </div>
 
-      {/* Current user footer */}
       <div className={cn("flex h-14 flex-shrink-0 items-center gap-2 px-2", "bg-[#292b2f]")}>
         <div className="relative flex-shrink-0">
           {currentUser.avatar ? (
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.username}
-              className="h-8 w-8 rounded-full"
-            />
+            <img src={currentUser.avatar} alt={currentUser.username} className="h-8 w-8 rounded-full" />
           ) : (
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white">
-              {currentUser.username[0].toUpperCase()}
+              {userInitial}
             </div>
           )}
           <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 ring-2 ring-[#292b2f]" />
@@ -251,44 +257,61 @@ function ChannelSidebar({
 
 // ─── Message area ─────────────────────────────────────────────────────────────
 
-function MessageBubble({ message }: { message: Message }) {
+// #c5: showHeader=false hides avatar+author line for grouped messages
+function MessageBubble({ message, showHeader = true }: { message: Message; showHeader?: boolean }) {
+  // #c4: safe initial for empty usernames
+  const authorInitial = message.author.username?.charAt(0)?.toUpperCase() ?? "?";
+
+  if (!showHeader) {
+    // Compact follow-up line — no avatar, no author name
+    return (
+      <div className="group flex gap-4 px-4 py-0.5 hover:bg-white/[0.02]">
+        {/* Spacer aligns with the 40px avatar of the header row */}
+        <div className="w-10 flex-shrink-0 text-right">
+          <span className="invisible text-[10px] text-gray-500 group-hover:visible">
+            {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
+          {message.reactions && message.reactions.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {message.reactions.map((r, i) => (
+                <button key={i} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
+                  <span>{r.emoji}</span>
+                  <span>{r.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="group flex gap-4 px-4 py-0.5 hover:bg-white/[0.02]">
-      {/* Avatar */}
       <div className="mt-0.5 flex-shrink-0">
         {message.author.avatarUrl ? (
-          <img
-            src={message.author.avatarUrl}
-            alt={message.author.username}
-            className="h-10 w-10 rounded-full"
-          />
+          <img src={message.author.avatarUrl} alt={message.author.username} className="h-10 w-10 rounded-full" />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white">
-            {message.author.username[0].toUpperCase()}
+            {authorInitial}
           </div>
         )}
       </div>
-
-      {/* Body */}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className="font-medium text-white hover:underline cursor-pointer">
+          <span className="cursor-pointer font-medium text-white hover:underline">
             {message.author.displayName ?? message.author.username}
           </span>
-          <span className="text-[11px] text-gray-400">
-            {formatRelativeTime(message.timestamp)}
-          </span>
+          <span className="text-[11px] text-gray-400">{formatRelativeTime(message.timestamp)}</span>
         </div>
         <p className="mt-0.5 text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
-
-        {/* Reactions */}
         {message.reactions && message.reactions.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {message.reactions.map((r, i) => (
-              <button
-                key={i}
-                className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10"
-              >
+              <button key={i} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
                 <span>{r.emoji}</span>
                 <span>{r.count}</span>
               </button>
@@ -300,9 +323,8 @@ function MessageBubble({ message }: { message: Message }) {
   );
 }
 
-// Group consecutive messages by the same author (within 5 minutes)
 function groupMessages(messages: Message[]) {
-  type Group = { messages: Message[]; showHeader: boolean };
+  type Group = { messages: Message[] };
   const groups: Group[] = [];
 
   for (let i = 0; i < messages.length; i++) {
@@ -316,32 +338,41 @@ function groupMessages(messages: Message[]) {
     if (sameAuthor && withinTime) {
       groups[groups.length - 1].messages.push(msg);
     } else {
-      groups.push({ messages: [msg], showHeader: true });
+      groups.push({ messages: [msg] });
     }
   }
 
   return groups;
 }
 
-function MessageArea({
-  channel,
-  messages,
-}: {
-  channel: Channel;
-  messages: Message[];
-}) {
+function MessageArea({ channel, messages }: { channel: Channel; messages: Message[] }) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // #c7: only auto-scroll when already near the bottom
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom <= 100;
+  }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView();
+    if (isNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   const groups = groupMessages(messages);
 
   return (
     <div className={cn("flex flex-1 flex-col overflow-hidden", BG.primary)}>
-      {/* Scroll area */}
-      <div className="flex-1 overflow-y-auto py-4">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto py-4"
+        onScroll={handleScroll}
+      >
         {/* Channel intro header */}
         <div className="px-4 pb-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#40444b]">
@@ -350,9 +381,7 @@ function MessageArea({
             </svg>
           </div>
           <h2 className="mt-2 text-3xl font-bold text-white">Welcome to #{channel.name}!</h2>
-          {channel.topic && (
-            <p className="mt-1 text-sm text-gray-400">{channel.topic}</p>
-          )}
+          {channel.topic && <p className="mt-1 text-sm text-gray-400">{channel.topic}</p>}
           <div className="mt-1 text-xs text-gray-500">
             {channel.visibility === ChannelVisibility.PUBLIC_INDEXABLE && "🌐 Public · Indexed by search engines"}
             {channel.visibility === ChannelVisibility.PUBLIC_NO_INDEX && "👁 Public · Not indexed"}
@@ -360,33 +389,33 @@ function MessageArea({
           </div>
         </div>
 
-        {/* Messages */}
+        {/* Messages — #c5: pass showHeader=false for grouped follow-ups */}
         <div className="space-y-4">
           {groups.map((group, gi) => (
             <div key={gi}>
-              {group.messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
+              {group.messages.map((msg, mi) => (
+                <MessageBubble key={msg.id} message={msg} showHeader={mi === 0} />
               ))}
             </div>
           ))}
         </div>
 
         {messages.length === 0 && (
-          <p className="px-4 text-sm text-gray-500">
-            No messages yet — be the first to say something!
-          </p>
+          <p className="px-4 text-sm text-gray-500">No messages yet — be the first to say something!</p>
         )}
 
         <div ref={bottomRef} />
       </div>
 
-      {/* Message input */}
+      {/* Message input — #c2: read-only demo indicator */}
       <div className="flex-shrink-0 px-4 pb-6 pt-2">
         <div className="flex items-center gap-2 rounded-lg bg-[#40444b] px-4 py-3">
           <input
             type="text"
-            placeholder={`Message #${channel.name}`}
-            className="flex-1 bg-transparent text-sm text-[#dcddde] placeholder-gray-500 outline-none"
+            placeholder={`Message #${channel.name} (read-only demo)`}
+            title="Sending messages is disabled in this demo"
+            aria-readonly="true"
+            className="flex-1 cursor-not-allowed bg-transparent text-sm text-[#dcddde] placeholder-gray-500 outline-none opacity-70"
             readOnly
           />
           <button className="flex-shrink-0 text-gray-400 hover:text-gray-200" title="Emoji">
@@ -425,15 +454,30 @@ export function HarmonyShell({
   const [isMembersOpen, setIsMembersOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Mock current user — owner for demo so the gear icon shows
   const currentUser = members.find((m) => m.role === "owner") ?? members[0];
+
+  // #c10: global Ctrl+K / Cmd+K listener to OPEN the search modal
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen((v) => !v);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#202225] font-sans">
-      {/* 1. Server list — far left 72px */}
-      <ServerList servers={servers} currentServerId={currentServer.id} />
+      {/* 1. Server list */}
+      <ServerList
+        servers={servers}
+        allChannels={channels}
+        currentServerId={currentServer.id}
+      />
 
-      {/* 2. Channel sidebar — 240px */}
+      {/* 2. Channel sidebar */}
       <ChannelSidebar
         server={currentServer}
         channels={channels}
@@ -441,9 +485,8 @@ export function HarmonyShell({
         currentUser={currentUser}
       />
 
-      {/* 3. Main column — flex-1 */}
+      {/* 3. Main column */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* TopBar */}
         <TopBar
           channel={currentChannel}
           serverSlug={currentServer.slug}
@@ -454,11 +497,8 @@ export function HarmonyShell({
           onMenuToggle={() => {}}
         />
 
-        {/* Content row (messages + optional members) */}
         <div className="flex flex-1 overflow-hidden">
           <MessageArea channel={currentChannel} messages={messages} />
-
-          {/* 4. Members sidebar — 240px, toggleable */}
           <MembersSidebar
             members={members}
             isOpen={isMembersOpen}
@@ -467,7 +507,6 @@ export function HarmonyShell({
         </div>
       </div>
 
-      {/* Search modal overlay */}
       <SearchModal
         messages={messages}
         channelName={currentChannel.name}

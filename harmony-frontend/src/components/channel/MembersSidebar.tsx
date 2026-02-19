@@ -92,7 +92,7 @@ function MemberRow({ user }: { user: User }) {
           />
         ) : (
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-semibold text-white">
-            {user.username.charAt(0).toUpperCase()}
+            {user.username.charAt(0).toUpperCase() || "?"}
           </div>
         )}
         <span className="absolute -bottom-0.5 -right-0.5">

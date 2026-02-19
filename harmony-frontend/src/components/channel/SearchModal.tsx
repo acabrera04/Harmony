@@ -67,7 +67,7 @@ function ResultItem({
         />
       ) : (
         <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-gray-600">
-          {message.author.username.charAt(0).toUpperCase()}
+          {message.author.username.charAt(0).toUpperCase() || "?"}
         </div>
       )}
 
@@ -108,10 +108,17 @@ export function SearchModal({
   onResultSelect,
 }: SearchModalProps) {
   const [query, setQuery] = useState("");
+  // #c11: debounce search to avoid re-filtering on every keystroke
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const results = filterMessages(messages, query);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const results = filterMessages(messages, debouncedQuery);
 
   // Focus input when opening
   useEffect(() => {
@@ -143,6 +150,7 @@ export function SearchModal({
   }, [isOpen, onClose]);
 
   // Trap focus inside the modal
+  // #c13: also redirect focus into the modal if activeElement is currently outside
   const handleKeyDownModal = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== "Tab" || !modalRef.current) return;
 
@@ -151,14 +159,22 @@ export function SearchModal({
     );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+
+    // If focus escaped the modal, pull it back to the first element
+    if (!modalRef.current.contains(active)) {
+      e.preventDefault();
+      first?.focus();
+      return;
+    }
 
     if (e.shiftKey) {
-      if (document.activeElement === first) {
+      if (active === first) {
         e.preventDefault();
         last?.focus();
       }
     } else {
-      if (document.activeElement === last) {
+      if (active === last) {
         e.preventDefault();
         first?.focus();
       }
@@ -247,10 +263,10 @@ export function SearchModal({
             </p>
           )}
 
-          {/* No results */}
-          {query && results.length === 0 && (
+          {/* No results — uses debouncedQuery so it only appears after debounce settles */}
+          {debouncedQuery && results.length === 0 && (
             <p className="text-center text-sm text-gray-400">
-              No results found for &ldquo;{query}&rdquo;
+              No results found for &ldquo;{debouncedQuery}&rdquo;
             </p>
           )}
 
