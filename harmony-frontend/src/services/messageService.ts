@@ -1,18 +1,10 @@
 /**
  * Message Service (M3 — mock implementation)
- * Simulates async API calls with 200–500ms delay.
  * References: dev-spec-guest-public-channel-view.md
  */
 
 import type { Message } from "@/types";
 import { mockMessages, mockCurrentUser } from "@/mocks";
-
-// ─── Simulated delay ──────────────────────────────────────────────────────────
-
-function delay(ms?: number): Promise<void> {
-  const wait = ms ?? Math.floor(Math.random() * 301) + 200; // 200–500ms
-  return new Promise((resolve) => setTimeout(resolve, wait));
-}
 
 // ─── In-memory store ──────────────────────────────────────────────────────────
 
@@ -30,7 +22,6 @@ export async function getMessages(
   channelId: string,
   page = 1
 ): Promise<{ messages: Message[]; hasMore: boolean }> {
-  await delay();
   const channelMessages = messages
     .filter((m) => m.channelId === channelId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -52,7 +43,6 @@ export async function sendMessage(
   channelId: string,
   content: string
 ): Promise<Message> {
-  await delay();
   const newMessage: Message = {
     id: `msg-${Date.now()}`,
     channelId,
@@ -74,7 +64,6 @@ export async function sendMessage(
  * Deletes a message by ID. Returns true if deleted, false if not found.
  */
 export async function deleteMessage(id: string): Promise<boolean> {
-  await delay();
   const index = messages.findIndex((m) => m.id === id);
   if (index === -1) return false;
   messages.splice(index, 1);
