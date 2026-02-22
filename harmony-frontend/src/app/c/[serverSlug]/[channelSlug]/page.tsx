@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
-import { mockServers } from "@/mocks/servers";
-import { mockChannels } from "@/mocks/channels";
-import { mockMessages } from "@/mocks/messages";
-import { mockUsers } from "@/mocks/users";
+import { getServers, getServerMembers } from "@/services/serverService";
+import { getChannels } from "@/services/channelService";
+import { getMessages } from "@/services/messageService";
 import { HarmonyShell } from "@/components/layout/HarmonyShell";
 import { VisibilityGuard } from "@/components/channel/VisibilityGuard";
 
@@ -13,29 +12,35 @@ interface PageProps {
 export default async function ChannelPage({ params }: PageProps) {
   const { serverSlug, channelSlug } = await params;
 
-  const server = mockServers.find((s) => s.slug === serverSlug);
+  const servers = await getServers();
+  const server = servers.find((s) => s.slug === serverSlug);
   if (!server) notFound();
 
-  const serverChannels = mockChannels.filter((c) => c.serverId === server.id);
+  const serverChannels = await getChannels(server.id);
   const channel = serverChannels.find((c) => c.slug === channelSlug);
   if (!channel) notFound();
 
-  const messages = mockMessages
-    .filter((m) => m.channelId === channel.id)
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  // Gather all channels across servers for cross-server navigation
+  const allChannels = (
+    await Promise.all(servers.map((s) => getChannels(s.id)))
+  ).flat();
 
-  // #c30: isLoading is hardcoded false because mock data is resolved synchronously.
-  // When real async service calls are introduced, pass a proper loading/error state here.
+  // Service returns newest-first; reverse for chronological display
+  const { messages } = await getMessages(channel.id);
+  const sortedMessages = [...messages].reverse();
+
+  const members = await getServerMembers(server.id);
+
   return (
     <VisibilityGuard visibility={channel.visibility} isLoading={false}>
       <HarmonyShell
-        servers={mockServers}
+        servers={servers}
         currentServer={server}
         channels={serverChannels}
-        allChannels={mockChannels}
+        allChannels={allChannels}
         currentChannel={channel}
-        messages={messages}
-        members={mockUsers}
+        messages={sortedMessages}
+        members={members}
       />
     </VisibilityGuard>
   );
