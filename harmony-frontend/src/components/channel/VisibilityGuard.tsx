@@ -122,7 +122,7 @@ function AccessDeniedPage() {
           </Link>
           <button
             onClick={() => router.back()}
-            className="flex w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:text-gray-200"
+            className="flex w-full cursor-pointer items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium text-gray-400 transition-colors hover:text-gray-200"
           >
             Go Back
           </button>
