@@ -17,7 +17,7 @@ Design a Figma page titled "📱 Mobile Screens" for Harmony's channel visibilit
   Frame M2 "Mobile — Bottom Sheet (Default, INDEXED)":
   Channel view at 40% opacity as background. rgba(0,0,0,0.70) overlay. Bottom sheet slides up from bottom: bg
   #2f3136, border-radius 12px 12px 0 0, full width, height ~730px (90% of 812). Top of sheet: drag handle (4px ×
-  32px, bg #40444b, centered, margin-top 8px). ✕ close button top-right (44×44px, ✕ 20px #72767d). Title "# general
+  32px, bg #40444b, centered, margin-top 8px). ✕ close button top-right (44×44px, ✕ 20px #72767d). Title "#general
    Settings" (16px weight 600 #dcddde) margin-top 8px, left-padded 16px. Divider. Accordion list (each row height
   44px, flex space-between, padding 0 16px, border-bottom 1px rgba(255,255,255,0.06), 14px weight 600 #b9bbbe,
   chevron right icon 16px #72767d): "Overview" | "Permissions" | "Visibility" [chevron points DOWN, expanded —

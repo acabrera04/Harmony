@@ -17,7 +17,7 @@ Design a Figma component library page for Harmony, a Discord-like dark-mode chat
   MD size (height 24px, padding 4px 10px, font 13px weight 600 uppercase): same three variants at larger size.
 
   --- Group 2: VisibilityRadioGroup ---
-  Three variants stacked vertically (show all three side by side). Each variant is a set of three option cards (full width 480px, stacked, 8px gap). Each
+  Three variants shown side by side. Each variant is a set of three option cards (full width 480px, stacked, 8px gap). Each
   card: height 80px, border 2px, border-radius 8px, padding 16px, horizontal flex row with: radio dot (20px) | icon (20px) | label+description column
   (flex-grow) | badge (right, md size).
 
