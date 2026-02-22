@@ -99,7 +99,7 @@ Design a Figma page titled "📐 Responsive & Accessibility" for Harmony's chann
   Frame A3 "Accessibility — Mobile Touch Targets" (600 × 900px):
   Show the mobile bottom sheet (M2) at full size. Purple annotations:
 
-  - Purple dashed red 44×44px boxes overlaid on each tappable element:
+  - Purple dashed 44×44px boxes overlaid on each tappable element:
     - ✕ close button: label "44×44px minimum touch target"
     - Gear ⚙ in header: label "44×44px — icon may be 22px visually but hit area is 44×44"
     - Each accordion section row: label "44px height — full-width tap area"

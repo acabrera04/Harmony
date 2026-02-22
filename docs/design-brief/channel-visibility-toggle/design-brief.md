@@ -256,7 +256,7 @@ On hover of a channel row:
 - Header: "Visibility & Indexing" (`text-lg`, `text-primary`)
 - Sub-header: "Control who can see this channel and whether search engines can index it." (`text-sm`, `text-muted`)
 - Divider (`border-subtle`)
-- **VisibilityRadioGroup component** (see Component 3 below)
+- **VisibilityRadioGroup component** (see VisibilityRadioGroup in the Component Library below)
 - Divider
 - **Changes toolbar** (only visible after a selection change):
   - Left-aligned text: "Careful — you have unsaved changes" (`text-sm`, `warning`)
@@ -285,7 +285,7 @@ User has clicked a different visibility option but not yet saved:
 #### State 2E — Save Success
 
 - Confirmation modal OR inline:
-  - If transitioning to `PUBLIC_INDEXABLE` or from `PUBLIC_INDEXABLE` to `PRIVATE`: **Confirmation Modal** fires BEFORE save (see Screen 3)
+  - If transitioning from `PUBLIC_INDEXABLE` to `PRIVATE` or `PUBLIC_NO_INDEX`: **Confirmation Modal** fires BEFORE save (see Screen 3)
   - If transitioning between `PRIVATE` ↔ `PUBLIC_NO_INDEX`: **No confirmation required**, proceeds directly to save
 - After confirmed save:
   - Toast notification slides in from bottom-right (see Component 6 — Toast)
@@ -908,10 +908,12 @@ Annotate the following keyboard interactions:
 | Open channel settings | Enter or Space on gear icon | Opens settings panel |
 | Navigate radio options | ↑ / ↓ arrow keys | Moves focus between option cards |
 | Select radio option | Space or Enter | Selects focused option |
-| Close modal | Escape | Dismisses modal, returns focus to trigger |
-| Close bottom sheet (mobile) | Escape | Dismisses sheet |
+| Close modal | Escape | When not submitting (not in State 3C), dismisses modal and returns focus to trigger |
+| Close bottom sheet (mobile) | Escape | When not submitting (not in State 3C), dismisses sheet |
 | Dismiss toast | Escape or click ✕ | Closes toast |
 | Focus trap in modal | Tab / Shift+Tab | Cycles within modal only |
+
+**Note:** During **State 3C — Modal Loading** (submission in progress), the modal/bottom sheet is non-dismissible: Escape keypresses and backdrop clicks are ignored until the request completes or errors.
 
 ### 7.5 Motion and Animation
 
