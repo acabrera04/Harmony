@@ -4,7 +4,7 @@
  */
 
 import type { User } from "@/types";
-import { mockCurrentUser } from "@/mocks";
+import { mockUsers } from "@/mocks";
 
 // ─── In-memory auth state ─────────────────────────────────────────────────────
 
@@ -20,12 +20,17 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 /**
- * Simulates login — returns the mock current user on success.
- * @param _username - Ignored in mock; any credentials succeed.
- * @param _password - Ignored in mock; any credentials succeed.
+ * Simulates login — validates username against mock users.
+ * Accepts any password (mock) but requires a valid username.
  */
-export async function login(_username: string, _password: string): Promise<User> {
-  currentUser = { ...mockCurrentUser };
+export async function login(username: string, _password: string): Promise<User> {
+  const matched = mockUsers.find(
+    (u) => u.username.toLowerCase() === username.toLowerCase()
+  );
+  if (!matched) {
+    throw new Error("Invalid username");
+  }
+  currentUser = { ...matched };
   return { ...currentUser };
 }
 

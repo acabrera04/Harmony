@@ -13,7 +13,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
 import { SearchModal } from "@/components/channel/SearchModal";
-import { mockCurrentUser } from "@/mocks";
+import { useAuth } from "@/hooks/useAuth";
 import { ChannelVisibility, ChannelType } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
 
@@ -499,8 +499,16 @@ export function HarmonyShell({
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // #c24: use mockCurrentUser for consistency with the auth layer (authService also uses it)
-  const currentUser = mockCurrentUser;
+  const { user: authUser } = useAuth();
+
+  // Fallback for guest/unauthenticated view
+  const currentUser: User = authUser ?? {
+    id: "guest",
+    username: "Guest",
+    displayName: "Guest",
+    status: "online",
+    role: "guest",
+  };
 
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {
