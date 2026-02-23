@@ -13,7 +13,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
 import { SearchModal } from "@/components/channel/SearchModal";
-import { mockCurrentUser } from "@/mocks";
+import { useAuth } from "@/hooks/useAuth";
 import { ChannelVisibility, ChannelType } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
 
@@ -164,6 +164,8 @@ function ChannelSidebar({
   currentUser,
   isOpen,
   onClose,
+  isAuthenticated,
+  onLogout,
 }: {
   server: Server;
   channels: Channel[];
@@ -172,6 +174,8 @@ function ChannelSidebar({
   /** #c33: controls mobile visibility — desktop is always visible */
   isOpen: boolean;
   onClose: () => void;
+  isAuthenticated: boolean;
+  onLogout: () => void;
 }) {
   const textChannels = channels.filter(
     (c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT
@@ -273,6 +277,25 @@ function ChannelSidebar({
           </p>
           <p className="truncate text-xs text-gray-400">#{currentUser.username}</p>
         </div>
+        {isAuthenticated ? (
+          <button
+            onClick={onLogout}
+            title="Log out"
+            className="flex-shrink-0 rounded p-1.5 text-gray-400 hover:bg-[#3a3c41] hover:text-white"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clipRule="evenodd" />
+            </svg>
+          </button>
+        ) : (
+          <Link
+            href="/auth/login"
+            className="flex-shrink-0 rounded bg-[#5865f2] px-2 py-1 text-xs font-medium text-white hover:bg-[#4752c4]"
+          >
+            Log In
+          </Link>
+        )}
       </div>
     </nav>
     </>
@@ -499,8 +522,16 @@ export function HarmonyShell({
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // #c24: use mockCurrentUser for consistency with the auth layer (authService also uses it)
-  const currentUser = mockCurrentUser;
+  const { user: authUser, logout, isAuthenticated } = useAuth();
+
+  // Fallback for guest/unauthenticated view
+  const currentUser: User = authUser ?? {
+    id: "guest",
+    username: "Guest",
+    displayName: "Guest",
+    status: "online",
+    role: "guest",
+  };
 
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {
@@ -531,6 +562,10 @@ export function HarmonyShell({
         currentUser={currentUser}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        onLogout={async () => {
+          await logout();
+        }}
       />
 
       {/* 3. Main column */}
