@@ -10,8 +10,6 @@ import { mockUsers } from "@/mocks";
 
 let currentUser: User | null = null;
 
-const MOCK_PASSWORD = "password";
-
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 /**
@@ -23,14 +21,14 @@ export async function getCurrentUser(): Promise<User | null> {
 
 /**
  * Simulates login — validates username against mock users.
- * Accepts the mock password "password" for any valid user.
+ * Any password is accepted for demo purposes.
  */
-export async function login(username: string, password: string): Promise<User> {
+export async function login(username: string, _password: string): Promise<User> {
   const matched = mockUsers.find(
     (u) => u.username.toLowerCase() === username.toLowerCase()
   );
-  if (!matched || password !== MOCK_PASSWORD) {
-    throw new Error("Invalid username or password");
+  if (!matched) {
+    throw new Error("Invalid username");
   }
   currentUser = { ...matched };
   return { ...currentUser };
