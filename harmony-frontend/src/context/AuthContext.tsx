@@ -20,9 +20,21 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ─── Storage key ──────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const AUTH_STORAGE_KEY = "harmony_auth_user";
+
+/** Runtime check that parsed JSON has the required User shape. */
+function isValidUser(value: unknown): value is User {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.id === "string" &&
+    typeof obj.username === "string" &&
+    typeof obj.status === "string" &&
+    typeof obj.role === "string"
+  );
+}
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -30,13 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore persisted auth state on mount
+  // Restore persisted auth state on mount and sync authService
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        const parsed: User = JSON.parse(stored);
-        setUser(parsed);
+        const parsed: unknown = JSON.parse(stored);
+        if (isValidUser(parsed)) {
+          setUser(parsed);
+          authService.setCurrentUser(parsed);
+        } else {
+          sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        }
       }
     } catch {
       sessionStorage.removeItem(AUTH_STORAGE_KEY);

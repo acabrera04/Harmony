@@ -10,6 +10,8 @@ import { mockUsers } from "@/mocks";
 
 let currentUser: User | null = null;
 
+const MOCK_PASSWORD = "password";
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 /**
@@ -21,17 +23,24 @@ export async function getCurrentUser(): Promise<User | null> {
 
 /**
  * Simulates login — validates username against mock users.
- * Accepts any password (mock) but requires a valid username.
+ * Accepts the mock password "password" for any valid user.
  */
-export async function login(username: string, _password: string): Promise<User> {
+export async function login(username: string, password: string): Promise<User> {
   const matched = mockUsers.find(
     (u) => u.username.toLowerCase() === username.toLowerCase()
   );
-  if (!matched) {
-    throw new Error("Invalid username");
+  if (!matched || password !== MOCK_PASSWORD) {
+    throw new Error("Invalid username or password");
   }
   currentUser = { ...matched };
   return { ...currentUser };
+}
+
+/**
+ * Restores the in-memory auth state (used after sessionStorage restore).
+ */
+export function setCurrentUser(user: User | null): void {
+  currentUser = user ? { ...user } : null;
 }
 
 /**
