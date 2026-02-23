@@ -8,9 +8,11 @@ import { VisibilityGuard } from "@/components/channel/VisibilityGuard";
 interface ChannelPageContentProps {
   serverSlug: string;
   channelSlug: string;
+  /** When true, wraps content in VisibilityGuard to deny guest access to PRIVATE channels. */
+  isGuestView?: boolean;
 }
 
-export async function ChannelPageContent({ serverSlug, channelSlug }: ChannelPageContentProps) {
+export async function ChannelPageContent({ serverSlug, channelSlug, isGuestView = false }: ChannelPageContentProps) {
   const servers = await getServers();
   const server = servers.find((s) => s.slug === serverSlug);
   if (!server) notFound();
@@ -30,17 +32,25 @@ export async function ChannelPageContent({ serverSlug, channelSlug }: ChannelPag
 
   const members = await getServerMembers(server.id);
 
-  return (
-    <VisibilityGuard visibility={channel.visibility} isLoading={false}>
-      <HarmonyShell
-        servers={servers}
-        currentServer={server}
-        channels={serverChannels}
-        allChannels={allChannels}
-        currentChannel={channel}
-        messages={sortedMessages}
-        members={members}
-      />
-    </VisibilityGuard>
+  const shell = (
+    <HarmonyShell
+      servers={servers}
+      currentServer={server}
+      channels={serverChannels}
+      allChannels={allChannels}
+      currentChannel={channel}
+      messages={sortedMessages}
+      members={members}
+    />
   );
+
+  if (isGuestView) {
+    return (
+      <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+        {shell}
+      </VisibilityGuard>
+    );
+  }
+
+  return shell;
 }
