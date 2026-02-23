@@ -25,7 +25,10 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 const AUTH_STORAGE_KEY = "harmony_auth_user";
 
-/** Runtime check that parsed JSON has the required User shape. */
+const VALID_STATUSES = ["online", "idle", "dnd", "offline"];
+const VALID_ROLES = ["owner", "admin", "moderator", "member", "guest"];
+
+/** Runtime check that parsed JSON has the required User shape and valid enum values. */
 function isValidUser(value: unknown): value is User {
   if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
@@ -33,7 +36,9 @@ function isValidUser(value: unknown): value is User {
     typeof obj.id === "string" &&
     typeof obj.username === "string" &&
     typeof obj.status === "string" &&
-    typeof obj.role === "string"
+    VALID_STATUSES.includes(obj.status) &&
+    typeof obj.role === "string" &&
+    VALID_ROLES.includes(obj.role)
   );
 }
 

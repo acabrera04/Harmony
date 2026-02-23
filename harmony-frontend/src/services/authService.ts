@@ -10,6 +10,42 @@ import { mockUsers } from "@/mocks";
 
 let currentUser: User | null = null;
 
+// ─── Registered users persistence ─────────────────────────────────────────────
+
+const REGISTERED_USERS_KEY = "harmony_registered_users";
+
+function loadRegisteredUsers(): void {
+  try {
+    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
+    if (stored) {
+      const users: User[] = JSON.parse(stored);
+      for (const u of users) {
+        if (!mockUsers.some((m) => m.id === u.id)) {
+          mockUsers.push(u);
+        }
+      }
+    }
+  } catch {
+    sessionStorage.removeItem(REGISTERED_USERS_KEY);
+  }
+}
+
+function saveRegisteredUser(user: User): void {
+  try {
+    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
+    const users: User[] = stored ? JSON.parse(stored) : [];
+    users.push(user);
+    sessionStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+  } catch {
+    // Storage full or unavailable — user won't persist across refresh
+  }
+}
+
+// Restore registered users on module load
+if (typeof window !== "undefined") {
+  loadRegisteredUsers();
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 /**
@@ -81,6 +117,7 @@ export async function register(
   };
 
   mockUsers.push(newUser);
+  saveRegisteredUser(newUser);
   currentUser = { ...newUser };
   return { ...currentUser };
 }
