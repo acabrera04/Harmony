@@ -8,7 +8,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
@@ -524,7 +523,6 @@ export function HarmonyShell({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { user: authUser, logout, isAuthenticated } = useAuth();
-  const router = useRouter();
 
   // Fallback for guest/unauthenticated view
   const currentUser: User = authUser ?? {
@@ -567,7 +565,6 @@ export function HarmonyShell({
         isAuthenticated={isAuthenticated}
         onLogout={async () => {
           await logout();
-          router.push("/auth/login");
         }}
       />
 
