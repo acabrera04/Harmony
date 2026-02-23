@@ -12,6 +12,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, displayName: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
 }
@@ -68,6 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedInUser));
   }, []);
 
+  const register = useCallback(async (username: string, displayName: string, password: string) => {
+    const newUser = await authService.register(username, displayName, password);
+    setUser(newUser);
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
+  }, []);
+
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
@@ -83,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: user !== null,
     isLoading,
     login,
+    register,
     logout,
     isAdmin,
   };

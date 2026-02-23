@@ -54,3 +54,33 @@ export async function logout(): Promise<void> {
 export async function isAuthenticated(): Promise<boolean> {
   return currentUser !== null;
 }
+
+/**
+ * Simulates account creation — adds a new user to mock data and logs them in.
+ * Rejects duplicate usernames.
+ */
+export async function register(
+  username: string,
+  displayName: string,
+  _password: string
+): Promise<User> {
+  const exists = mockUsers.some(
+    (u) => u.username.toLowerCase() === username.toLowerCase()
+  );
+  if (exists) {
+    throw new Error("Username already taken");
+  }
+
+  const newUser: User = {
+    id: `user-${Date.now()}`,
+    username,
+    displayName,
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+    status: "online",
+    role: "member",
+  };
+
+  mockUsers.push(newUser);
+  currentUser = { ...newUser };
+  return { ...currentUser };
+}

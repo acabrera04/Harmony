@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -19,10 +20,10 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(username, password);
+      await register(username, displayName || username, password);
       router.push("/c/harmony-hq/general");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -32,11 +33,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-discord-primary">
       <div className="w-full max-w-md rounded-lg bg-discord-secondary p-8 shadow-lg">
         <h1 className="mb-2 text-center text-2xl font-bold text-white">
-          Welcome back!
+          Create an account
         </h1>
-        <p className="mb-6 text-center text-sm text-discord-muted">
-          We&apos;re so excited to see you again!
-        </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -44,7 +42,7 @@ export default function LoginPage() {
               htmlFor="username"
               className="mb-2 block text-xs font-bold uppercase text-discord-muted"
             >
-              Username
+              Username <span className="text-red-400">*</span>
             </label>
             <input
               id="username"
@@ -53,7 +51,25 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
-              placeholder="Enter your username"
+              placeholder="Choose a username"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="displayName"
+              className="mb-2 block text-xs font-bold uppercase text-discord-muted"
+            >
+              Display Name
+            </label>
+            <input
+              id="displayName"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
+              placeholder="How others see you"
               disabled={isSubmitting}
             />
           </div>
@@ -63,7 +79,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="mb-2 block text-xs font-bold uppercase text-discord-muted"
             >
-              Password
+              Password <span className="text-red-400">*</span>
             </label>
             <input
               id="password"
@@ -72,7 +88,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
-              placeholder="Enter your password"
+              placeholder="Create a password"
               disabled={isSubmitting}
             />
           </div>
@@ -88,16 +104,16 @@ export default function LoginPage() {
             disabled={isSubmitting}
             className="w-full rounded bg-discord-accent py-2.5 font-medium text-white transition-colors hover:bg-discord-accent/80 disabled:opacity-50"
           >
-            {isSubmitting ? "Logging in..." : "Log In"}
+            {isSubmitting ? "Creating account..." : "Continue"}
           </button>
 
           <p className="text-sm text-discord-muted">
-            Need an account?{" "}
+            Already have an account?{" "}
             <Link
-              href="/auth/signup"
+              href="/auth/login"
               className="text-discord-link hover:underline"
             >
-              Register
+              Log In
             </Link>
           </p>
         </form>
