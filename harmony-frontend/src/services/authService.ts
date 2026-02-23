@@ -14,13 +14,31 @@ let currentUser: User | null = null;
 
 const REGISTERED_USERS_KEY = "harmony_registered_users";
 
+const VALID_STATUSES = ["online", "idle", "dnd", "offline"];
+const VALID_ROLES = ["owner", "admin", "moderator", "member", "guest"];
+
+/** Runtime check that parsed JSON has the required User shape and valid enum values. */
+function isValidUser(value: unknown): value is User {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.id === "string" &&
+    typeof obj.username === "string" &&
+    typeof obj.status === "string" &&
+    VALID_STATUSES.includes(obj.status) &&
+    typeof obj.role === "string" &&
+    VALID_ROLES.includes(obj.role)
+  );
+}
+
 function loadRegisteredUsers(): void {
   try {
     const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
     if (stored) {
-      const users: User[] = JSON.parse(stored);
-      for (const u of users) {
-        if (!mockUsers.some((m) => m.id === u.id)) {
+      const parsed: unknown[] = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return;
+      for (const u of parsed) {
+        if (isValidUser(u) && !mockUsers.some((m) => m.id === u.id)) {
           mockUsers.push(u);
         }
       }
