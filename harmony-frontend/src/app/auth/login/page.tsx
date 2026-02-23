@@ -29,12 +29,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-discord-primary">
-      <div className="w-full max-w-md rounded-lg bg-discord-secondary p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-discord-bg-primary">
+      <div className="w-full max-w-md rounded-lg bg-discord-bg-secondary p-8 shadow-lg">
         <h1 className="mb-2 text-center text-2xl font-bold text-white">
           Welcome back!
         </h1>
-        <p className="mb-6 text-center text-sm text-discord-muted">
+        <p className="mb-6 text-center text-sm text-discord-text-muted">
           We&apos;re so excited to see you again!
         </p>
 
@@ -42,7 +42,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="username"
-              className="mb-2 block text-xs font-bold uppercase text-discord-muted"
+              className="mb-2 block text-xs font-bold uppercase text-discord-text-muted"
             >
               Username
             </label>
@@ -52,7 +52,7 @@ export default function LoginPage() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
+              className="w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent"
               placeholder="Enter your username"
               disabled={isSubmitting}
             />
@@ -61,7 +61,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-xs font-bold uppercase text-discord-muted"
+              className="mb-2 block text-xs font-bold uppercase text-discord-text-muted"
             >
               Password
             </label>
@@ -71,7 +71,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
+              className="w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent"
               placeholder="Enter your password"
               disabled={isSubmitting}
             />
@@ -91,11 +91,11 @@ export default function LoginPage() {
             {isSubmitting ? "Logging in..." : "Log In"}
           </button>
 
-          <p className="text-sm text-discord-muted">
+          <p className="text-sm text-discord-text-muted">
             Need an account?{" "}
             <Link
               href="/auth/signup"
-              className="text-discord-link hover:underline"
+              className="text-discord-accent hover:underline"
             >
               Register
             </Link>

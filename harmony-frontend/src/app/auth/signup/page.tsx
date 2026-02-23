@@ -30,8 +30,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-discord-primary">
-      <div className="w-full max-w-md rounded-lg bg-discord-secondary p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-discord-bg-primary">
+      <div className="w-full max-w-md rounded-lg bg-discord-bg-secondary p-8 shadow-lg">
         <h1 className="mb-2 text-center text-2xl font-bold text-white">
           Create an account
         </h1>
@@ -40,7 +40,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="username"
-              className="mb-2 block text-xs font-bold uppercase text-discord-muted"
+              className="mb-2 block text-xs font-bold uppercase text-discord-text-muted"
             >
               Username <span className="text-red-400">*</span>
             </label>
@@ -50,7 +50,7 @@ export default function SignupPage() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
+              className="w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent"
               placeholder="Choose a username"
               disabled={isSubmitting}
             />
@@ -59,7 +59,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="displayName"
-              className="mb-2 block text-xs font-bold uppercase text-discord-muted"
+              className="mb-2 block text-xs font-bold uppercase text-discord-text-muted"
             >
               Display Name
             </label>
@@ -68,7 +68,7 @@ export default function SignupPage() {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
+              className="w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent"
               placeholder="How others see you"
               disabled={isSubmitting}
             />
@@ -77,7 +77,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-xs font-bold uppercase text-discord-muted"
+              className="mb-2 block text-xs font-bold uppercase text-discord-text-muted"
             >
               Password <span className="text-red-400">*</span>
             </label>
@@ -87,7 +87,7 @@ export default function SignupPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded bg-discord-tertiary p-2.5 text-white placeholder-discord-muted outline-none focus:ring-2 focus:ring-discord-accent"
+              className="w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent"
               placeholder="Create a password"
               disabled={isSubmitting}
             />
@@ -107,11 +107,11 @@ export default function SignupPage() {
             {isSubmitting ? "Creating account..." : "Continue"}
           </button>
 
-          <p className="text-sm text-discord-muted">
+          <p className="text-sm text-discord-text-muted">
             Already have an account?{" "}
             <Link
               href="/auth/login"
-              className="text-discord-link hover:underline"
+              className="text-discord-accent hover:underline"
             >
               Log In
             </Link>
