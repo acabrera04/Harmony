@@ -152,7 +152,7 @@ export function VisibilityGuard({
   error,
   children,
 }: VisibilityGuardProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   if (isLoading) {
     return <VisibilityLoading />;
@@ -165,6 +165,11 @@ export function VisibilityGuard({
   }
 
   if (visibility === null) {
+    return <VisibilityLoading />;
+  }
+
+  // Wait for auth state to be restored before deciding on private channel access
+  if (visibility === ChannelVisibility.PRIVATE && isAuthLoading) {
     return <VisibilityLoading />;
   }
 
