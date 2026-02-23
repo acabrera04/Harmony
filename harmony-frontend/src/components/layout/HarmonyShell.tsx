@@ -105,11 +105,13 @@ function ServerList({
 
       {servers.map((server) => {
         // #c9: dynamically pick the first text/announcement channel for the server
-        const defaultChannel = allChannels.find(
-          (c) =>
-            c.serverId === server.id &&
-            (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
-        );
+        const defaultChannel = allChannels
+          .filter(
+            (c) =>
+              c.serverId === server.id &&
+              (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
+          )
+          .sort((a, b) => a.position - b.position)[0];
         // #c26: "general" is an assumption — all current mock servers have this channel
         const defaultChannelSlug = defaultChannel?.slug ?? "general";
 
