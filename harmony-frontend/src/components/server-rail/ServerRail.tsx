@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -28,10 +28,13 @@ function ServerPill({
   isActive: boolean;
   basePath: string;
 }) {
-  // Tracks whether the server icon image failed to load. State resets
-  // automatically when server.icon changes because the parent keys this
-  // component by `${server.id}-${server.icon}` (see ServerRail render).
   const [iconError, setIconError] = useState(false);
+
+  // Reset error flag when the icon URL changes so a new URL is always attempted.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIconError(false);
+  }, [server.icon]);
 
   const initials = server.name
     .split(" ")
@@ -146,7 +149,7 @@ export function ServerRail({
         const defaultChannelSlug = defaultChannelByServer.get(server.id) ?? "general";
         return (
           <ServerPill
-            key={`${server.id}-${server.icon ?? ''}`}
+            key={server.id}
             server={server}
             defaultChannelSlug={defaultChannelSlug}
             isActive={server.id === currentServerId}
