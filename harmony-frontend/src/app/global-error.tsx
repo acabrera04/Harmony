@@ -8,7 +8,7 @@
  * Issue #36 — Build 404 and error pages
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface ServerErrorPageProps {
   error: Error & { digest?: string };
@@ -16,6 +16,11 @@ interface ServerErrorPageProps {
 }
 
 export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) {
+  const [buttonHovered, setButtonHovered] = useState(false);
+  const [buttonFocused, setButtonFocused] = useState(false);
+  const [linkHovered, setLinkHovered] = useState(false);
+  const [linkFocused, setLinkFocused] = useState(false);
+
   useEffect(() => {
     console.error("[ServerError]", error);
   }, [error]);
@@ -72,7 +77,17 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
           notified. If this keeps happening, please reach out at{" "}
           <a
             href="mailto:support@harmony.app"
-            style={{ color: "#5865f2", textDecoration: "underline" }}
+            onMouseEnter={() => setLinkHovered(true)}
+            onMouseLeave={() => setLinkHovered(false)}
+            onFocus={() => setLinkFocused(true)}
+            onBlur={() => setLinkFocused(false)}
+            style={{
+              color: linkHovered ? "#7983f5" : "#5865f2",
+              textDecoration: "underline",
+              outline: linkFocused ? "2px solid #5865f2" : "none",
+              outlineOffset: "2px",
+              borderRadius: "2px",
+            }}
           >
             support@harmony.app
           </a>
@@ -81,16 +96,22 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
 
         <button
           onClick={reset}
+          onMouseEnter={() => setButtonHovered(true)}
+          onMouseLeave={() => setButtonHovered(false)}
+          onFocus={() => setButtonFocused(true)}
+          onBlur={() => setButtonFocused(false)}
           style={{
             marginTop: "2rem",
             padding: "0.625rem 1.25rem",
-            backgroundColor: "#5865f2",
+            backgroundColor: buttonHovered ? "#4752c4" : "#5865f2",
             color: "#ffffff",
             border: "none",
             borderRadius: "0.375rem",
             fontSize: "0.875rem",
             fontWeight: 600,
             cursor: "pointer",
+            outline: buttonFocused ? "2px solid #5865f2" : "none",
+            outlineOffset: "2px",
           }}
         >
           Try again

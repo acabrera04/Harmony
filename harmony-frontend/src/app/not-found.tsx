@@ -6,7 +6,7 @@
 
 import Link from "next/link";
 
-export default function NotFound() {
+export default function NotFoundPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-discord-bg-primary px-4 text-center">
       <p className="text-8xl font-black text-discord-accent select-none">404</p>
