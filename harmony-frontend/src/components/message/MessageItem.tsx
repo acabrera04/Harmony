@@ -8,8 +8,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-import { formatRelativeTime } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import type { Message } from "@/types";
 
 // ─── Hover action bar ─────────────────────────────────────────────────────────
@@ -24,6 +23,7 @@ function ActionBar() {
     <div className="absolute -top-3 right-4 hidden group-hover:flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg">
       {/* Reply */}
       <button
+        type="button"
         aria-label="Reply"
         title="Reply"
         className="flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
@@ -35,6 +35,7 @@ function ActionBar() {
 
       {/* Add Reaction */}
       <button
+        type="button"
         aria-label="Add Reaction"
         title="Add Reaction"
         className="flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
@@ -46,6 +47,7 @@ function ActionBar() {
 
       {/* More */}
       <button
+        type="button"
         aria-label="More actions"
         title="More"
         className="flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
