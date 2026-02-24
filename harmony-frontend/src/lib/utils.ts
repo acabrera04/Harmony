@@ -38,6 +38,26 @@ export function formatRelativeTime(date: Date | string): string {
 }
 
 /**
+ * Format a message timestamp in Discord style:
+ *   - Same day   → "Today at 3:42 PM"
+ *   - Yesterday  → "Yesterday at 3:42 PM"
+ *   - Older      → "2/20/2026"
+ */
+export function formatMessageTimestamp(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+  if (d.toDateString() === now.toDateString()) return `Today at ${time}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return `Yesterday at ${time}`;
+
+  return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+}
+
+/**
  * Truncate text to a specified length
  */
 export function truncate(text: string, maxLength: number): string {

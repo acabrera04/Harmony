@@ -8,19 +8,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn, formatRelativeTime } from "@/lib/utils";
-import type { Message } from "@/types";
+import { cn, formatMessageTimestamp } from "@/lib/utils";
+import type { Message, Reaction } from "@/types";
+
+// ─── ReactionList ─────────────────────────────────────────────────────────────
+
+function ReactionList({ reactions, messageId }: { reactions: Reaction[]; messageId: string }) {
+  if (!reactions || reactions.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {reactions.map((r) => (
+        <button
+          key={`${r.emoji}-${messageId}`}
+          type="button"
+          className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10"
+        >
+          <span>{r.emoji}</span>
+          <span>{r.count}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 // ─── Hover action bar ─────────────────────────────────────────────────────────
 
 /**
- * Placeholder action bar that appears on hover at the top-right of a message.
- * Buttons are non-functional stubs — wire up handlers when implementing
- * reply, reactions, and message options (Issue #24 / follow-on issues).
+ * Placeholder action bar that appears on hover (or focus-within) at the
+ * top-right of a message. Buttons are non-functional stubs — wire up handlers
+ * when implementing reply, reactions, and message options (Issue #24).
  */
 function ActionBar() {
   return (
-    <div className="absolute -top-3 right-4 hidden group-hover:flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg">
+    <div className="absolute -top-3 right-4 hidden group-hover:flex group-focus-within:flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg">
       {/* Reply */}
       <button
         type="button"
@@ -77,7 +97,9 @@ export function MessageItem({
     setAvatarError(false);
   }, [message.author.avatarUrl]);
 
-  const authorInitial = message.author.username?.charAt(0)?.toUpperCase() ?? "?";
+  // Trim first to guard against empty-string usernames — || catches "" where ?? would not.
+  const trimmedUsername = message.author.username?.trim();
+  const authorInitial = trimmedUsername?.charAt(0)?.toUpperCase() || "?";
 
   // TODO: Author name role coloring
   // The Author type embedded in Message does not carry a role field —
@@ -94,7 +116,7 @@ export function MessageItem({
         {/* Spacer aligns content with the 40px avatar of the header row */}
         <div className="w-10 flex-shrink-0 text-right">
           <span className="invisible text-[10px] text-gray-500 group-hover:visible">
-            {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {new Date(message.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
           </span>
         </div>
         <div className="min-w-0 flex-1">
@@ -104,19 +126,7 @@ export function MessageItem({
               <span className="ml-1 text-[10px] text-gray-500">(edited)</span>
             )}
           </p>
-          {message.reactions && message.reactions.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {message.reactions.map((r) => (
-                <button
-                  key={`${r.emoji}-${message.id}`}
-                  className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10"
-                >
-                  <span>{r.emoji}</span>
-                  <span>{r.count}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
         </div>
       </div>
     );
@@ -147,26 +157,14 @@ export function MessageItem({
             {message.author.displayName ?? message.author.username}
           </span>
           <span className="text-[11px] text-gray-400">
-            {formatRelativeTime(message.timestamp)}
+            {formatMessageTimestamp(message.timestamp)}
           </span>
           {message.editedAt && (
             <span className="text-[10px] text-gray-500">(edited)</span>
           )}
         </div>
         <p className="mt-0.5 text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
-        {message.reactions && message.reactions.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {message.reactions.map((r) => (
-              <button
-                key={`${r.emoji}-${message.id}`}
-                className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10"
-              >
-                <span>{r.emoji}</span>
-                <span>{r.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
       </div>
     </div>
   );
