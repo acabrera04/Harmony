@@ -4,11 +4,65 @@
  */
 
 import type { User } from "@/types";
-import { mockCurrentUser } from "@/mocks";
+import { mockUsers } from "@/mocks";
 
 // ─── In-memory auth state ─────────────────────────────────────────────────────
 
 let currentUser: User | null = null;
+
+// ─── Registered users persistence ─────────────────────────────────────────────
+
+const REGISTERED_USERS_KEY = "harmony_registered_users";
+
+const VALID_STATUSES = ["online", "idle", "dnd", "offline"];
+const VALID_ROLES = ["owner", "admin", "moderator", "member", "guest"];
+
+/** Runtime check that parsed JSON has the required User shape and valid enum values. */
+function isValidUser(value: unknown): value is User {
+  if (typeof value !== "object" || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.id === "string" &&
+    typeof obj.username === "string" &&
+    typeof obj.status === "string" &&
+    VALID_STATUSES.includes(obj.status) &&
+    typeof obj.role === "string" &&
+    VALID_ROLES.includes(obj.role)
+  );
+}
+
+function loadRegisteredUsers(): void {
+  try {
+    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
+    if (stored) {
+      const parsed: unknown[] = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return;
+      for (const u of parsed) {
+        if (isValidUser(u) && !mockUsers.some((m) => m.id === u.id)) {
+          mockUsers.push(u);
+        }
+      }
+    }
+  } catch {
+    sessionStorage.removeItem(REGISTERED_USERS_KEY);
+  }
+}
+
+function saveRegisteredUser(user: User): void {
+  try {
+    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
+    const users: User[] = stored ? JSON.parse(stored) : [];
+    users.push(user);
+    sessionStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+  } catch {
+    // Storage full or unavailable — user won't persist across refresh
+  }
+}
+
+// Restore registered users on module load
+if (typeof window !== "undefined") {
+  loadRegisteredUsers();
+}
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
@@ -20,13 +74,25 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 /**
- * Simulates login — returns the mock current user on success.
- * @param _username - Ignored in mock; any credentials succeed.
- * @param _password - Ignored in mock; any credentials succeed.
+ * Simulates login — validates username against mock users.
+ * Any password is accepted for demo purposes.
  */
-export async function login(_username: string, _password: string): Promise<User> {
-  currentUser = { ...mockCurrentUser };
+export async function login(username: string, _password: string): Promise<User> {
+  const matched = mockUsers.find(
+    (u) => u.username.toLowerCase() === username.toLowerCase()
+  );
+  if (!matched) {
+    throw new Error("Invalid username");
+  }
+  currentUser = { ...matched };
   return { ...currentUser };
+}
+
+/**
+ * Restores the in-memory auth state (used after sessionStorage restore).
+ */
+export function setCurrentUser(user: User | null): void {
+  currentUser = user ? { ...user } : null;
 }
 
 /**
@@ -41,4 +107,35 @@ export async function logout(): Promise<void> {
  */
 export async function isAuthenticated(): Promise<boolean> {
   return currentUser !== null;
+}
+
+/**
+ * Simulates account creation — adds a new user to mock data and logs them in.
+ * Rejects duplicate usernames.
+ */
+export async function register(
+  username: string,
+  displayName: string,
+  _password: string
+): Promise<User> {
+  const exists = mockUsers.some(
+    (u) => u.username.toLowerCase() === username.toLowerCase()
+  );
+  if (exists) {
+    throw new Error("Username already taken");
+  }
+
+  const newUser: User = {
+    id: `user-${Date.now()}`,
+    username,
+    displayName,
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+    status: "online",
+    role: "member",
+  };
+
+  mockUsers.push(newUser);
+  saveRegisteredUser(newUser);
+  currentUser = { ...newUser };
+  return { ...currentUser };
 }

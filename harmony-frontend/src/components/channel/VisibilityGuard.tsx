@@ -16,6 +16,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChannelVisibility } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 
 // ─── Loading state ────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ function AccessDeniedPage() {
         {/* CTAs */}
         <div className="flex w-full flex-col gap-2">
           <Link
-            href="/auth/register"
+            href="/auth/signup"
             className="flex w-full items-center justify-center rounded-md bg-[#5865f2] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#4752c4]"
           >
             Create Account
@@ -151,6 +152,8 @@ export function VisibilityGuard({
   error,
   children,
 }: VisibilityGuardProps) {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
   if (isLoading) {
     return <VisibilityLoading />;
   }
@@ -165,7 +168,13 @@ export function VisibilityGuard({
     return <VisibilityLoading />;
   }
 
-  if (visibility === ChannelVisibility.PRIVATE) {
+  // Wait for auth state to be restored before deciding on private channel access
+  if (visibility === ChannelVisibility.PRIVATE && isAuthLoading) {
+    return <VisibilityLoading />;
+  }
+
+  // Private channels are only accessible to authenticated users
+  if (visibility === ChannelVisibility.PRIVATE && !isAuthenticated) {
     return <AccessDeniedPage />;
   }
 
