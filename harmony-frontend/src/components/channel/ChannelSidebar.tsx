@@ -110,6 +110,8 @@ export interface ChannelSidebarProps {
   onClose: () => void;
   isAuthenticated: boolean;
   onLogout: () => void;
+  /** URL base path for channel links — defaults to "/c" */
+  basePath?: string;
 }
 
 export function ChannelSidebar({
@@ -121,6 +123,7 @@ export function ChannelSidebar({
   onClose,
   isAuthenticated,
   onLogout,
+  basePath = "/c",
 }: ChannelSidebarProps) {
   const [textCollapsed, setTextCollapsed] = useState(false);
   const [voiceCollapsed, setVoiceCollapsed] = useState(false);
@@ -184,7 +187,7 @@ export function ChannelSidebar({
                   return (
                     <Link
                       key={channel.id}
-                      href={`/c/${server.slug}/${channel.slug}`}
+                      href={`${basePath}/${server.slug}/${channel.slug}`}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
                         "group flex items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors",

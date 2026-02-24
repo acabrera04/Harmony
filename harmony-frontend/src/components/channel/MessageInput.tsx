@@ -40,6 +40,14 @@ export function MessageInput({
   const [sendError, setSendError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // On channel switch: clear draft, clear any send error, and autofocus the
+  // textarea so the user can start typing without clicking the input first
+  useEffect(() => {
+    setValue("");
+    setSendError(null);
+    textareaRef.current?.focus();
+  }, [channelId]);
+
   // Auto-resize: grow up to ~8 lines, then scroll
   useEffect(() => {
     const el = textareaRef.current;

@@ -374,6 +374,13 @@ export function HarmonyShell({
     role: "guest",
   };
 
+  // Sync local messages whenever the channel changes so stale messages from
+  // the previous channel are never shown (useState init only runs on mount)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocalMessages(messages);
+  }, [messages, currentChannel.id]);
+
   const handleMessageSent = useCallback((msg: Message) => {
     setLocalMessages((prev) => [...prev, msg]);
   }, []);
