@@ -7,8 +7,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { DEFAULT_HOME_PATH } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
@@ -66,7 +66,7 @@ function MessageBubble({ message, showHeader = true }: { message: Message; showH
     <div className="group flex gap-4 px-4 py-0.5 hover:bg-white/[0.02]">
       <div className="mt-0.5 flex-shrink-0">
         {message.author.avatarUrl ? (
-          <img src={message.author.avatarUrl} alt={message.author.username} className="h-10 w-10 rounded-full" />
+          <Image src={message.author.avatarUrl} alt={message.author.username} width={40} height={40} unoptimized className="h-10 w-10 rounded-full" />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white">
             {authorInitial}

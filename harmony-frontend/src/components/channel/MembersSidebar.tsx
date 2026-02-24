@@ -7,6 +7,7 @@
 
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { User, UserRole, UserStatus } from "@/types";
 
@@ -85,9 +86,12 @@ function MemberRow({ user }: { user: User }) {
       {/* Avatar + status dot */}
       <div className="relative flex-shrink-0">
         {user.avatar ? (
-          <img
+          <Image
             src={user.avatar}
             alt={user.username}
+            width={32}
+            height={32}
+            unoptimized
             className="h-8 w-8 rounded-full"
           />
         ) : (

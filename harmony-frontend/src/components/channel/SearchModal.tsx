@@ -15,6 +15,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Message } from "@/types";
@@ -60,9 +61,12 @@ function ResultItem({
     >
       {/* Avatar */}
       {message.author.avatarUrl ? (
-        <img
+        <Image
           src={message.author.avatarUrl}
           alt={message.author.username}
+          width={32}
+          height={32}
+          unoptimized
           className="mt-0.5 h-8 w-8 flex-shrink-0 rounded-full"
         />
       ) : (
@@ -126,6 +130,8 @@ export function SearchModal({
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 0);
     } else {
+      // Resetting query on close is intentional: next open should start clean.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("");
     }
   }, [isOpen]);
