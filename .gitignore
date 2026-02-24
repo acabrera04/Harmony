@@ -1,1 +1,4 @@
 tasks/todo.md
+.claude/*
+.env*
+*.local*
