@@ -6,7 +6,7 @@
 - Write detailed specs upfront to reduce ambiguity
 
 ### 2. Subagent Strategy
-- Use subagents liberally to keep main context window clean
+- Use subagents liberally to keep main context window clean 
 - Offload research, exploration, and parallel analysis to subagents
 - For complex problems, throw more compute at it via subagents
 - One task per subagent for focused execution
@@ -63,6 +63,9 @@ Example steps: `Starting`, `In Progress`, `Blocked`, `Complete`
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
 - **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
 - **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+- **Lean Context Files**: Keep AGENTS.md and similar files to only non-obvious, non-discoverable essentials. Research shows context file bloat decreases task success rates and increases inference cost by 20%+ with 2–4 extra steps per task (Gloaguen et al., 2026).
 
 
 #### Taken from https://x.com/mdancho84/status/2023738764841894352
+
+Gloaguen, T., Mündler, N., Müller, M., Raychev, V., & Vechev, M. (2026, February 12). Evaluating AGENTS.MD: Are Repository-Level context Files helpful for coding agents? arXiv.org. https://arxiv.org/abs/2602.11988
