@@ -8,6 +8,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ChannelVisibility, ChannelType } from "@/types";
@@ -238,9 +239,12 @@ export function ChannelSidebar({
         <div className={cn("flex h-14 flex-shrink-0 items-center gap-2 px-2", BG_USER_BAR)}>
           <div className="relative flex-shrink-0">
             {currentUser.avatar ? (
-              <img
+              <Image
                 src={currentUser.avatar}
                 alt={currentUser.username}
+                width={32}
+                height={32}
+                unoptimized
                 className="h-8 w-8 rounded-full"
               />
             ) : (
