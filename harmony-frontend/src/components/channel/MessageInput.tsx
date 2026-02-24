@@ -37,6 +37,7 @@ export function MessageInput({
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize: grow up to ~8 lines, then scroll
@@ -51,10 +52,13 @@ export function MessageInput({
     const trimmed = value.trim();
     if (!trimmed || isSending || isReadOnly) return;
     setIsSending(true);
+    setSendError(null);
     try {
       const msg = await sendMessage(channelId, trimmed);
       setValue("");
       onMessageSent?.(msg);
+    } catch {
+      setSendError("Failed to send message. Please try again.");
     } finally {
       setIsSending(false);
       // Return focus to textarea after send
@@ -95,6 +99,11 @@ export function MessageInput({
 
   return (
     <div className="flex-shrink-0 px-4 pb-6 pt-2">
+      {sendError && (
+        <p className="mb-1 px-1 text-xs text-red-400" role="alert">
+          {sendError}
+        </p>
+      )}
       <div
         className={cn(
           "flex items-end gap-1 rounded-lg bg-[#40444b] px-2 py-2",

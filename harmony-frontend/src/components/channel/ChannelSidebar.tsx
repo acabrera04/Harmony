@@ -25,7 +25,7 @@ const STATUS_COLOR: Record<UserStatus, string> = {
   online: "bg-green-500",
   idle: "bg-yellow-400",
   dnd: "bg-red-500",
-  offline: "bg-gray-500",
+  offline: "bg-gray-400",
 };
 
 // ─── Channel type icons ───────────────────────────────────────────────────────
@@ -62,6 +62,12 @@ const VISIBILITY_BADGE: Record<ChannelVisibility, string | null> = {
   [ChannelVisibility.PUBLIC_INDEXABLE]: null,
 };
 
+const VISIBILITY_LABEL: Record<ChannelVisibility, string> = {
+  [ChannelVisibility.PRIVATE]: "Private channel",
+  [ChannelVisibility.PUBLIC_NO_INDEX]: "Public channel, not indexed",
+  [ChannelVisibility.PUBLIC_INDEXABLE]: "",
+};
+
 // ─── Collapsible category header ─────────────────────────────────────────────
 
 function CategoryHeader({
@@ -83,7 +89,7 @@ function CategoryHeader({
       <svg
         className={cn("h-3 w-3 flex-shrink-0 transition-transform duration-150", isCollapsed && "-rotate-90")}
         viewBox="0 0 24 24"
-        fill="currentColor"
+        fill="none"
       >
         <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
@@ -179,6 +185,7 @@ export function ChannelSidebar({
                     <Link
                       key={channel.id}
                       href={`/c/${server.slug}/${channel.slug}`}
+                      aria-current={isActive ? "page" : undefined}
                       className={cn(
                         "group flex items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors",
                         isActive
@@ -188,7 +195,15 @@ export function ChannelSidebar({
                     >
                       <ChannelIcon type={channel.type} />
                       <span className="flex-1 truncate">{channel.name}</span>
-                      {badge && <span className="text-xs opacity-60">{badge}</span>}
+                      {badge && (
+                        <span
+                          className="text-xs opacity-60"
+                          role="img"
+                          aria-label={VISIBILITY_LABEL[channel.visibility]}
+                        >
+                          {badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
