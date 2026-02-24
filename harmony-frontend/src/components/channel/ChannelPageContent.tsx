@@ -23,7 +23,11 @@ export async function ChannelPageContent({ serverSlug, channelSlug, isGuestView 
 
   // Gather all channels across servers for cross-server navigation
   const allChannels = (
-    await Promise.all(servers.map((s) => getChannels(s.id)))
+    await Promise.all(
+      servers.map((s) =>
+        s.id === server.id ? Promise.resolve(serverChannels) : getChannels(s.id)
+      )
+    )
   ).flat();
 
   // Service returns newest-first; reverse for chronological display
