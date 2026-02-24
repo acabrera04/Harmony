@@ -28,17 +28,11 @@ function ServerPill({
   isActive: boolean;
   basePath: string;
 }) {
-  // Tracks whether the server icon image failed to load.
-  const [iconError, setIconError] = useState(false);
-  const [prevIcon, setPrevIcon] = useState(server.icon);
-
-  // Render-phase reset: when icon URL changes, reset the error flag before
-  // rendering so the component re-attempts the new image (React-recommended
-  // alternative to useEffect for "reset derived state on prop change").
-  if (prevIcon !== server.icon) {
-    setPrevIcon(server.icon);
-    setIconError(false);
-  }
+  // Tracks which icon URL caused a load error; comparing against the current
+  // icon URL derives the error flag without render-phase state updates or a
+  // post-render effect (which would flash initials for one frame).
+  const [iconErrorUrl, setIconErrorUrl] = useState<string | null>(null);
+  const iconError = iconErrorUrl !== null && iconErrorUrl === server.icon;
 
   const initials = server.name
     .split(" ")
@@ -78,7 +72,7 @@ function ServerPill({
             height={48}
             unoptimized
             className="h-full w-full object-cover"
-            onError={() => setIconError(true)}
+            onError={() => setIconErrorUrl(server.icon ?? null)}
           />
         ) : (
           <span>{initials}</span>
