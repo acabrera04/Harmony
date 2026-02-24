@@ -7,6 +7,7 @@
 
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { DEFAULT_HOME_PATH } from "@/lib/constants";
@@ -38,6 +39,7 @@ function ServerPill({
     <Link
       href={`${basePath}/${server.slug}/${defaultChannelSlug}`}
       title={server.name}
+      aria-current={isActive ? "page" : undefined}
       className="group relative flex items-center"
     >
       <span
@@ -48,13 +50,25 @@ function ServerPill({
       />
       <div
         className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-[24px] transition-all duration-200 text-white font-bold text-sm",
+          "flex h-12 w-12 items-center justify-center rounded-[24px] transition-all duration-200 text-white font-bold text-sm overflow-hidden",
           isActive
             ? "rounded-[16px] bg-[#5865f2]"
             : "bg-[#36393f] group-hover:rounded-[16px] group-hover:bg-[#5865f2]"
         )}
       >
-        {initials}
+        {server.icon ? (
+          <img
+            src={server.icon}
+            alt={server.name}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              // Fall back to initials if the icon URL fails to load
+              e.currentTarget.style.display = "none";
+              e.currentTarget.nextElementSibling?.removeAttribute("hidden");
+            }}
+          />
+        ) : null}
+        <span hidden={!!server.icon}>{initials}</span>
       </div>
     </Link>
   );
@@ -74,24 +88,24 @@ export function ServerRail({
   currentServerId: string;
   basePath: string;
 }) {
-  // Precompute serverId → defaultChannelSlug once rather than filtering inside the render loop.
-  const defaultChannelByServer = new Map<string, string>();
-  const textOrAnnouncement = allChannels
-    .filter((c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
-    .sort((a, b) => a.position - b.position);
-  for (const channel of textOrAnnouncement) {
-    if (!defaultChannelByServer.has(channel.serverId)) {
-      defaultChannelByServer.set(channel.serverId, channel.slug);
+  // Memoized so the map is only rebuilt when allChannels changes, not on every
+  // parent re-render (e.g. search/menu toggles in HarmonyShell).
+  const defaultChannelByServer = useMemo(() => {
+    const map = new Map<string, string>();
+    const textOrAnnouncement = allChannels
+      .filter((c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
+      .sort((a, b) => a.position - b.position);
+    for (const channel of textOrAnnouncement) {
+      if (!map.has(channel.serverId)) {
+        map.set(channel.serverId, channel.slug);
+      }
     }
-  }
+    return map;
+  }, [allChannels]);
 
-  const homeServer = servers[0];
-  const homeChannelSlug = homeServer
-    ? (defaultChannelByServer.get(homeServer.id) ?? "general")
-    : "general";
-  const homeHref = homeServer
-    ? `${basePath}/${homeServer.slug}/${homeChannelSlug}`
-    : `${basePath}${DEFAULT_HOME_PATH}`;
+  // Home is a stable entry point — always links to DEFAULT_HOME_PATH rather
+  // than being derived from servers[0] which depends on server ordering.
+  const homeHref = `${basePath}${DEFAULT_HOME_PATH}`;
 
   return (
     <nav
