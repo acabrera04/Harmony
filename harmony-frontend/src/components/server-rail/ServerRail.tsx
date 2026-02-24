@@ -28,11 +28,10 @@ function ServerPill({
   isActive: boolean;
   basePath: string;
 }) {
-  // Tracks which icon URL caused a load error; comparing against the current
-  // icon URL derives the error flag without render-phase state updates or a
-  // post-render effect (which would flash initials for one frame).
-  const [iconErrorUrl, setIconErrorUrl] = useState<string | null>(null);
-  const iconError = iconErrorUrl !== null && iconErrorUrl === server.icon;
+  // Tracks whether the server icon image failed to load. State resets
+  // automatically when server.icon changes because the parent keys this
+  // component by `${server.id}-${server.icon}` (see ServerRail render).
+  const [iconError, setIconError] = useState(false);
 
   const initials = server.name
     .split(" ")
@@ -72,7 +71,7 @@ function ServerPill({
             height={48}
             unoptimized
             className="h-full w-full object-cover"
-            onError={() => setIconErrorUrl(server.icon ?? null)}
+            onError={() => setIconError(true)}
           />
         ) : (
           <span>{initials}</span>
@@ -147,7 +146,7 @@ export function ServerRail({
         const defaultChannelSlug = defaultChannelByServer.get(server.id) ?? "general";
         return (
           <ServerPill
-            key={server.id}
+            key={`${server.id}-${server.icon ?? ''}`}
             server={server}
             defaultChannelSlug={defaultChannelSlug}
             isActive={server.id === currentServerId}
