@@ -1,7 +1,7 @@
 /**
  * Layout: HarmonyShell
  * Full Discord-like 3-column layout shell.
- * Wires together ServerList, ChannelSidebar, TopBar, MessageArea, MembersSidebar, SearchModal.
+ * Wires together ServerRail, ChannelSidebar, TopBar, MessageArea, MembersSidebar, SearchModal.
  */
 
 "use client";
@@ -16,8 +16,9 @@ import { MembersSidebar } from "@/components/channel/MembersSidebar";
 import { SearchModal } from "@/components/channel/SearchModal";
 import { ChannelSidebar } from "@/components/channel/ChannelSidebar";
 import { MessageInput } from "@/components/channel/MessageInput";
+import { ServerRail } from "@/components/server-rail/ServerRail";
 import { useAuth } from "@/hooks/useAuth";
-import { ChannelVisibility, ChannelType } from "@/types";
+import { ChannelVisibility } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -26,124 +27,6 @@ const BG = {
   tertiary: "bg-[#202225]",
   primary: "bg-[#36393f]",
 };
-
-// ─── Server List ──────────────────────────────────────────────────────────────
-
-function ServerPill({
-  server,
-  defaultChannelSlug,
-  isActive,
-  basePath,
-}: {
-  server: Server;
-  defaultChannelSlug: string;
-  isActive: boolean;
-  basePath: string;
-}) {
-  // #c17/#c22: filter empty words explicitly before taking initials
-  const initials = server.name
-    .split(" ")
-    .filter((w) => w.length > 0)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  return (
-    <Link
-      href={`${basePath}/${server.slug}/${defaultChannelSlug}`}
-      title={server.name}
-      className="group relative flex items-center"
-    >
-      <span
-        className={cn(
-          "absolute -left-1 w-1 rounded-r-full bg-white transition-all",
-          isActive ? "h-8" : "h-0 group-hover:h-4"
-        )}
-      />
-      <div
-        className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-[24px] transition-all duration-200 text-white font-bold text-sm",
-          isActive
-            ? "rounded-[16px] bg-[#5865f2]"
-            : "bg-[#36393f] group-hover:rounded-[16px] group-hover:bg-[#5865f2]"
-        )}
-      >
-        {initials}
-      </div>
-    </Link>
-  );
-}
-
-function ServerList({
-  servers,
-  allChannels,
-  currentServerId,
-  basePath,
-}: {
-  servers: Server[];
-  allChannels: Channel[];   // #c9: used to derive first text channel per server
-  currentServerId: string;
-  basePath: string;
-}) {
-  // Precompute a map of serverId → defaultChannelSlug once (O(channels log channels))
-  // rather than repeating filter+sort inside the render loop per server.
-  const defaultChannelByServer = new Map<string, string>();
-  const textOrAnnouncement = allChannels
-    .filter((c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT)
-    .sort((a, b) => a.position - b.position);
-  for (const channel of textOrAnnouncement) {
-    if (!defaultChannelByServer.has(channel.serverId)) {
-      defaultChannelByServer.set(channel.serverId, channel.slug);
-    }
-  }
-
-  // Derive the Home link destination from the first server's default channel
-  const homeServer = servers[0];
-  const homeChannelSlug = homeServer
-    ? (defaultChannelByServer.get(homeServer.id) ?? "general")
-    : "general";
-  const homeHref = homeServer
-    ? `${basePath}/${homeServer.slug}/${homeChannelSlug}`
-    : `${basePath}${DEFAULT_HOME_PATH}`;
-
-  return (
-    <nav
-      aria-label="Servers"
-      className={cn(
-        "flex w-[72px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto py-3",
-        BG.tertiary
-      )}
-    >
-      <Link
-        href={homeHref}
-        className="group relative mb-2 flex items-center"
-        title="Home"
-      >
-        <div className="flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#5865f2] text-white transition-all duration-200 group-hover:rounded-[16px]">
-          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.030z" />
-          </svg>
-        </div>
-      </Link>
-
-      <div className="mx-auto h-0.5 w-8 rounded-full bg-[#36393f]" />
-
-      {servers.map((server) => {
-        const defaultChannelSlug = defaultChannelByServer.get(server.id) ?? "general";
-        return (
-          <ServerPill
-            key={server.id}
-            server={server}
-            defaultChannelSlug={defaultChannelSlug}
-            isActive={server.id === currentServerId}
-            basePath={basePath}
-          />
-        );
-      })}
-    </nav>
-  );
-}
 
 // ─── Message area ─────────────────────────────────────────────────────────────
 
@@ -333,7 +216,7 @@ export interface HarmonyShellProps {
   /** Channels belonging to the current server — used by ChannelSidebar */
   channels: Channel[];
   /**
-   * All channels across every server — used by ServerList to derive the
+   * All channels across every server — used by ServerRail to derive the
    * correct default channel slug when navigating to another server.
    * #c32: passing only serverChannels here caused other server icons to link
    * to a non-existent route because their channels weren't in the list.
@@ -399,8 +282,8 @@ export function HarmonyShell({
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#202225] font-sans">
-      {/* 1. Server list — uses allChannels (full set) to derive default slug per server */}
-      <ServerList
+      {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
+      <ServerRail
         servers={servers}
         allChannels={allChannels}
         currentServerId={currentServer.id}
