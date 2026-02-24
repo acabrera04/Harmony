@@ -8,6 +8,8 @@ This file provides context and guidelines for AI coding agents (GitHub Copilot, 
 Before starting any task, read and follow the rules in @WORKFLOW.md 
 It defines workflow orchestration, task management, and core principles all agents must follow.
 
+Always check for lint or build errors before committing code.
+
 ### Specs/Docs
 - No build/test commands for specifications
 - Jest/Playwright/Lighthouse referenced in specs are design intent for future implementation
