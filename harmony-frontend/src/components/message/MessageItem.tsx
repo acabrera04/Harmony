@@ -7,7 +7,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import { formatMessageTimestamp, formatTimeOnly } from "@/lib/utils";
 import type { Message, Reaction } from "@/types";
 
@@ -95,11 +96,13 @@ export function MessageItem({
   showHeader?: boolean;
 }) {
   const [avatarError, setAvatarError] = useState(false);
-
-  // Reset error state when the avatar URL changes so a newly valid URL is retried.
-  useEffect(() => {
-    setAvatarError(false);
-  }, [message.author.avatarUrl]);
+  // Render-phase derived-state reset: when the avatar URL changes (including A→B→A),
+  // reset avatarError so the new URL is always attempted.
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(message.author.avatarUrl);
+  if (prevAvatarUrl !== message.author.avatarUrl) {
+    setPrevAvatarUrl(message.author.avatarUrl);
+    if (avatarError) setAvatarError(false);
+  }
 
   // Trim first to guard against empty-string usernames — || catches "" where ?? would not.
   const trimmedUsername = message.author.username?.trim();
@@ -142,9 +145,12 @@ export function MessageItem({
       {/* Avatar */}
       <div className="mt-0.5 flex-shrink-0">
         {message.author.avatarUrl && !avatarError ? (
-          <img
+          <Image
             src={message.author.avatarUrl}
             alt={message.author.username}
+            width={40}
+            height={40}
+            unoptimized
             className="h-10 w-10 rounded-full"
             onError={() => setAvatarError(true)}
           />
