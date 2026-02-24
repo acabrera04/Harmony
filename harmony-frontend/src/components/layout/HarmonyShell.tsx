@@ -32,10 +32,12 @@ function ServerPill({
   server,
   defaultChannelSlug,
   isActive,
+  basePath,
 }: {
   server: Server;
   defaultChannelSlug: string;
   isActive: boolean;
+  basePath: string;
 }) {
   // #c17/#c22: filter empty words explicitly before taking initials
   const initials = server.name
@@ -48,7 +50,7 @@ function ServerPill({
 
   return (
     <Link
-      href={`/c/${server.slug}/${defaultChannelSlug}`}
+      href={`${basePath}/${server.slug}/${defaultChannelSlug}`}
       title={server.name}
       className="group relative flex items-center"
     >
@@ -76,10 +78,12 @@ function ServerList({
   servers,
   allChannels,
   currentServerId,
+  basePath,
 }: {
   servers: Server[];
   allChannels: Channel[];   // #c9: used to derive first text channel per server
   currentServerId: string;
+  basePath: string;
 }) {
   return (
     <nav
@@ -90,7 +94,7 @@ function ServerList({
       )}
     >
       <Link
-        href="/c/harmony-hq/general"
+        href={`${basePath}/harmony-hq/general`}
         className="group relative mb-2 flex items-center"
         title="Home"
       >
@@ -121,6 +125,7 @@ function ServerList({
             server={server}
             defaultChannelSlug={defaultChannelSlug}
             isActive={server.id === currentServerId}
+            basePath={basePath}
           />
         );
       })}
@@ -166,6 +171,7 @@ function ChannelSidebar({
   currentUser,
   isOpen,
   onClose,
+  basePath,
 }: {
   server: Server;
   channels: Channel[];
@@ -174,6 +180,7 @@ function ChannelSidebar({
   /** #c33: controls mobile visibility — desktop is always visible */
   isOpen: boolean;
   onClose: () => void;
+  basePath: string;
 }) {
   const textChannels = channels.filter(
     (c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT
@@ -223,7 +230,7 @@ function ChannelSidebar({
               return (
                 <Link
                   key={channel.id}
-                  href={`/c/${server.slug}/${channel.slug}`}
+                  href={`${basePath}/${server.slug}/${channel.slug}`}
                   className={cn(
                     "group flex items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors",
                     isActive
@@ -485,6 +492,8 @@ export interface HarmonyShellProps {
   currentChannel: Channel;
   messages: Message[];
   members: User[];
+  /** Base path for navigation links. Use "/c" for public guest routes, "/channels" for authenticated routes. */
+  basePath?: string;
 }
 
 export function HarmonyShell({
@@ -495,6 +504,7 @@ export function HarmonyShell({
   currentChannel,
   messages,
   members,
+  basePath = "/c",
 }: HarmonyShellProps) {
   const [isMembersOpen, setIsMembersOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -523,6 +533,7 @@ export function HarmonyShell({
         servers={servers}
         allChannels={allChannels}
         currentServerId={currentServer.id}
+        basePath={basePath}
       />
 
       {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
@@ -533,6 +544,7 @@ export function HarmonyShell({
         currentUser={currentUser}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
+        basePath={basePath}
       />
 
       {/* 3. Main column */}

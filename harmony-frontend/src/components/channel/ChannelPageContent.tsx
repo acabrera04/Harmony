@@ -45,6 +45,7 @@ export async function ChannelPageContent({ serverSlug, channelSlug, isGuestView 
       currentChannel={channel}
       messages={sortedMessages}
       members={members}
+      basePath={isGuestView ? "/c" : "/channels"}
     />
   );
 
