@@ -9,6 +9,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { DEFAULT_HOME_PATH } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
@@ -104,7 +105,7 @@ function ServerList({
     : "general";
   const homeHref = homeServer
     ? `${basePath}/${homeServer.slug}/${homeChannelSlug}`
-    : `${basePath}/harmony-hq/general`;
+    : `${basePath}${DEFAULT_HOME_PATH}`;
 
   return (
     <nav

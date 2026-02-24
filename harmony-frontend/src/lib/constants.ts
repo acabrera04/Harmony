@@ -43,6 +43,9 @@ export const ROUTES = {
   SIGNUP: "/auth/signup",
 } as const;
 
+/** Last-resort fallback destination when no server/channel data is available */
+export const DEFAULT_HOME_PATH = "/harmony-hq/general";
+
 /**
  * Visibility states from dev spec
  * Section 5: State Diagrams
