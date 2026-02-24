@@ -161,7 +161,7 @@ export function ServerRail({
         disabled
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#36393f] text-[#3ba55c] transition-all duration-200 group-hover:rounded-[16px] group-hover:bg-[#3ba55c] group-hover:text-white">
-          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
             <path d="M20 11.0001H13V4.00006C13 3.44778 12.5523 3.00006 12 3.00006C11.4477 3.00006 11 3.44778 11 4.00006V11.0001H4C3.44772 11.0001 3 11.4478 3 12.0001C3 12.5523 3.44772 13.0001 4 13.0001H11V20.0001C11 20.5523 11.4477 21.0001 12 21.0001C12.5523 21.0001 13 20.5523 13 20.0001V13.0001H20C20.5523 13.0001 21 12.5523 21 12.0001C21 11.4478 20.5523 11.0001 20 11.0001Z" />
           </svg>
         </div>
