@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { DEFAULT_HOME_PATH } from "@/lib/constants";
@@ -30,6 +30,13 @@ function ServerPill({
   // Tracks whether the server icon image failed to load. Using state (rather than
   // direct DOM manipulation) keeps React in control of the render tree.
   const [iconError, setIconError] = useState(false);
+
+  // Reset the error flag whenever the icon URL changes (e.g. an admin updates
+  // the server icon) so the component re-attempts loading the new image rather
+  // than staying stuck on the initials fallback.
+  useEffect(() => {
+    setIconError(false);
+  }, [server.icon]);
 
   const initials = server.name
     .split(" ")
