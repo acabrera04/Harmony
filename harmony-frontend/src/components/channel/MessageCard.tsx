@@ -4,6 +4,7 @@
  * Based on dev spec C1.5 MessageCard
  */
 
+import Image from "next/image";
 import { formatRelativeTime } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/Card";
 
@@ -35,9 +36,12 @@ export function MessageCard({
           {/* Avatar */}
           <div className="flex-shrink-0">
             {author.avatarUrl ? (
-              <img
+              <Image
                 src={author.avatarUrl}
                 alt={author.username}
+                width={40}
+                height={40}
+                unoptimized
                 className="h-10 w-10 rounded-full"
               />
             ) : (
