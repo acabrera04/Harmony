@@ -13,12 +13,8 @@ It defines workflow orchestration, task management, and core principles all agen
 - Jest/Playwright/Lighthouse referenced in specs are design intent for future implementation
 
 ## Key repository conventions
-- Dev specs use a strict numbered structure with consistent major sections (`1` through `13` across all three specs; SEO spec also includes `14. Acceptance Criteria`).
-- Use and preserve the labeling system across diagrams/tables:
-  - Modules: `M#`
-  - Classes: `CL-C#`, DTOs: `CL-D#`, Entities: `CL-E#`, Interfaces: `CL-I#`
-  - Data schemas: `D#`, Technologies: `T#`, Flows: `F#`, States: `S#`/`B#`
+- Dev specs use a strict numbered structure (`1`–`13`; SEO spec also has `14. Acceptance Criteria`).
+- Preserve spec labeling prefixes exactly: `M#` (modules), `CL-C#`/`CL-D#`/`CL-E#`/`CL-I#` (classes/DTOs/entities/interfaces), `D#`/`T#`/`F#`/`S#`/`B#` (schemas/tech/flows/states).
 - Keep **Section 3 (Class Diagram)** and **Section 4 (List of Classes)** synchronized whenever classes are added/renamed.
 - Preserve canonical visibility enum values exactly: `PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE`.
-- Prefer UUID-based identifiers in cache/data contracts and keep key patterns consistent with each spec’s schema section.
 
