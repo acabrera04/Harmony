@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { DEFAULT_HOME_PATH } from "@/lib/constants";
@@ -27,9 +27,13 @@ function ServerPill({
   isActive: boolean;
   basePath: string;
 }) {
+  // Tracks whether the server icon image failed to load. Using state (rather than
+  // direct DOM manipulation) keeps React in control of the render tree.
+  const [iconError, setIconError] = useState(false);
+
   const initials = server.name
     .split(" ")
-    .filter((w: string) => w.length > 0)
+    .filter((w) => w.length > 0)
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
@@ -56,19 +60,16 @@ function ServerPill({
             : "bg-[#36393f] group-hover:rounded-[16px] group-hover:bg-[#5865f2]"
         )}
       >
-        {server.icon ? (
+        {server.icon && !iconError ? (
           <img
             src={server.icon}
             alt={server.name}
             className="h-full w-full object-cover"
-            onError={(e) => {
-              // Fall back to initials if the icon URL fails to load
-              e.currentTarget.style.display = "none";
-              e.currentTarget.nextElementSibling?.removeAttribute("hidden");
-            }}
+            onError={() => setIconError(true)}
           />
-        ) : null}
-        <span hidden={!!server.icon}>{initials}</span>
+        ) : (
+          <span>{initials}</span>
+        )}
       </div>
     </Link>
   );
@@ -103,8 +104,13 @@ export function ServerRail({
     return map;
   }, [allChannels]);
 
-  // Home is a stable entry point — always links to DEFAULT_HOME_PATH rather
-  // than being derived from servers[0] which depends on server ordering.
+  // Home links to a stable, hardcoded entry point (DEFAULT_HOME_PATH) rather
+  // than deriving from servers[0], which would change if server ordering changes.
+  //
+  // TODO: When real user/server data is wired up, revisit this. "Home" should
+  // ideally navigate to the user's DM inbox or a personalized landing route —
+  // not a hardcoded server channel. Update DEFAULT_HOME_PATH or replace this
+  // with a user-context-aware route at that point.
   const homeHref = `${basePath}${DEFAULT_HOME_PATH}`;
 
   return (
