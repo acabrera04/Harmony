@@ -6,8 +6,9 @@
 - Write detailed specs upfront to reduce ambiguity
 
 ### 2. Subagent Strategy
-- Use subagents for genuinely parallel work or when isolating heavy exploration from the main context — not by default
-- Offload research and parallel analysis to subagents; avoid spawning them for tasks you can handle directly
+- Use subagents liberally to keep main context window clean 
+- Offload research, exploration, and parallel analysis to subagents
+- For complex problems, throw more compute at it via subagents
 - One task per subagent for focused execution
 
 ### 3. Self-Improvement Loop 
