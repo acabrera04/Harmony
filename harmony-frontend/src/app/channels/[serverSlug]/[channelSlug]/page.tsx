@@ -4,7 +4,7 @@ interface PageProps {
   params: Promise<{ serverSlug: string; channelSlug: string }>;
 }
 
-export default async function ChannelPage({ params }: PageProps) {
+export default async function AuthenticatedChannelPage({ params }: PageProps) {
   const { serverSlug, channelSlug } = await params;
-  return <ChannelPageContent serverSlug={serverSlug} channelSlug={channelSlug} isGuestView />;
+  return <ChannelPageContent serverSlug={serverSlug} channelSlug={channelSlug} />;
 }
