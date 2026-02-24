@@ -45,6 +45,7 @@ export function formatRelativeTime(date: Date | string): string {
  */
 export function formatMessageTimestamp(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "";
   const now = new Date();
   const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 

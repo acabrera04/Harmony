@@ -36,11 +36,14 @@ function ReactionList({ reactions, messageId }: { reactions: Reaction[]; message
 /**
  * Placeholder action bar that appears on hover (or focus-within) at the
  * top-right of a message. Buttons are non-functional stubs — wire up handlers
- * when implementing reply, reactions, and message options (Issue #24).
+ * when implementing reply, reactions, and message options in follow-on issues.
+ *
+ * Uses opacity/pointer-events toggling (not display:none) so buttons remain
+ * in the DOM tab order and are reachable by keyboard users via focus-within.
  */
 function ActionBar() {
   return (
-    <div className="absolute -top-3 right-4 hidden group-hover:flex group-focus-within:flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg">
+    <div className="absolute -top-3 right-4 flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
       {/* Reply */}
       <button
         type="button"
@@ -120,7 +123,7 @@ export function MessageItem({
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm leading-relaxed text-[#dcddde]">
+          <p className="whitespace-pre-line text-sm leading-relaxed text-[#dcddde]">
             {message.content}
             {message.editedAt && (
               <span className="ml-1 text-[10px] text-gray-500">(edited)</span>
@@ -163,7 +166,7 @@ export function MessageItem({
             <span className="text-[10px] text-gray-500">(edited)</span>
           )}
         </div>
-        <p className="mt-0.5 text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
+        <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
         <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
       </div>
     </div>
