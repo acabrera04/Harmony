@@ -8,7 +8,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn, formatMessageTimestamp } from "@/lib/utils";
+import { formatMessageTimestamp } from "@/lib/utils";
 import type { Message, Reaction } from "@/types";
 
 // ─── ReactionList ─────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ function ReactionList({ reactions, messageId }: { reactions: Reaction[]; message
  */
 function ActionBar() {
   return (
-    <div className="absolute -top-3 right-4 flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
+    <div className="absolute -top-3 right-4 z-10 flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
       {/* Reply */}
       <button
         type="button"
@@ -156,7 +156,7 @@ export function MessageItem({
       {/* Content */}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className={cn(authorNameClass)}>
+          <span className={authorNameClass}>
             {message.author.displayName ?? message.author.username}
           </span>
           <span className="text-[11px] text-gray-400">
