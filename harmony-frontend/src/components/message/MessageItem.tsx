@@ -118,8 +118,8 @@ export function MessageItem({
         <ActionBar />
         {/* Spacer aligns content with the 40px avatar of the header row */}
         <div className="w-10 flex-shrink-0 text-right">
-          <span className="invisible text-[10px] text-gray-500 group-hover:visible">
-            {new Date(message.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+          <span className="invisible text-[10px] text-gray-500 group-hover:visible group-focus-within:visible">
+            {formatMessageTimestamp(message.timestamp)}
           </span>
         </div>
         <div className="min-w-0 flex-1">
