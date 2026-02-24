@@ -19,9 +19,9 @@ import type { User, UserStatus } from "@/types";
 
 const STATUS_COLOR: Record<UserStatus, string> = {
   online: "bg-green-500",
-  idle: "bg-yellow-500",
+  idle: "bg-yellow-400",
   dnd: "bg-red-500",
-  offline: "bg-gray-500",
+  offline: "bg-gray-400",
 };
 
 const STATUS_LABEL: Record<UserStatus, string> = {
@@ -87,6 +87,7 @@ export function UserStatusBar({
         <button
           onClick={() => setIsMuted((v) => !v)}
           title={isMuted ? "Unmute" : "Mute"}
+          aria-label={isMuted ? "Unmute" : "Mute"}
           className="rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white"
         >
           {isMuted ? (
@@ -105,6 +106,7 @@ export function UserStatusBar({
         <button
           onClick={() => setIsDeafened((v) => !v)}
           title={isDeafened ? "Undeafen" : "Deafen"}
+          aria-label={isDeafened ? "Undeafen" : "Deafen"}
           className="rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white"
         >
           {isDeafened ? (
@@ -113,8 +115,7 @@ export function UserStatusBar({
             </svg>
           ) : (
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-2.05 0-3.91-.78-5.32-2.06C7.53 16.44 9.6 15.5 12 15.5s4.47.93 5.32 2.44A7.948 7.948 0 0112 20zm-3-8c0-1.66 1.34-3 3-3s3 1.34 3 3v1h2v-1c0-3.07-2.16-5.64-5.04-6.27A3.001 3.001 0 007 9v4c0 .55.45 1 1 1h1v-1c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v1h1c.55 0 1-.45 1-1V9c0-2.76-2.24-5-5-5S7 6.24 7 9v3z" />
-              <path d="M7 14v3c0 .55.45 1 1 1h2v-5H8c-.55 0-1 .45-1 1zm10 0c0-.55-.45-1-1-1h-2v5h2c.55 0 1-.45 1-1v-3z" />
+              <path d="M12 3C7.03 3 3 7.03 3 12v7c0 1.1.9 2 2 2h3v-6H5v-3c0-3.87 3.13-7 7-7s7 3.13 7 7v3h-3v6h3c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z" />
             </svg>
           )}
         </button>
@@ -124,6 +125,7 @@ export function UserStatusBar({
           <Link
             href="/settings"
             title="User Settings"
+            aria-label="User Settings"
             className="rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
