@@ -8,7 +8,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatMessageTimestamp } from "@/lib/utils";
+import { formatMessageTimestamp, formatTimeOnly } from "@/lib/utils";
 import type { Message, Reaction } from "@/types";
 
 // ─── ReactionList ─────────────────────────────────────────────────────────────
@@ -21,6 +21,7 @@ function ReactionList({ reactions, messageId }: { reactions: Reaction[]; message
         <button
           key={`${r.emoji}-${messageId}`}
           type="button"
+          aria-label={`React with ${r.emoji} (${r.count} ${r.count !== 1 ? "reactions" : "reaction"})`}
           className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10"
         >
           <span>{r.emoji}</span>
@@ -119,7 +120,7 @@ export function MessageItem({
         {/* Spacer aligns content with the 40px avatar of the header row */}
         <div className="w-10 flex-shrink-0 text-right">
           <span className="invisible text-[10px] text-gray-500 group-hover:visible group-focus-within:visible">
-            {formatMessageTimestamp(message.timestamp)}
+            {formatTimeOnly(message.timestamp)}
           </span>
         </div>
         <div className="min-w-0 flex-1">

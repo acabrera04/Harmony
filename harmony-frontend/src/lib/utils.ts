@@ -42,6 +42,11 @@ export function formatRelativeTime(date: Date | string): string {
  *   - Same day   → "Today at 3:42 PM"
  *   - Yesterday  → "Yesterday at 3:42 PM"
  *   - Older      → "2/20/2026"
+ *
+ * Note: "Today" / "Yesterday" comparisons use toDateString(), which operates
+ * in the viewer's local browser timezone. A message sent just before midnight
+ * UTC may appear as "Today" or "Yesterday" differently across timezones —
+ * this is expected behaviour (same as Discord) and is intentional.
  */
 export function formatMessageTimestamp(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -56,6 +61,17 @@ export function formatMessageTimestamp(date: Date | string): string {
   if (d.toDateString() === yesterday.toDateString()) return `Yesterday at ${time}`;
 
   return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+}
+
+/**
+ * Format a timestamp as time-only (e.g. "3:42 PM").
+ * Returns "" for invalid dates rather than throwing a RangeError.
+ * Used in the compact message variant where only the time is shown on hover.
+ */
+export function formatTimeOnly(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 /**
