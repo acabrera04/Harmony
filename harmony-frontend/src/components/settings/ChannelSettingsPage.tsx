@@ -50,6 +50,9 @@ function OverviewSection({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Synchronous re-entrancy lock: prevents two rapid clicks from dispatching
+  // concurrent saves before React can re-render and disable the button.
+  const isSavingRef = useRef(false);
   // Always reflects the current channel.id regardless of closure age —
   // used to guard stale async saves that complete after a channel switch.
   const currentChannelIdRef = useRef(channel.id);
@@ -71,11 +74,13 @@ function OverviewSection({
     setSaved(false);
     setSaveError(null);
     setSaving(false);
+    isSavingRef.current = false;
   }
 
   useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); }, []);
 
   async function handleSave() {
+    if (isSavingRef.current) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
       setSaveError("Channel name cannot be empty");
@@ -85,6 +90,7 @@ function OverviewSection({
     // navigates to a different channel before this async request resolves.
     const savedForChannelId = channel.id;
     const thisToken = ++saveCounterRef.current;
+    isSavingRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
@@ -102,7 +108,10 @@ function OverviewSection({
       if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken) return;
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
-      if (currentChannelIdRef.current === savedForChannelId && saveCounterRef.current === thisToken) setSaving(false);
+      if (currentChannelIdRef.current === savedForChannelId && saveCounterRef.current === thisToken) {
+        isSavingRef.current = false;
+        setSaving(false);
+      }
     }
   }
 
@@ -239,6 +248,15 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("overview");
   const [displayName, setDisplayName] = useState(channel.name);
+
+  // Render-phase derived-state reset: keep sidebar heading and back-button text
+  // in sync when channel prop changes without unmounting this component.
+  const [prevChannelId, setPrevChannelId] = useState(channel.id);
+  if (prevChannelId !== channel.id) {
+    setPrevChannelId(channel.id);
+    setDisplayName(channel.name);
+    setActiveSection("overview");
+  }
 
   const backHref = `/channels/${serverSlug}/${channel.slug}`;
 
