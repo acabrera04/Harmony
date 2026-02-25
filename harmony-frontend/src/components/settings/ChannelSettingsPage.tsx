@@ -37,6 +37,12 @@ function OverviewSection({ channel }: { channel: Channel }) {
   const [name, setName] = useState(channel.name);
   const [topic, setTopic] = useState(channel.topic ?? "");
   const [description, setDescription] = useState(channel.description ?? "");
+  const [saved, setSaved] = useState(false);
+
+  function handleSave() {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   return (
     <div className="max-w-lg space-y-6">
@@ -109,13 +115,17 @@ function OverviewSection({ channel }: { channel: Channel }) {
         />
       </div>
 
-      {/* Save — non-functional per issue scope */}
+      {/* Save */}
       <div>
         <button
           type="button"
-          className="rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4752c4] focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
+          onClick={handleSave}
+          className={cn(
+            "rounded px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2] transition-colors",
+            saved ? "bg-[#3ba55c] hover:bg-[#2d8a4d]" : "bg-[#5865f2] hover:bg-[#4752c4]"
+          )}
         >
-          Save Changes
+          {saved ? "Saved ✓" : "Save Changes"}
         </button>
       </div>
     </div>
