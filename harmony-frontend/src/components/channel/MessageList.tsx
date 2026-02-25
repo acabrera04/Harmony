@@ -79,6 +79,9 @@ export function MessageList({ channel, messages }: MessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // #c7: only auto-scroll when user is already near the bottom
   const isNearBottomRef = useRef(true);
+  // Track whether the initial mount scroll has happened so we jump instantly
+  // to the bottom on load rather than smoothly scrolling from the top.
+  const hasMountedRef = useRef(false);
 
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -88,7 +91,13 @@ export function MessageList({ channel, messages }: MessageListProps) {
   }, []);
 
   useEffect(() => {
-    if (isNearBottomRef.current) {
+    if (!hasMountedRef.current) {
+      // Initial load: jump instantly so the user starts at the bottom
+      hasMountedRef.current = true;
+      const el = scrollContainerRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    } else if (isNearBottomRef.current) {
+      // New message while already near bottom: smooth scroll
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
