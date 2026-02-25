@@ -144,7 +144,7 @@ export function MessageList({ channel, messages }: MessageListProps) {
       </div>
 
       {messages.length === 0 && (
-        <p className="px-4 text-sm text-gray-500">No messages yet — be the first to say something!</p>
+        <p className="px-4 text-sm text-gray-500">No messages yet. Start the conversation!</p>
       )}
 
       <div ref={bottomRef} />
