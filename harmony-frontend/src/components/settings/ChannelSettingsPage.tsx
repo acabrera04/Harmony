@@ -50,6 +50,28 @@ function OverviewSection({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Always reflects the current channel.id regardless of closure age —
+  // used to guard stale async saves that complete after a channel switch.
+  const currentChannelIdRef = useRef(channel.id);
+  currentChannelIdRef.current = channel.id;
+  // Monotonically-incrementing token: only the latest save invocation can apply
+  // post-await state updates, preventing older in-flight saves from overwriting
+  // results from a newer one (e.g. channel A → B → A rapid save scenario).
+  const saveCounterRef = useRef(0);
+
+  // Render-phase derived-state reset: when the channel changes (e.g. navigating
+  // between channel settings without unmounting), reset all form fields immediately
+  // so stale values from the previous channel don't persist for even one render.
+  const [prevChannelId, setPrevChannelId] = useState(channel.id);
+  if (prevChannelId !== channel.id) {
+    setPrevChannelId(channel.id);
+    setName(channel.name);
+    setTopic(channel.topic ?? "");
+    setDescription(channel.description ?? "");
+    setSaved(false);
+    setSaveError(null);
+    setSaving(false);
+  }
 
   useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); }, []);
 
@@ -59,6 +81,10 @@ function OverviewSection({
       setSaveError("Channel name cannot be empty");
       return;
     }
+    // Capture the channel being saved so we can ignore completion if the user
+    // navigates to a different channel before this async request resolves.
+    const savedForChannelId = channel.id;
+    const thisToken = ++saveCounterRef.current;
     setSaving(true);
     setSaveError(null);
     try {
@@ -67,14 +93,16 @@ function OverviewSection({
         topic,
         description,
       });
+      if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken) return;
       setSaved(true);
       onSave(trimmedName);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (err) {
+      if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken) return;
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
-      setSaving(false);
+      if (currentChannelIdRef.current === savedForChannelId && saveCounterRef.current === thisToken) setSaving(false);
     }
   }
 
