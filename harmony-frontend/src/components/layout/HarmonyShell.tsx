@@ -7,15 +7,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { formatRelativeTime } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
 import { SearchModal } from "@/components/channel/SearchModal";
 import { ChannelSidebar } from "@/components/channel/ChannelSidebar";
 import { MessageInput } from "@/components/channel/MessageInput";
 import { ServerRail } from "@/components/server-rail/ServerRail";
+import { MessageItem } from "@/components/message/MessageItem";
 import { useAuth } from "@/hooks/useAuth";
 import { ChannelVisibility } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
@@ -28,74 +27,6 @@ const BG = {
 };
 
 // ─── Message area ─────────────────────────────────────────────────────────────
-
-// #c5: showHeader=false hides avatar+author line for grouped messages
-function MessageBubble({ message, showHeader = true }: { message: Message; showHeader?: boolean }) {
-  // #c4: safe initial for empty usernames
-  const authorInitial = message.author.username?.charAt(0)?.toUpperCase() ?? "?";
-
-  if (!showHeader) {
-    // Compact follow-up line — no avatar, no author name
-    return (
-      <div className="group flex gap-4 px-4 py-0.5 hover:bg-white/[0.02]">
-        {/* Spacer aligns with the 40px avatar of the header row */}
-        <div className="w-10 flex-shrink-0 text-right">
-          <span className="invisible text-[10px] text-gray-500 group-hover:visible">
-            {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
-          {message.reactions && message.reactions.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {/* #c38: use stable emoji+id key instead of array index */}
-              {message.reactions.map((r) => (
-                <button key={`${r.emoji}-${message.id}`} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
-                  <span>{r.emoji}</span>
-                  <span>{r.count}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="group flex gap-4 px-4 py-0.5 hover:bg-white/[0.02]">
-      <div className="mt-0.5 flex-shrink-0">
-        {message.author.avatarUrl ? (
-          <Image src={message.author.avatarUrl} alt={message.author.username} width={40} height={40} unoptimized className="h-10 w-10 rounded-full" />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white">
-            {authorInitial}
-          </div>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="cursor-pointer font-medium text-white hover:underline">
-            {message.author.displayName ?? message.author.username}
-          </span>
-          <span className="text-[11px] text-gray-400">{formatRelativeTime(message.timestamp)}</span>
-        </div>
-        <p className="mt-0.5 text-sm leading-relaxed text-[#dcddde]">{message.content}</p>
-        {message.reactions && message.reactions.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {/* #c39: use stable emoji+id key instead of array index */}
-            {message.reactions.map((r) => (
-              <button key={`${r.emoji}-${message.id}`} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-300 hover:bg-white/10">
-                <span>{r.emoji}</span>
-                <span>{r.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function groupMessages(messages: Message[]) {
   type Group = { messages: Message[] };
@@ -179,12 +110,12 @@ function MessageArea({
           </div>
         </div>
 
-        {/* Messages — #c5: pass showHeader=false for grouped follow-ups */}
+        {/* Messages — pass showHeader=false for grouped follow-ups */}
         <div className="space-y-4">
           {groups.map((group, gi) => (
             <div key={gi}>
               {group.messages.map((msg, mi) => (
-                <MessageBubble key={msg.id} message={msg} showHeader={mi === 0} />
+                <MessageItem key={msg.id} message={msg} showHeader={mi === 0} />
               ))}
             </div>
           ))}
