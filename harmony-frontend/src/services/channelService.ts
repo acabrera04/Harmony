@@ -18,10 +18,8 @@ import { mockChannels, mockServers } from "@/mocks";
 // Known limitation: in-memory state is not shared across multiple server
 // processes (e.g. PM2 clusters, Kubernetes pods) and is lost on restart.
 const g = globalThis as typeof globalThis & { __harmonyChannels?: Channel[] };
-if (!g.__harmonyChannels) {
-  g.__harmonyChannels = [...mockChannels];
-}
-const channels = g.__harmonyChannels;
+g.__harmonyChannels ??= [...mockChannels];
+const channels: Channel[] = g.__harmonyChannels;
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 

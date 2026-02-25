@@ -75,6 +75,10 @@ function OverviewSection({
     setSaveError(null);
     setSaving(false);
     isSavingRef.current = false;
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
   }
 
   useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); }, []);
