@@ -62,6 +62,13 @@ export function HarmonyShell({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Local message state so sent messages appear immediately without a page reload
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
+  // Track previous channel so we can reset localMessages synchronously on channel
+  // switch — avoids a one-render flash where old messages show under the new channel header.
+  const [prevChannelId, setPrevChannelId] = useState(currentChannel.id);
+  if (prevChannelId !== currentChannel.id) {
+    setPrevChannelId(currentChannel.id);
+    setLocalMessages(messages);
+  }
 
   const { user: authUser, logout, isAuthenticated } = useAuth();
 
@@ -73,13 +80,6 @@ export function HarmonyShell({
     status: "online",
     role: "guest",
   };
-
-  // Sync local messages whenever the channel changes so stale messages from
-  // the previous channel are never shown (useState init only runs on mount)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalMessages(messages);
-  }, [messages, currentChannel.id]);
 
   const handleMessageSent = useCallback((msg: Message) => {
     setLocalMessages((prev) => [...prev, msg]);
@@ -137,7 +137,7 @@ export function HarmonyShell({
 
         <div className="flex flex-1 overflow-hidden">
           <div className={cn("flex flex-1 flex-col overflow-hidden", BG.primary)}>
-            <MessageList channel={currentChannel} messages={localMessages} />
+            <MessageList key={currentChannel.id} channel={currentChannel} messages={localMessages} />
             <MessageInput
               channelId={currentChannel.id}
               channelName={currentChannel.name}

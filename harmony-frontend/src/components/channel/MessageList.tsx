@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useLayoutEffect, useCallback } from "react";
 import { MessageItem } from "@/components/message/MessageItem";
 import { formatDate } from "@/lib/utils";
 import { ChannelVisibility } from "@/types";
@@ -90,7 +90,7 @@ export function MessageList({ channel, messages }: MessageListProps) {
     isNearBottomRef.current = distanceFromBottom <= 100;
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!hasMountedRef.current) {
       // Initial load: jump instantly so the user starts at the bottom
       hasMountedRef.current = true;
