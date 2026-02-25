@@ -39,8 +39,9 @@ export async function saveChannelSettings(
 
   await updateChannel(channel.id, sanitizedPatch);
 
-  // Invalidate all routes that render channel data so they re-fetch on next visit
-  revalidatePath(`/channels/${serverSlug}/${channelSlug}`);
-  revalidatePath(`/c/${serverSlug}/${channelSlug}`);
-  revalidatePath(`/settings/${serverSlug}/${channelSlug}`);
+  // Invalidate at layout level so sidebars (channel lists) across all pages
+  // under the server segment also receive fresh data after a rename.
+  revalidatePath(`/channels/${serverSlug}`, "layout");
+  revalidatePath(`/c/${serverSlug}`, "layout");
+  revalidatePath(`/settings/${serverSlug}`, "layout");
 }

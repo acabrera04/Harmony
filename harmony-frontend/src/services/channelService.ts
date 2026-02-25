@@ -85,7 +85,9 @@ export async function updateChannel(
   }
   channels[index] = {
     ...channels[index],
-    ...patch,
+    // Filter out undefined values so a Partial<> with absent keys doesn't
+    // overwrite existing fields with undefined (standard PATCH semantics).
+    ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
     updatedAt: new Date().toISOString(),
   };
   return { ...channels[index] };
