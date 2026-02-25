@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +49,9 @@ function OverviewSection({
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current); }, []);
 
   async function handleSave() {
     const trimmedName = name.trim();
@@ -66,7 +69,8 @@ function OverviewSection({
       });
       setSaved(true);
       onSave(trimmedName);
-      setTimeout(() => setSaved(false), 2000);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
     } finally {
@@ -182,8 +186,13 @@ function ComingSoonSection({ label }: { label: string }) {
 
 function LoadingScreen() {
   return (
-    <div className={cn("flex h-screen items-center justify-center", BG.base)}>
+    <div
+      className={cn("flex h-screen items-center justify-center", BG.base)}
+      role="status"
+      aria-live="polite"
+    >
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#5865f2] border-t-transparent" />
+      <span className="sr-only">Loading…</span>
     </div>
   );
 }

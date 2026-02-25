@@ -14,13 +14,30 @@ export async function saveChannelSettings(
   if (!channel) {
     throw new Error("Channel not found");
   }
-  // Validate name: required, non-empty after trimming
+  // TODO (#71): This action has no server-side auth check. Anyone who can call
+  // it can mutate channel data. Enforce a server-verifiable session + role check
+  // before this reaches production.
+
+  // Build an explicit whitelist so callers cannot sneak in extra fields
+  // (e.g. serverId, visibility) even though TS types restrict them at compile time.
+  const sanitizedPatch: Partial<Pick<Channel, "name" | "topic" | "description">> = {};
+
   if (patch.name !== undefined) {
+    if (typeof patch.name !== "string") throw new Error("Invalid channel name");
     const trimmed = patch.name.trim();
     if (!trimmed) throw new Error("Channel name cannot be empty");
-    patch = { ...patch, name: trimmed };
+    sanitizedPatch.name = trimmed;
   }
-  await updateChannel(channel.id, patch);
+  if (patch.topic !== undefined) {
+    if (typeof patch.topic !== "string") throw new Error("Invalid channel topic");
+    sanitizedPatch.topic = patch.topic;
+  }
+  if (patch.description !== undefined) {
+    if (typeof patch.description !== "string") throw new Error("Invalid channel description");
+    sanitizedPatch.description = patch.description;
+  }
+
+  await updateChannel(channel.id, sanitizedPatch);
 
   // Invalidate all routes that render channel data so they re-fetch on next visit
   revalidatePath(`/channels/${serverSlug}/${channelSlug}`);
