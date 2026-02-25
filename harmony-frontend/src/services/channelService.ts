@@ -8,11 +8,18 @@ import { ChannelVisibility, type Channel } from "@/types";
 import { mockChannels, mockServers } from "@/mocks";
 
 // ─── In-memory store (mutated by write operations) ────────────────────────────
-// #c37: This is a module-scoped, process-wide mutable store shared across requests.
-// In a real implementation concurrent writes would require proper locking/transactions
-// or a database to avoid race conditions. For this mock/demo layer the trade-off is
-// acceptable — state is only intended to persist for the lifetime of the server process.
-const channels: Channel[] = [...mockChannels];
+// Use globalThis so the array survives Next.js hot-reloads and Turbopack
+// worker re-evaluations in dev mode — same pattern used by Prisma client in
+// Next.js dev. In production the module is evaluated once and this is a no-op.
+//
+// TODO(database): Replace with real DB queries when persistence is introduced.
+// Each service function (getChannels, updateChannel, etc.) maps 1:1 to a SQL
+// query — the component layer won't need to change, only this service.
+// Known limitation: in-memory state is not shared across multiple server
+// processes (e.g. PM2 clusters, Kubernetes pods) and is lost on restart.
+const g = globalThis as typeof globalThis & { __harmonyChannels?: Channel[] };
+g.__harmonyChannels ??= [...mockChannels];
+const channels: Channel[] = g.__harmonyChannels;
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
@@ -57,6 +64,28 @@ export async function updateVisibility(
   channels[index] = {
     ...channels[index],
     visibility,
+    updatedAt: new Date().toISOString(),
+  };
+  return { ...channels[index] };
+}
+
+/**
+ * Updates editable metadata (name, topic, description) of a channel in-memory.
+ * slug is intentionally excluded — renaming the slug would break existing URLs.
+ */
+export async function updateChannel(
+  channelId: string,
+  patch: Partial<Pick<Channel, "name" | "topic" | "description">>
+): Promise<Channel> {
+  const index = channels.findIndex((c) => c.id === channelId);
+  if (index === -1) {
+    throw new Error(`Channel not found: ${channelId}`);
+  }
+  channels[index] = {
+    ...channels[index],
+    // Filter out undefined values so a Partial<> with absent keys doesn't
+    // overwrite existing fields with undefined (standard PATCH semantics).
+    ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
     updatedAt: new Date().toISOString(),
   };
   return { ...channels[index] };
