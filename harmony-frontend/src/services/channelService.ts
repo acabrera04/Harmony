@@ -8,11 +8,14 @@ import { ChannelVisibility, type Channel } from "@/types";
 import { mockChannels, mockServers } from "@/mocks";
 
 // ─── In-memory store (mutated by write operations) ────────────────────────────
-// #c37: This is a module-scoped, process-wide mutable store shared across requests.
-// In a real implementation concurrent writes would require proper locking/transactions
-// or a database to avoid race conditions. For this mock/demo layer the trade-off is
-// acceptable — state is only intended to persist for the lifetime of the server process.
-const channels: Channel[] = [...mockChannels];
+// Use globalThis so the array survives Next.js hot-reloads and Turbopack
+// worker re-evaluations in dev mode — same pattern used by Prisma client in
+// Next.js dev. In production the module is evaluated once and this is a no-op.
+const g = globalThis as typeof globalThis & { __harmonyChannels?: Channel[] };
+if (!g.__harmonyChannels) {
+  g.__harmonyChannels = [...mockChannels];
+}
+const channels = g.__harmonyChannels;
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 

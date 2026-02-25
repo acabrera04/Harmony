@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { updateChannel, getChannel } from "@/services/channelService";
 import type { Channel } from "@/types";
 
@@ -20,4 +21,9 @@ export async function saveChannelSettings(
     patch = { ...patch, name: trimmed };
   }
   await updateChannel(channel.id, patch);
+
+  // Invalidate all routes that render channel data so they re-fetch on next visit
+  revalidatePath(`/channels/${serverSlug}/${channelSlug}`);
+  revalidatePath(`/c/${serverSlug}/${channelSlug}`);
+  revalidatePath(`/settings/${serverSlug}/${channelSlug}`);
 }
