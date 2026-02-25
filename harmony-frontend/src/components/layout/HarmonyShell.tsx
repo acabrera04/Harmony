@@ -1,22 +1,21 @@
 /**
  * Layout: HarmonyShell
  * Full Discord-like 3-column layout shell.
- * Wires together ServerRail, ChannelSidebar, TopBar, MessageArea, MembersSidebar, SearchModal.
+ * Wires together ServerRail, ChannelSidebar, TopBar, MessageList, MembersSidebar, SearchModal.
  */
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { TopBar } from "@/components/channel/TopBar";
 import { MembersSidebar } from "@/components/channel/MembersSidebar";
 import { SearchModal } from "@/components/channel/SearchModal";
 import { ChannelSidebar } from "@/components/channel/ChannelSidebar";
 import { MessageInput } from "@/components/channel/MessageInput";
+import { MessageList } from "@/components/channel/MessageList";
 import { ServerRail } from "@/components/server-rail/ServerRail";
-import { MessageItem } from "@/components/message/MessageItem";
 import { useAuth } from "@/hooks/useAuth";
-import { ChannelVisibility } from "@/types";
 import type { Server, Channel, Message, User } from "@/types";
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -25,118 +24,6 @@ const BG = {
   tertiary: "bg-[#202225]",
   primary: "bg-[#36393f]",
 };
-
-// ─── Message area ─────────────────────────────────────────────────────────────
-
-function groupMessages(messages: Message[]) {
-  type Group = { messages: Message[] };
-  const groups: Group[] = [];
-
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
-    const prev = messages[i - 1];
-    const sameAuthor = prev && prev.author.id === msg.author.id;
-    // #c31: guard against invalid timestamps — NaN comparisons always return false,
-    // which would silently break grouping; we treat NaN as "not within time".
-    const msgTime = new Date(msg.timestamp).getTime();
-    const prevTime = prev ? new Date(prev.timestamp).getTime() : NaN;
-    const withinTime =
-      prev &&
-      !isNaN(msgTime) &&
-      !isNaN(prevTime) &&
-      msgTime - prevTime < 5 * 60 * 1000;
-
-    if (sameAuthor && withinTime) {
-      groups[groups.length - 1].messages.push(msg);
-    } else {
-      groups.push({ messages: [msg] });
-    }
-  }
-
-  return groups;
-}
-
-function MessageArea({
-  channel,
-  messages,
-  isReadOnly,
-  onSendMessage,
-}: {
-  channel: Channel;
-  messages: Message[];
-  isReadOnly: boolean;
-  onSendMessage: (msg: Message) => void;
-}) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  // #c7: only auto-scroll when already near the bottom
-  const isNearBottomRef = useRef(true);
-
-  const handleScroll = useCallback(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    isNearBottomRef.current = distanceFromBottom <= 100;
-  }, []);
-
-  useEffect(() => {
-    if (isNearBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-
-  const groups = groupMessages(messages);
-
-  return (
-    <div className={cn("flex flex-1 flex-col overflow-hidden", BG.primary)}>
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto py-4"
-        onScroll={handleScroll}
-      >
-        {/* Channel intro header */}
-        <div className="px-4 pb-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#40444b]">
-            <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M5.88657 21C5.57547 21 5.3399 20.7189 5.39427 20.4126L6.00001 17H2.59511C2.28449 17 2.04905 16.7198 2.10259 16.4138L2.27759 15.4138C2.31946 15.1746 2.52722 15 2.77011 15H6.35001L7.41001 9H4.00511C3.69449 9 3.45905 8.71977 3.51259 8.41381L3.68759 7.41381C3.72946 7.17456 3.93722 7 4.18011 7H7.76001L8.39677 3.41262C8.43914 3.17391 8.64664 3 8.88907 3H9.87344C10.1845 3 10.4201 3.28107 10.3657 3.58738L9.76001 7H15.76L16.3968 3.41262C16.4391 3.17391 16.6466 3 16.8891 3H17.8734C18.1845 3 18.4201 3.28107 18.3657 3.58738L17.76 7H21.1649C21.4755 7 21.711 7.28023 21.6574 7.58619L21.4824 8.58619C21.4406 8.82544 21.2328 9 20.9899 9H17.41L16.35 15H19.7549C20.0655 15 20.301 15.2802 20.2474 15.5862L20.0724 16.5862C20.0306 16.8254 19.8228 17 19.5799 17H16L15.3632 20.5874C15.3209 20.8261 15.1134 21 14.871 21H13.8866C13.5755 21 13.3399 20.7189 13.3943 20.4126L14 17H8.00001L7.36325 20.5874C7.32088 20.8261 7.11337 21 6.87094 21H5.88657ZM9.41001 9L8.35001 15H14.35L15.41 9H9.41001Z" />
-            </svg>
-          </div>
-          <h2 className="mt-2 text-3xl font-bold text-white">Welcome to #{channel.name}!</h2>
-          {channel.topic && <p className="mt-1 text-sm text-gray-400">{channel.topic}</p>}
-          <div className="mt-1 text-xs text-gray-500">
-            {channel.visibility === ChannelVisibility.PUBLIC_INDEXABLE && "🌐 Public · Indexed by search engines"}
-            {channel.visibility === ChannelVisibility.PUBLIC_NO_INDEX && "👁 Public · Not indexed"}
-            {channel.visibility === ChannelVisibility.PRIVATE && "🔒 Private channel"}
-          </div>
-        </div>
-
-        {/* Messages — pass showHeader=false for grouped follow-ups */}
-        <div className="space-y-4">
-          {groups.map((group, gi) => (
-            <div key={gi}>
-              {group.messages.map((msg, mi) => (
-                <MessageItem key={msg.id} message={msg} showHeader={mi === 0} />
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {messages.length === 0 && (
-          <p className="px-4 text-sm text-gray-500">No messages yet — be the first to say something!</p>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      <MessageInput
-        channelId={channel.id}
-        channelName={channel.name}
-        isReadOnly={isReadOnly}
-        onMessageSent={onSendMessage}
-      />
-    </div>
-  );
-}
 
 // ─── Main Shell ───────────────────────────────────────────────────────────────
 
@@ -175,6 +62,13 @@ export function HarmonyShell({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Local message state so sent messages appear immediately without a page reload
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
+  // Track previous channel so we can reset localMessages synchronously on channel
+  // switch — avoids a one-render flash where old messages show under the new channel header.
+  const [prevChannelId, setPrevChannelId] = useState(currentChannel.id);
+  if (prevChannelId !== currentChannel.id) {
+    setPrevChannelId(currentChannel.id);
+    setLocalMessages(messages);
+  }
 
   const { user: authUser, isAuthenticated } = useAuth();
 
@@ -186,13 +80,6 @@ export function HarmonyShell({
     status: "online",
     role: "guest",
   };
-
-  // Sync local messages whenever the channel changes so stale messages from
-  // the previous channel are never shown (useState init only runs on mount)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalMessages(messages);
-  }, [messages, currentChannel.id]);
 
   const handleMessageSent = useCallback((msg: Message) => {
     setLocalMessages((prev) => [...prev, msg]);
@@ -246,12 +133,15 @@ export function HarmonyShell({
         />
 
         <div className="flex flex-1 overflow-hidden">
-          <MessageArea
-            channel={currentChannel}
-            messages={localMessages}
-            isReadOnly={currentUser.role === "guest"}
-            onSendMessage={handleMessageSent}
-          />
+          <div className={cn("flex flex-1 flex-col overflow-hidden", BG.primary)}>
+            <MessageList key={currentChannel.id} channel={currentChannel} messages={localMessages} />
+            <MessageInput
+              channelId={currentChannel.id}
+              channelName={currentChannel.name}
+              isReadOnly={currentUser.role === "guest"}
+              onMessageSent={handleMessageSent}
+            />
+          </div>
           <MembersSidebar
             members={members}
             isOpen={isMembersOpen}
