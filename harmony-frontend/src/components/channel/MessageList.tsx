@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useRef, useLayoutEffect, useCallback } from "react";
+import { useRef, useLayoutEffect, useCallback, useMemo } from "react";
 import { MessageItem } from "@/components/message/MessageItem";
 import { formatDate } from "@/lib/utils";
 import { ChannelVisibility } from "@/types";
@@ -102,7 +102,7 @@ export function MessageList({ channel, messages }: MessageListProps) {
     }
   }, [messages]);
 
-  const groups = groupMessages(messages);
+  const groups = useMemo(() => groupMessages(messages), [messages]);
 
   return (
     <div
@@ -130,9 +130,10 @@ export function MessageList({ channel, messages }: MessageListProps) {
       <div className="space-y-4">
         {groups.map((group, gi) => {
           const prevGroup = groups[gi - 1];
-          const showDateSeparator = gi > 0 && prevGroup && prevGroup.dateLabel !== group.dateLabel;
+          const showDateSeparator =
+            gi > 0 && prevGroup && group.dateLabel && prevGroup.dateLabel !== group.dateLabel;
           return (
-            <div key={gi}>
+            <div key={group.messages[0]?.id || gi}>
               {showDateSeparator && <DateSeparator label={group.dateLabel} />}
               {group.messages.map((msg, mi) => (
                 <MessageItem key={msg.id} message={msg} showHeader={mi === 0} />
