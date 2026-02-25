@@ -100,8 +100,8 @@ function OverviewSection({
     try {
       await saveChannelSettings(serverSlug, channel.slug, {
         name: trimmedName,
-        topic,
-        description,
+        topic: topic.trim(),
+        description: description.trim(),
       });
       if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken) return;
       setSaved(true);
