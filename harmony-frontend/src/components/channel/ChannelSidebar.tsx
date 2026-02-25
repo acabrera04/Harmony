@@ -8,26 +8,16 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { UserStatusBar } from "@/components/channel/UserStatusBar";
 import { ChannelVisibility, ChannelType } from "@/types";
-import type { Server, Channel, User, UserStatus } from "@/types";
+import type { Server, Channel, User } from "@/types";
 
 // ─── Colour tokens (Discord palette) ─────────────────────────────────────────
 
 const BG_SIDEBAR = "bg-[#2f3136]";
-const BG_USER_BAR = "bg-[#292b2f]";
 const BG_ACTIVE = "bg-[#3d4148]";
-
-// ─── Status dot colours ───────────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<UserStatus, string> = {
-  online: "bg-green-500",
-  idle: "bg-yellow-400",
-  dnd: "bg-red-500",
-  offline: "bg-gray-400",
-};
 
 // ─── Channel type icons ───────────────────────────────────────────────────────
 
@@ -110,7 +100,6 @@ export interface ChannelSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
-  onLogout: () => void;
   /** URL base path for channel links — defaults to "/c" */
   basePath?: string;
 }
@@ -123,7 +112,6 @@ export function ChannelSidebar({
   isOpen,
   onClose,
   isAuthenticated,
-  onLogout,
   basePath = "/c",
 }: ChannelSidebarProps) {
   const [textCollapsed, setTextCollapsed] = useState(false);
@@ -133,8 +121,6 @@ export function ChannelSidebar({
     (c) => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT
   );
   const voiceChannels = channels.filter((c) => c.type === ChannelType.VOICE);
-
-  const userInitial = currentUser.username?.[0]?.toUpperCase() ?? "?";
 
   return (
     <>
@@ -235,73 +221,11 @@ export function ChannelSidebar({
           )}
         </div>
 
-        {/* User info bar */}
-        <div className={cn("flex h-14 flex-shrink-0 items-center gap-2 px-2", BG_USER_BAR)}>
-          <div className="relative flex-shrink-0">
-            {currentUser.avatar ? (
-              <Image
-                src={currentUser.avatar}
-                alt={currentUser.username}
-                width={32}
-                height={32}
-                unoptimized
-                className="h-8 w-8 rounded-full"
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white">
-                {userInitial}
-              </div>
-            )}
-            <span
-              className={cn(
-                "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-[#292b2f]",
-                STATUS_COLOR[currentUser.status]
-              )}
-              aria-label={currentUser.status}
-            />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-white">
-              {currentUser.displayName ?? currentUser.username}
-            </p>
-            <p className="truncate text-xs text-gray-400">#{currentUser.username}</p>
-          </div>
-
-          {isAuthenticated ? (
-            <button
-              onClick={onLogout}
-              title="Log out"
-              aria-label="Log out"
-              className="flex-shrink-0 rounded p-1.5 text-gray-400 hover:bg-[#3a3c41] hover:text-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-4 w-4"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z"
-                  clipRule="evenodd"
-                />
-                <path
-                  fillRule="evenodd"
-                  d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="flex-shrink-0 rounded bg-[#5865f2] px-2 py-1 text-xs font-medium text-white hover:bg-[#4752c4]"
-            >
-              Log In
-            </Link>
-          )}
-        </div>
+        {/* User status bar */}
+        <UserStatusBar
+          currentUser={currentUser}
+          isAuthenticated={isAuthenticated}
+        />
       </nav>
     </>
   );

@@ -176,7 +176,7 @@ export function HarmonyShell({
   // Local message state so sent messages appear immediately without a page reload
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
 
-  const { user: authUser, logout, isAuthenticated } = useAuth();
+  const { user: authUser, isAuthenticated } = useAuth();
 
   // Fallback for guest/unauthenticated view
   const currentUser: User = authUser ?? {
@@ -230,9 +230,6 @@ export function HarmonyShell({
         onClose={() => setIsMenuOpen(false)}
         basePath={basePath}
         isAuthenticated={isAuthenticated}
-        onLogout={async () => {
-          await logout();
-        }}
       />
 
       {/* 3. Main column */}
