@@ -34,7 +34,15 @@ const SECTIONS: { id: Section; label: string }[] = [
 
 // ─── Overview section ─────────────────────────────────────────────────────────
 
-function OverviewSection({ channel, serverSlug }: { channel: Channel; serverSlug: string }) {
+function OverviewSection({
+  channel,
+  serverSlug,
+  onSave,
+}: {
+  channel: Channel;
+  serverSlug: string;
+  onSave: (savedName: string) => void;
+}) {
   const [name, setName] = useState(channel.name);
   const [topic, setTopic] = useState(channel.topic ?? "");
   const [description, setDescription] = useState(channel.description ?? "");
@@ -57,6 +65,7 @@ function OverviewSection({ channel, serverSlug }: { channel: Channel; serverSlug
         description,
       });
       setSaved(true);
+      onSave(trimmedName);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save changes");
@@ -192,6 +201,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
   const { isAdmin, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("overview");
+  const [displayName, setDisplayName] = useState(channel.name);
 
   const backHref = `/channels/${serverSlug}/${channel.slug}`;
 
@@ -212,7 +222,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
         {/* Channel name heading */}
         <div className="mb-2 px-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-            #{channel.name}
+            #{displayName}
           </p>
         </div>
 
@@ -225,7 +235,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
               onClick={() => setActiveSection(id)}
               aria-current={activeSection === id ? "page" : undefined}
               className={cn(
-                "w-full rounded px-2 py-1.5 text-left text-sm transition-colors",
+                "w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors",
                 activeSection === id
                   ? cn(BG.active, "font-medium text-white")
                   : "text-gray-400 hover:bg-[#393c43] hover:text-gray-200"
@@ -244,7 +254,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
           <button
             type="button"
             onClick={() => router.push(backHref)}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"
+            className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-400 hover:text-white"
           >
             <svg
               className="h-4 w-4"
@@ -259,13 +269,13 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
             >
               <path d="m15 18-6-6 6-6" />
             </svg>
-            Back to #{channel.slug}
+            Back to #{displayName}
           </button>
         </div>
 
         {/* Section content */}
         <div className="px-10 py-8">
-          {activeSection === "overview" && <OverviewSection channel={channel} serverSlug={serverSlug} />}
+          {activeSection === "overview" && <OverviewSection channel={channel} serverSlug={serverSlug} onSave={setDisplayName} />}
           {activeSection === "permissions" && <ComingSoonSection label="Permissions" />}
           {activeSection === "visibility" && <ComingSoonSection label="Visibility" />}
         </div>
