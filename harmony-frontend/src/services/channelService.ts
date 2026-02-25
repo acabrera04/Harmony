@@ -63,6 +63,26 @@ export async function updateVisibility(
 }
 
 /**
+ * Updates editable metadata (name, topic, description) of a channel in-memory.
+ * slug is intentionally excluded — renaming the slug would break existing URLs.
+ */
+export async function updateChannel(
+  channelId: string,
+  patch: Partial<Pick<Channel, "name" | "topic" | "description">>
+): Promise<Channel> {
+  const index = channels.findIndex((c) => c.id === channelId);
+  if (index === -1) {
+    throw new Error(`Channel not found: ${channelId}`);
+  }
+  channels[index] = {
+    ...channels[index],
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
+  return { ...channels[index] };
+}
+
+/**
  * Creates a new channel and appends it to the in-memory store.
  */
 export async function createChannel(

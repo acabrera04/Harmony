@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { saveChannelSettings } from "@/app/settings/[serverSlug]/[channelSlug]/actions";
 import type { Channel } from "@/types";
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -33,15 +34,35 @@ const SECTIONS: { id: Section; label: string }[] = [
 
 // ─── Overview section ─────────────────────────────────────────────────────────
 
-function OverviewSection({ channel }: { channel: Channel }) {
+function OverviewSection({ channel, serverSlug }: { channel: Channel; serverSlug: string }) {
   const [name, setName] = useState(channel.name);
   const [topic, setTopic] = useState(channel.topic ?? "");
   const [description, setDescription] = useState(channel.description ?? "");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  function handleSave() {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  async function handleSave() {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setSaveError("Channel name cannot be empty");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveChannelSettings(serverSlug, channel.slug, {
+        name: trimmedName,
+        topic,
+        description,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -116,17 +137,21 @@ function OverviewSection({ channel }: { channel: Channel }) {
       </div>
 
       {/* Save */}
-      <div>
+      <div className="space-y-2">
         <button
           type="button"
           onClick={handleSave}
+          disabled={saving}
           className={cn(
-            "rounded px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2] transition-colors",
+            "rounded px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2] transition-colors disabled:opacity-60",
             saved ? "bg-[#3ba55c] hover:bg-[#2d8a4d]" : "bg-[#5865f2] hover:bg-[#4752c4]"
           )}
         >
-          {saved ? "Saved ✓" : "Save Changes"}
+          {saving ? "Saving…" : saved ? "Saved ✓" : "Save Changes"}
         </button>
+        {saveError && (
+          <p role="alert" className="text-sm text-red-400">{saveError}</p>
+        )}
       </div>
     </div>
   );
@@ -240,7 +265,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
 
         {/* Section content */}
         <div className="px-10 py-8">
-          {activeSection === "overview" && <OverviewSection channel={channel} />}
+          {activeSection === "overview" && <OverviewSection channel={channel} serverSlug={serverSlug} />}
           {activeSection === "permissions" && <ComingSoonSection label="Permissions" />}
           {activeSection === "visibility" && <ComingSoonSection label="Visibility" />}
         </div>
