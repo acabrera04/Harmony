@@ -11,6 +11,12 @@ import { mockChannels, mockServers } from "@/mocks";
 // Use globalThis so the array survives Next.js hot-reloads and Turbopack
 // worker re-evaluations in dev mode — same pattern used by Prisma client in
 // Next.js dev. In production the module is evaluated once and this is a no-op.
+//
+// TODO(database): Replace with real DB queries when persistence is introduced.
+// Each service function (getChannels, updateChannel, etc.) maps 1:1 to a SQL
+// query — the component layer won't need to change, only this service.
+// Known limitation: in-memory state is not shared across multiple server
+// processes (e.g. PM2 clusters, Kubernetes pods) and is lost on restart.
 const g = globalThis as typeof globalThis & { __harmonyChannels?: Channel[] };
 if (!g.__harmonyChannels) {
   g.__harmonyChannels = [...mockChannels];
