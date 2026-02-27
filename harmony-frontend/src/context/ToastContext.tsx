@@ -2,6 +2,10 @@
  * Toast Context (Issue #35 — Toast Notification System)
  * Manages a stack of toasts with auto-dismiss and manual dismiss.
  * Ref: docs/dev-spec-channel-visibility-toggle.md (consumer: CL-C1.2 VisibilityToggle)
+ *
+ * Context is split into two to prevent unnecessary re-renders:
+ *  - ToastActionsContext: stable callbacks (never changes) — used by most consumers
+ *  - ToastStateContext:   toasts array (changes on every push/pop) — used only by ToastContainer
  */
 
 "use client";
@@ -23,21 +27,25 @@ export interface Toast {
 export interface ShowToastOptions {
   message: string;
   type: ToastType;
-  /** Auto-dismiss delay in ms. Default: 3000 */
+  /** Auto-dismiss delay in ms. Default: 3000. Pass 0 for no auto-dismiss. */
   duration?: number;
 }
 
-export interface ToastContextValue {
-  toasts: Toast[];
+export interface ToastActionsContextValue {
   showToast: (options: ShowToastOptions) => void;
   dismissToast: (id: string) => void;
   /** Cancels the auto-dismiss timer for a toast without removing it from state. */
   cancelAutoDismiss: (id: string) => void;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+export interface ToastStateContextValue {
+  toasts: Toast[];
+}
 
-export const ToastContext = createContext<ToastContextValue | null>(null);
+// ─── Contexts ─────────────────────────────────────────────────────────────────
+
+export const ToastActionsContext = createContext<ToastActionsContextValue | null>(null);
+export const ToastStateContext = createContext<ToastStateContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -90,8 +98,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, dismissToast, cancelAutoDismiss }}>
-      {children}
-    </ToastContext.Provider>
+    <ToastActionsContext.Provider value={{ showToast, dismissToast, cancelAutoDismiss }}>
+      <ToastStateContext.Provider value={{ toasts }}>
+        {children}
+      </ToastStateContext.Provider>
+    </ToastActionsContext.Provider>
   );
 }

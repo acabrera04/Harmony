@@ -7,7 +7,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useToast } from "@/hooks/useToast";
+import { useToast, useToastState } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import type { Toast } from "@/context/ToastContext";
 
@@ -38,6 +38,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   const [visible, setVisible] = useState(false);
   // Tracks the dismiss-delay timer so we can cancel it if the component unmounts early
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against double-click: once dismiss is initiated, ignore further clicks
+  const dismissedRef = useRef(false);
 
   // Slide in on mount
   useEffect(() => {
@@ -62,15 +64,22 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 
   // Cancel the provider's auto-dismiss timer immediately (so it can't fire mid-animation),
   // animate out, then remove from context once the transition completes.
+  // Guards against double-clicks: idempotent after first invocation.
   const handleDismiss = () => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     cancelAutoDismiss(toast.id);
     setVisible(false);
     dismissTimerRef.current = setTimeout(onDismiss, EXIT_ANIMATION_MS);
   };
 
+  const isError = toast.type === "error";
+
   return (
     <div
-      role="alert"
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
       className={cn(
         "flex items-start gap-3 min-w-[280px] max-w-sm w-full",
         "rounded-md border px-4 py-3 shadow-lg text-white text-sm",
@@ -102,7 +111,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 // ─── Container ────────────────────────────────────────────────────────────────
 
 export function ToastContainer() {
-  const { toasts, dismissToast } = useToast();
+  const { toasts } = useToastState();
+  const { dismissToast } = useToast();
 
   if (toasts.length === 0) return null;
 
