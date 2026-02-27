@@ -54,11 +54,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // Track active timers so we can clear them on manual dismiss
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Clear all pending timers on unmount to prevent setState-after-unmount warnings
+  // Clear all pending timers on unmount to prevent setState-after-unmount warnings.
+  // Snapshot timers.current at effect setup time to satisfy react-hooks/exhaustive-deps.
   useEffect(() => {
+    const currentTimers = timers.current;
     return () => {
-      timers.current.forEach((timer) => clearTimeout(timer));
-      timers.current.clear();
+      currentTimers.forEach((timer) => clearTimeout(timer));
+      currentTimers.clear();
     };
   }, []);
 
