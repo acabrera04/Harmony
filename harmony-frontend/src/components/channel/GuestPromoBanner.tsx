@@ -7,33 +7,37 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 
 const DISMISS_KEY = 'harmony_guest_banner_dismissed';
 
+function isDismissedInStorage(): boolean {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 export function GuestPromoBanner() {
-  const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
+  // Lazy initialiser reads sessionStorage once on first render (client only).
+  // SSR returns true (hidden) so the banner never flashes during hydration.
+  const [dismissed, setDismissed] = useState(() =>
+    typeof window === 'undefined' ? true : isDismissedInStorage(),
+  );
 
-  useEffect(() => {
-    try {
-      setDismissed(sessionStorage.getItem(DISMISS_KEY) === 'true');
-    } catch {
-      setDismissed(false);
-    }
-  }, []);
-
-  if (dismissed) return null;
-
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setDismissed(true);
     try {
       sessionStorage.setItem(DISMISS_KEY, 'true');
     } catch {
       // sessionStorage unavailable (e.g. private browsing) — still dismiss in-memory
     }
-  };
+  }, []);
+
+  if (dismissed) return null;
 
   return (
     <div
