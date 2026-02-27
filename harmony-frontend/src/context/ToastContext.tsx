@@ -10,7 +10,7 @@
 
 "use client";
 
-import { createContext, useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -97,8 +97,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [dismissToast]
   );
 
+  // Memoize so the actions context value reference stays stable across re-renders
+  // caused by toasts state changes — fulfilling the "no unnecessary re-renders" goal.
+  const actionsValue = useMemo(
+    () => ({ showToast, dismissToast, cancelAutoDismiss }),
+    [showToast, dismissToast, cancelAutoDismiss]
+  );
+
   return (
-    <ToastActionsContext.Provider value={{ showToast, dismissToast, cancelAutoDismiss }}>
+    <ToastActionsContext.Provider value={actionsValue}>
       <ToastStateContext.Provider value={{ toasts }}>
         {children}
       </ToastStateContext.Provider>
