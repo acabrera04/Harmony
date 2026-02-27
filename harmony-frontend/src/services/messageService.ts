@@ -3,8 +3,8 @@
  * References: dev-spec-guest-public-channel-view.md
  */
 
-import type { Message } from "@/types";
-import { mockMessages, mockCurrentUser } from "@/mocks";
+import type { Message } from '@/types';
+import { mockMessages, mockCurrentUser } from '@/mocks';
 
 // ─── In-memory store ──────────────────────────────────────────────────────────
 
@@ -20,10 +20,10 @@ const PAGE_SIZE = 20;
  */
 export async function getMessages(
   channelId: string,
-  page = 1
+  page = 1,
 ): Promise<{ messages: Message[]; hasMore: boolean }> {
   const channelMessages = messages
-    .filter((m) => m.channelId === channelId)
+    .filter(m => m.channelId === channelId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const start = (page - 1) * PAGE_SIZE;
@@ -39,10 +39,7 @@ export async function getMessages(
 /**
  * Appends a new message to the in-memory store and returns it.
  */
-export async function sendMessage(
-  channelId: string,
-  content: string
-): Promise<Message> {
+export async function sendMessage(channelId: string, content: string): Promise<Message> {
   const newMessage: Message = {
     id: `msg-${Date.now()}`,
     channelId,
@@ -64,7 +61,7 @@ export async function sendMessage(
  * Deletes a message by ID. Returns true if deleted, false if not found.
  */
 export async function deleteMessage(id: string): Promise<boolean> {
-  const index = messages.findIndex((m) => m.id === id);
+  const index = messages.findIndex(m => m.id === id);
   if (index === -1) return false;
   messages.splice(index, 1);
   return true;

@@ -1,9 +1,9 @@
-import { notFound } from "next/navigation";
-import { getServers, getServerMembers } from "@/services/serverService";
-import { getChannels } from "@/services/channelService";
-import { getMessages } from "@/services/messageService";
-import { HarmonyShell } from "@/components/layout/HarmonyShell";
-import { VisibilityGuard } from "@/components/channel/VisibilityGuard";
+import { notFound } from 'next/navigation';
+import { getServers, getServerMembers } from '@/services/serverService';
+import { getChannels } from '@/services/channelService';
+import { getMessages } from '@/services/messageService';
+import { HarmonyShell } from '@/components/layout/HarmonyShell';
+import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 
 interface ChannelPageContentProps {
   serverSlug: string;
@@ -12,21 +12,23 @@ interface ChannelPageContentProps {
   isGuestView?: boolean;
 }
 
-export async function ChannelPageContent({ serverSlug, channelSlug, isGuestView = false }: ChannelPageContentProps) {
+export async function ChannelPageContent({
+  serverSlug,
+  channelSlug,
+  isGuestView = false,
+}: ChannelPageContentProps) {
   const servers = await getServers();
-  const server = servers.find((s) => s.slug === serverSlug);
+  const server = servers.find(s => s.slug === serverSlug);
   if (!server) notFound();
 
   const serverChannels = await getChannels(server.id);
-  const channel = serverChannels.find((c) => c.slug === channelSlug);
+  const channel = serverChannels.find(c => c.slug === channelSlug);
   if (!channel) notFound();
 
   // Gather all channels across servers for cross-server navigation
   const allChannels = (
     await Promise.all(
-      servers.map((s) =>
-        s.id === server.id ? Promise.resolve(serverChannels) : getChannels(s.id)
-      )
+      servers.map(s => (s.id === server.id ? Promise.resolve(serverChannels) : getChannels(s.id))),
     )
   ).flat();
 
@@ -45,7 +47,7 @@ export async function ChannelPageContent({ serverSlug, channelSlug, isGuestView 
       currentChannel={channel}
       messages={sortedMessages}
       members={members}
-      basePath={isGuestView ? "/c" : "/channels"}
+      basePath={isGuestView ? '/c' : '/channels'}
     />
   );
 

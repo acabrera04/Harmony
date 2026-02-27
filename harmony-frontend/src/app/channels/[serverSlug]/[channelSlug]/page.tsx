@@ -1,4 +1,4 @@
-import { ChannelPageContent } from "@/components/channel/ChannelPageContent";
+import { ChannelPageContent } from '@/components/channel/ChannelPageContent';
 
 interface PageProps {
   params: Promise<{ serverSlug: string; channelSlug: string }>;

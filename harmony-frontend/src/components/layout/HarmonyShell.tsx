@@ -4,25 +4,25 @@
  * Wires together ServerRail, ChannelSidebar, TopBar, MessageList, MembersSidebar, SearchModal.
  */
 
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { cn } from "@/lib/utils";
-import { TopBar } from "@/components/channel/TopBar";
-import { MembersSidebar } from "@/components/channel/MembersSidebar";
-import { SearchModal } from "@/components/channel/SearchModal";
-import { ChannelSidebar } from "@/components/channel/ChannelSidebar";
-import { MessageInput } from "@/components/channel/MessageInput";
-import { MessageList } from "@/components/channel/MessageList";
-import { ServerRail } from "@/components/server-rail/ServerRail";
-import { useAuth } from "@/hooks/useAuth";
-import type { Server, Channel, Message, User } from "@/types";
+import { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
+import { TopBar } from '@/components/channel/TopBar';
+import { MembersSidebar } from '@/components/channel/MembersSidebar';
+import { SearchModal } from '@/components/channel/SearchModal';
+import { ChannelSidebar } from '@/components/channel/ChannelSidebar';
+import { MessageInput } from '@/components/channel/MessageInput';
+import { MessageList } from '@/components/channel/MessageList';
+import { ServerRail } from '@/components/server-rail/ServerRail';
+import { useAuth } from '@/hooks/useAuth';
+import type { Server, Channel, Message, User } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
 
 const BG = {
-  tertiary: "bg-[#202225]",
-  primary: "bg-[#36393f]",
+  tertiary: 'bg-[#202225]',
+  primary: 'bg-[#36393f]',
 };
 
 // ─── Main Shell ───────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ export function HarmonyShell({
   currentChannel,
   messages,
   members,
-  basePath = "/c",
+  basePath = '/c',
 }: HarmonyShellProps) {
   const [isMembersOpen, setIsMembersOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -74,31 +74,31 @@ export function HarmonyShell({
 
   // Fallback for guest/unauthenticated view
   const currentUser: User = authUser ?? {
-    id: "guest",
-    username: "Guest",
-    displayName: "Guest",
-    status: "online",
-    role: "guest",
+    id: 'guest',
+    username: 'Guest',
+    displayName: 'Guest',
+    status: 'online',
+    role: 'guest',
   };
 
   const handleMessageSent = useCallback((msg: Message) => {
-    setLocalMessages((prev) => [...prev, msg]);
+    setLocalMessages(prev => [...prev, msg]);
   }, []);
 
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setIsSearchOpen((v) => !v);
+        setIsSearchOpen(v => !v);
       }
     }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#202225] font-sans">
+    <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
       {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
       <ServerRail
         servers={servers}
@@ -120,25 +120,29 @@ export function HarmonyShell({
       />
 
       {/* 3. Main column */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className='flex flex-1 flex-col overflow-hidden'>
         <TopBar
           channel={currentChannel}
           serverSlug={currentServer.slug}
           userRole={currentUser.role}
           isMembersOpen={isMembersOpen}
-          onMembersToggle={() => setIsMembersOpen((v) => !v)}
+          onMembersToggle={() => setIsMembersOpen(v => !v)}
           onSearchOpen={() => setIsSearchOpen(true)}
           isMenuOpen={isMenuOpen}
-          onMenuToggle={() => setIsMenuOpen((v) => !v)}
+          onMenuToggle={() => setIsMenuOpen(v => !v)}
         />
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className={cn("flex flex-1 flex-col overflow-hidden", BG.primary)}>
-            <MessageList key={currentChannel.id} channel={currentChannel} messages={localMessages} />
+        <div className='flex flex-1 overflow-hidden'>
+          <div className={cn('flex flex-1 flex-col overflow-hidden', BG.primary)}>
+            <MessageList
+              key={currentChannel.id}
+              channel={currentChannel}
+              messages={localMessages}
+            />
             <MessageInput
               channelId={currentChannel.id}
               channelName={currentChannel.name}
-              isReadOnly={currentUser.role === "guest"}
+              isReadOnly={currentUser.role === 'guest'}
               onMessageSent={handleMessageSent}
             />
           </div>

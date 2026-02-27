@@ -4,8 +4,8 @@
  * References: dev-spec-channel-visibility-toggle.md
  */
 
-import { ChannelVisibility, type Channel } from "@/types";
-import { mockChannels, mockServers } from "@/mocks";
+import { ChannelVisibility, type Channel } from '@/types';
+import { mockChannels, mockServers } from '@/mocks';
 
 // ─── In-memory store (mutated by write operations) ────────────────────────────
 // Use globalThis so the array survives Next.js hot-reloads and Turbopack
@@ -27,24 +27,17 @@ const channels: Channel[] = g.__harmonyChannels;
  * Returns all channels for a given server.
  */
 export async function getChannels(serverId: string): Promise<Channel[]> {
-  return channels.filter((c) => c.serverId === serverId);
+  return channels.filter(c => c.serverId === serverId);
 }
 
 /**
  * Returns a single channel by server slug + channel slug, or null if not found.
  */
-export async function getChannel(
-  serverSlug: string,
-  channelSlug: string
-): Promise<Channel | null> {
+export async function getChannel(serverSlug: string, channelSlug: string): Promise<Channel | null> {
   // #c36: mockServers is now a static import at module scope — no dynamic import needed
-  const server = mockServers.find((s) => s.slug === serverSlug);
+  const server = mockServers.find(s => s.slug === serverSlug);
   if (!server) return null;
-  return (
-    channels.find(
-      (c) => c.serverId === server.id && c.slug === channelSlug
-    ) ?? null
-  );
+  return channels.find(c => c.serverId === server.id && c.slug === channelSlug) ?? null;
 }
 
 /**
@@ -53,9 +46,9 @@ export async function getChannel(
  */
 export async function updateVisibility(
   channelId: string,
-  visibility: ChannelVisibility
+  visibility: ChannelVisibility,
 ): Promise<Channel> {
-  const index = channels.findIndex((c) => c.id === channelId);
+  const index = channels.findIndex(c => c.id === channelId);
   if (index === -1) {
     throw new Error(`Channel not found: ${channelId}`);
   }
@@ -75,9 +68,9 @@ export async function updateVisibility(
  */
 export async function updateChannel(
   channelId: string,
-  patch: Partial<Pick<Channel, "name" | "topic" | "description">>
+  patch: Partial<Pick<Channel, 'name' | 'topic' | 'description'>>,
 ): Promise<Channel> {
-  const index = channels.findIndex((c) => c.id === channelId);
+  const index = channels.findIndex(c => c.id === channelId);
   if (index === -1) {
     throw new Error(`Channel not found: ${channelId}`);
   }
@@ -95,7 +88,7 @@ export async function updateChannel(
  * Creates a new channel and appends it to the in-memory store.
  */
 export async function createChannel(
-  channel: Omit<Channel, "id" | "createdAt" | "updatedAt">
+  channel: Omit<Channel, 'id' | 'createdAt' | 'updatedAt'>,
 ): Promise<Channel> {
   const newChannel: Channel = {
     ...channel,
@@ -111,7 +104,7 @@ export async function createChannel(
  * Deletes a channel by ID. Returns true if deleted, false if not found.
  */
 export async function deleteChannel(channelId: string): Promise<boolean> {
-  const index = channels.findIndex((c) => c.id === channelId);
+  const index = channels.findIndex(c => c.id === channelId);
   if (index === -1) return false;
   channels.splice(index, 1);
   return true;

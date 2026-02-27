@@ -1,5 +1,5 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
-import { API_CONFIG } from "./constants";
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
+import { API_CONFIG } from './constants';
 
 /**
  * API Client for Harmony backend
@@ -13,7 +13,7 @@ class ApiClient {
       baseURL: API_CONFIG.BASE_URL,
       timeout: API_CONFIG.TIMEOUT,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -23,33 +23,31 @@ class ApiClient {
   private setupInterceptors() {
     // Request interceptor - add auth token if available
     this.client.interceptors.request.use(
-      (config) => {
+      config => {
         // Add authentication token from localStorage/cookies
-        const token = typeof window !== "undefined" 
-          ? localStorage.getItem("auth_token") 
-          : null;
-        
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         return config;
       },
-      (error) => Promise.reject(error)
+      error => Promise.reject(error),
     );
 
     // Response interceptor - handle errors globally
     this.client.interceptors.response.use(
-      (response) => response,
-      (error) => {
+      response => response,
+      error => {
         if (error.response?.status === 401) {
           // Handle unauthorized - redirect to login
-          if (typeof window !== "undefined") {
-            window.location.href = "/auth/login";
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
           }
         }
         return Promise.reject(error);
-      }
+      },
     );
   }
 
