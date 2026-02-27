@@ -7,7 +7,7 @@ Next.js 14+ application for the Harmony search-engine-indexable chat platform.
 This project uses the canonical tech stack from the Harmony dev specs (Section 8):
 
 - **T1**: TypeScript 5.3+ - Primary language with strict mode
-- **T2**: React 18.2+ - UI framework  
+- **T2**: React 18.2+ - UI framework
 - **T3**: Next.js 14.0+ - SSR/SSG framework (SEO-critical for public pages)
 - **T4**: Node.js 20 LTS - Server runtime
 - **Tailwind CSS** - Styling framework
@@ -86,7 +86,8 @@ harmony-frontend/
 ### Directory Purpose
 
 - **`app/`** - Next.js 14 App Router with pages, layouts, and routing
-- **`components/`** - Reusable UI components organized by domain (see [components/README.md](src/components/README.md))
+- **`components/`** - Reusable UI components organized by domain (see
+  [components/README.md](src/components/README.md))
 - **`lib/`** - Shared utilities, constants, and configurations
 - **`services/`** - API service layer and business logic
 - **`types/`** - TypeScript type definitions aligned with dev spec data schemas
@@ -101,9 +102,9 @@ TypeScript is configured with path aliases for cleaner imports:
 
 ```typescript
 // Instead of: import { Button } from '../../../components/ui/Button'
-import { Button } from '@/components/ui/Button'
-import { formatDate } from '@/lib/utils'
-import { apiClient } from '@/lib/api-client'
+import { Button } from '@/components/ui/Button';
+import { formatDate } from '@/lib/utils';
+import { apiClient } from '@/lib/api-client';
 ```
 
 The `@/` alias maps to `src/`.
@@ -145,4 +146,3 @@ All specs specify **Next.js 14.0+ (T3)** for SSR/SSG capabilities required for S
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API
 - [Harmony Project](https://github.com/acabrera04/Harmony) - main repository
-

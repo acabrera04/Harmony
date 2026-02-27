@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
     // stable set of image origins is established.
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "api.dicebear.com",
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
       },
     ],
   },
