@@ -3,8 +3,8 @@
  * Maintains in-session auth state via an in-memory variable.
  */
 
-import type { User } from "@/types";
-import { mockUsers } from "@/mocks";
+import type { User } from '@/types';
+import { mockUsers } from '@/mocks';
 
 // ─── In-memory auth state ─────────────────────────────────────────────────────
 
@@ -12,21 +12,21 @@ let currentUser: User | null = null;
 
 // ─── Registered users persistence ─────────────────────────────────────────────
 
-const REGISTERED_USERS_KEY = "harmony_registered_users";
+const REGISTERED_USERS_KEY = 'harmony_registered_users';
 
-const VALID_STATUSES = ["online", "idle", "dnd", "offline"];
-const VALID_ROLES = ["owner", "admin", "moderator", "member", "guest"];
+const VALID_STATUSES = ['online', 'idle', 'dnd', 'offline'];
+const VALID_ROLES = ['owner', 'admin', 'moderator', 'member', 'guest'];
 
 /** Runtime check that parsed JSON has the required User shape and valid enum values. */
 function isValidUser(value: unknown): value is User {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== 'object' || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
-    typeof obj.id === "string" &&
-    typeof obj.username === "string" &&
-    typeof obj.status === "string" &&
+    typeof obj.id === 'string' &&
+    typeof obj.username === 'string' &&
+    typeof obj.status === 'string' &&
     VALID_STATUSES.includes(obj.status) &&
-    typeof obj.role === "string" &&
+    typeof obj.role === 'string' &&
     VALID_ROLES.includes(obj.role)
   );
 }
@@ -38,7 +38,7 @@ function loadRegisteredUsers(): void {
       const parsed: unknown[] = JSON.parse(stored);
       if (!Array.isArray(parsed)) return;
       for (const u of parsed) {
-        if (isValidUser(u) && !mockUsers.some((m) => m.id === u.id)) {
+        if (isValidUser(u) && !mockUsers.some(m => m.id === u.id)) {
           mockUsers.push(u);
         }
       }
@@ -60,7 +60,7 @@ function saveRegisteredUser(user: User): void {
 }
 
 // Restore registered users on module load
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   loadRegisteredUsers();
 }
 
@@ -78,11 +78,9 @@ export async function getCurrentUser(): Promise<User | null> {
  * Any password is accepted for demo purposes.
  */
 export async function login(username: string, _password: string): Promise<User> {
-  const matched = mockUsers.find(
-    (u) => u.username.toLowerCase() === username.toLowerCase()
-  );
+  const matched = mockUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
   if (!matched) {
-    throw new Error("Invalid username");
+    throw new Error('Invalid username');
   }
   currentUser = { ...matched };
   return { ...currentUser };
@@ -116,13 +114,11 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function register(
   username: string,
   displayName: string,
-  _password: string
+  _password: string,
 ): Promise<User> {
-  const exists = mockUsers.some(
-    (u) => u.username.toLowerCase() === username.toLowerCase()
-  );
+  const exists = mockUsers.some(u => u.username.toLowerCase() === username.toLowerCase());
   if (exists) {
-    throw new Error("Username already taken");
+    throw new Error('Username already taken');
   }
 
   const newUser: User = {
@@ -130,8 +126,8 @@ export async function register(
     username,
     displayName,
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-    status: "online",
-    role: "member",
+    status: 'online',
+    role: 'member',
   };
 
   mockUsers.push(newUser);

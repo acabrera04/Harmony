@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { createContext, useState, useEffect, useCallback } from "react";
-import type { ReactNode } from "react";
-import type { User } from "@/types";
-import * as authService from "@/services/authService";
+import { createContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import type { User } from '@/types';
+import * as authService from '@/services/authService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,21 +23,21 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const AUTH_STORAGE_KEY = "harmony_auth_user";
+const AUTH_STORAGE_KEY = 'harmony_auth_user';
 
-const VALID_STATUSES = ["online", "idle", "dnd", "offline"];
-const VALID_ROLES = ["owner", "admin", "moderator", "member", "guest"];
+const VALID_STATUSES = ['online', 'idle', 'dnd', 'offline'];
+const VALID_ROLES = ['owner', 'admin', 'moderator', 'member', 'guest'];
 
 /** Runtime check that parsed JSON has the required User shape and valid enum values. */
 function isValidUser(value: unknown): value is User {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== 'object' || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
-    typeof obj.id === "string" &&
-    typeof obj.username === "string" &&
-    typeof obj.status === "string" &&
+    typeof obj.id === 'string' &&
+    typeof obj.username === 'string' &&
+    typeof obj.status === 'string' &&
     VALID_STATUSES.includes(obj.status) &&
-    typeof obj.role === "string" &&
+    typeof obj.role === 'string' &&
     VALID_ROLES.includes(obj.role)
   );
 }
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isAdmin = useCallback(() => {
-    return user?.role === "owner" || user?.role === "admin";
+    return user?.role === 'owner' || user?.role === 'admin';
   }, [user]);
 
   const value: AuthContextValue = {

@@ -4,9 +4,9 @@
  */
 
 export enum ChannelType {
-  TEXT = "TEXT",
-  VOICE = "VOICE",
-  ANNOUNCEMENT = "ANNOUNCEMENT",
+  TEXT = 'TEXT',
+  VOICE = 'VOICE',
+  ANNOUNCEMENT = 'ANNOUNCEMENT',
 }
 
 export interface Channel {
@@ -24,9 +24,9 @@ export interface Channel {
 }
 
 export enum ChannelVisibility {
-  PUBLIC_INDEXABLE = "PUBLIC_INDEXABLE",
-  PUBLIC_NO_INDEX = "PUBLIC_NO_INDEX",
-  PRIVATE = "PRIVATE",
+  PUBLIC_INDEXABLE = 'PUBLIC_INDEXABLE',
+  PUBLIC_NO_INDEX = 'PUBLIC_NO_INDEX',
+  PRIVATE = 'PRIVATE',
 }
 
 export interface ChannelDTO {

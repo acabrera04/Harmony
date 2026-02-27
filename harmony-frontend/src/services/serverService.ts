@@ -3,8 +3,8 @@
  * References: dev-spec-channel-visibility-toggle.md
  */
 
-import type { Server, User } from "@/types";
-import { mockServers, mockUsers } from "@/mocks";
+import type { Server, User } from '@/types';
+import { mockServers, mockUsers } from '@/mocks';
 
 // ─── In-memory store (mutated by write operations) ────────────────────────────
 
@@ -23,7 +23,7 @@ export async function getServers(): Promise<Server[]> {
  * Returns a single server by its slug, or null if not found.
  */
 export async function getServer(slug: string): Promise<Server | null> {
-  return servers.find((s) => s.slug === slug) ?? null;
+  return servers.find(s => s.slug === slug) ?? null;
 }
 
 /**
