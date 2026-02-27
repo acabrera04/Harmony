@@ -40,8 +40,8 @@ export function GuestPromoBanner() {
   if (dismissed) return null;
 
   return (
-    <div
-      role="banner"
+    <aside
+      aria-label="Sign-up promotion"
       className='sticky bottom-0 z-20 border-t border-[#2a2d31] bg-[#2f3136] px-4 py-3 shadow-lg'
     >
       <div className='mx-auto flex max-w-4xl items-center justify-between gap-4'>
@@ -87,6 +87,6 @@ export function GuestPromoBanner() {
           </button>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
