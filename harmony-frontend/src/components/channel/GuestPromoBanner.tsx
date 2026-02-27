@@ -52,12 +52,12 @@ export function GuestPromoBanner() {
         </p>
 
         <div className='flex shrink-0 items-center gap-2'>
-          <Link href='/signup' tabIndex={-1}>
+          <Link href='/auth/signup' tabIndex={-1}>
             <Button variant='primary' size='sm'>
               Create Account
             </Button>
           </Link>
-          <Link href='/login' tabIndex={-1}>
+          <Link href='/auth/login' tabIndex={-1}>
             <Button variant='secondary' size='sm'>
               Log In
             </Button>
