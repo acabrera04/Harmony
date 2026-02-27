@@ -4,9 +4,9 @@
  * Based on dev spec C1.5 MessageCard
  */
 
-import Image from "next/image";
-import { formatRelativeTime } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/Card";
+import Image from 'next/image';
+import { formatRelativeTime } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/Card';
 
 interface MessageCardProps {
   author: {
@@ -23,18 +23,13 @@ interface MessageCardProps {
   }>;
 }
 
-export function MessageCard({
-  author,
-  content,
-  timestamp,
-  attachments = [],
-}: MessageCardProps) {
+export function MessageCard({ author, content, timestamp, attachments = [] }: MessageCardProps) {
   return (
-    <Card className="mb-4">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+    <Card className='mb-4'>
+      <CardContent className='p-4'>
+        <div className='flex items-start gap-3'>
           {/* Avatar */}
-          <div className="flex-shrink-0">
+          <div className='flex-shrink-0'>
             {author.avatarUrl ? (
               <Image
                 src={author.avatarUrl}
@@ -42,30 +37,28 @@ export function MessageCard({
                 width={40}
                 height={40}
                 unoptimized
-                className="h-10 w-10 rounded-full"
+                className='h-10 w-10 rounded-full'
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300">
+              <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gray-300'>
                 {author.username.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
           {/* Message content */}
-          <div className="flex-1">
-            <div className="flex items-baseline gap-2">
-              <span className="font-semibold text-gray-900">{author.username}</span>
-              <span className="text-xs text-gray-500">
-                {formatRelativeTime(timestamp)}
-              </span>
+          <div className='flex-1'>
+            <div className='flex items-baseline gap-2'>
+              <span className='font-semibold text-gray-900'>{author.username}</span>
+              <span className='text-xs text-gray-500'>{formatRelativeTime(timestamp)}</span>
             </div>
-            <p className="mt-1 text-gray-700">{content}</p>
+            <p className='mt-1 text-gray-700'>{content}</p>
 
             {/* Attachments */}
             {attachments.length > 0 && (
-              <div className="mt-2 space-y-2">
-                {attachments.map((attachment) => (
-                  <div key={attachment.id} className="text-sm text-blue-600">
+              <div className='mt-2 space-y-2'>
+                {attachments.map(attachment => (
+                  <div key={attachment.id} className='text-sm text-blue-600'>
                     📎 {attachment.url}
                   </div>
                 ))}

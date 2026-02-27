@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * ServerErrorPage (global-error.tsx) — root-level error boundary
@@ -8,7 +8,7 @@
  * Issue #36 — Build 404 and error pages
  */
 
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 interface ServerErrorPageProps {
   error: Error & { digest?: string };
@@ -18,14 +18,14 @@ interface ServerErrorPageProps {
 export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) {
   useEffect(() => {
     // Log to an error reporting service in the future
-    console.error("[ServerError]", error);
+    console.error('[ServerError]', error);
   }, [error]);
 
   return (
-    <html lang="en">
+    <html lang='en'>
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charSet='utf-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
         <style>{`
           .retry-btn:hover { background-color: #4752c4; }
           .retry-btn:focus-visible { outline: 2px solid #5865f2; outline-offset: 2px; }
@@ -36,24 +36,24 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
       <body
         style={{
           margin: 0,
-          display: "flex",
-          minHeight: "100vh",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          backgroundColor: "#36393f",
-          color: "#dcddde",
-          fontFamily: "Inter, Open Sans, Arial, Helvetica, sans-serif",
-          textAlign: "center",
-          padding: "1rem",
+          display: 'flex',
+          minHeight: '100vh',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          backgroundColor: '#36393f',
+          color: '#dcddde',
+          fontFamily: 'Inter, Open Sans, Arial, Helvetica, sans-serif',
+          textAlign: 'center',
+          padding: '1rem',
         }}
       >
         <p
           style={{
-            fontSize: "4rem",
+            fontSize: '4rem',
             fontWeight: 900,
-            color: "#5865f2",
-            userSelect: "none",
+            color: '#5865f2',
+            userSelect: 'none',
             margin: 0,
           }}
         >
@@ -62,10 +62,10 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
 
         <h1
           style={{
-            marginTop: "1rem",
-            fontSize: "1.5rem",
+            marginTop: '1rem',
+            fontSize: '1.5rem',
             fontWeight: 700,
-            color: "#ffffff",
+            color: '#ffffff',
           }}
         >
           Something went wrong on our end.
@@ -73,18 +73,17 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
 
         <p
           style={{
-            marginTop: "0.5rem",
-            maxWidth: "24rem",
-            fontSize: "0.875rem",
-            color: "#72767d",
+            marginTop: '0.5rem',
+            maxWidth: '24rem',
+            fontSize: '0.875rem',
+            color: '#72767d',
           }}
         >
-          We&apos;re having trouble loading this page. If this keeps happening,
-          please reach out at{" "}
+          We&apos;re having trouble loading this page. If this keeps happening, please reach out at{' '}
           <a
-            href="mailto:support@harmony.app"
-            className="support-link"
-            style={{ color: "#5865f2", textDecoration: "underline" }}
+            href='mailto:support@harmony.app'
+            className='support-link'
+            style={{ color: '#5865f2', textDecoration: 'underline' }}
           >
             support@harmony.app
           </a>
@@ -93,17 +92,17 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
 
         <button
           onClick={reset}
-          className="retry-btn"
+          className='retry-btn'
           style={{
-            marginTop: "2rem",
-            padding: "0.625rem 1.25rem",
-            backgroundColor: "#5865f2",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "0.375rem",
-            fontSize: "0.875rem",
+            marginTop: '2rem',
+            padding: '0.625rem 1.25rem',
+            backgroundColor: '#5865f2',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '0.375rem',
+            fontSize: '0.875rem',
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: 'pointer',
           }}
         >
           Try again

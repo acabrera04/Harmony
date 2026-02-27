@@ -3,14 +3,14 @@
  * Aligned with dev spec requirements
  */
 
-export const APP_NAME = "Harmony";
-export const APP_DESCRIPTION = "Search-engine-indexable chat platform";
+export const APP_NAME = 'Harmony';
+export const APP_DESCRIPTION = 'Search-engine-indexable chat platform';
 
 /**
  * API Configuration
  */
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   TIMEOUT: 30000, // 30 seconds
 } as const;
 
@@ -37,23 +37,23 @@ export const CACHE_DURATION = {
  * Route paths
  */
 export const ROUTES = {
-  HOME: "/",
-  PUBLIC_CHANNEL: "/c/[serverSlug]/[channelSlug]",
-  LOGIN: "/auth/login",
-  SIGNUP: "/auth/signup",
+  HOME: '/',
+  PUBLIC_CHANNEL: '/c/[serverSlug]/[channelSlug]',
+  LOGIN: '/auth/login',
+  SIGNUP: '/auth/signup',
 } as const;
 
 /** Last-resort fallback destination when no server/channel data is available */
-export const DEFAULT_HOME_PATH = "/harmony-hq/general";
+export const DEFAULT_HOME_PATH = '/harmony-hq/general';
 
 /**
  * Visibility states from dev spec
  * Section 5: State Diagrams
  */
 export enum ChannelVisibility {
-  PUBLIC_INDEXABLE = "PUBLIC_INDEXABLE",
-  PUBLIC_NO_INDEX = "PUBLIC_NO_INDEX",
-  PRIVATE = "PRIVATE",
+  PUBLIC_INDEXABLE = 'PUBLIC_INDEXABLE',
+  PUBLIC_NO_INDEX = 'PUBLIC_NO_INDEX',
+  PRIVATE = 'PRIVATE',
 }
 
 /**
@@ -61,7 +61,7 @@ export enum ChannelVisibility {
  * From dev spec Section 8.1
  */
 export const EVENT_TYPES = {
-  VISIBILITY_CHANGED: "channel:visibility:changed",
-  MESSAGE_CREATED: "channel:message:created",
-  CHANNEL_UPDATED: "channel:updated",
+  VISIBILITY_CHANGED: 'channel:visibility:changed',
+  MESSAGE_CREATED: 'channel:message:created',
+  CHANNEL_UPDATED: 'channel:updated',
 } as const;

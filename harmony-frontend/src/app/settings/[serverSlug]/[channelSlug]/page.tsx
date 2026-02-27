@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
-import { getChannel } from "@/services/channelService";
-import { ChannelSettingsPage } from "@/components/settings/ChannelSettingsPage";
+import { notFound } from 'next/navigation';
+import { getChannel } from '@/services/channelService';
+import { ChannelSettingsPage } from '@/components/settings/ChannelSettingsPage';
 
 interface PageProps {
   params: Promise<{ serverSlug: string; channelSlug: string }>;

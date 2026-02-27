@@ -3,9 +3,9 @@
  * Based on dev spec data schemas (CL-D10, CL-E*)
  */
 
-export type UserStatus = "online" | "idle" | "dnd" | "offline";
+export type UserStatus = 'online' | 'idle' | 'dnd' | 'offline';
 
-export type UserRole = "owner" | "admin" | "moderator" | "member" | "guest";
+export type UserRole = 'owner' | 'admin' | 'moderator' | 'member' | 'guest';
 
 export interface User {
   id: string;
