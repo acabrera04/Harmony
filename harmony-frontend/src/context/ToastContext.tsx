@@ -83,14 +83,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback(
     ({ message, type, duration = 3000 }: ShowToastOptions) => {
+      // Normalize duration: coerce to a finite number, clamp to >= 0, default to 3000ms.
+      // Guards against NaN / Infinity / negative values that would leave the toast stuck.
+      let normalizedDuration =
+        typeof duration === "number" && Number.isFinite(duration) ? duration : 3000;
+      if (normalizedDuration < 0) normalizedDuration = 0;
+
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const toast: Toast = { id, message, type, duration };
+      const toast: Toast = { id, message, type, duration: normalizedDuration };
 
       setToasts((prev) => [...prev, toast]);
 
       // Only schedule auto-dismiss when duration is positive.
-      if (duration > 0) {
-        const timer = setTimeout(() => dismissToast(id), duration);
+      if (normalizedDuration > 0) {
+        const timer = setTimeout(() => dismissToast(id), normalizedDuration);
         timers.current.set(id, timer);
       }
     },
