@@ -71,7 +71,7 @@ export function HarmonyShell({
     setLocalMessages(messages);
   }
 
-  const { user: authUser, isAuthenticated } = useAuth();
+  const { user: authUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // Fallback for guest/unauthenticated view
   const currentUser: User = authUser ?? {
@@ -146,7 +146,7 @@ export function HarmonyShell({
               isReadOnly={currentUser.role === 'guest'}
               onMessageSent={handleMessageSent}
             />
-            {!isAuthenticated && <GuestPromoBanner />}
+            {!isAuthLoading && !isAuthenticated && <GuestPromoBanner />}
           </div>
           <MembersSidebar
             members={members}
