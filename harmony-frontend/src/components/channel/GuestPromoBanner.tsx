@@ -9,7 +9,6 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
 
 const DISMISS_KEY = 'harmony_guest_banner_dismissed';
 
@@ -52,15 +51,17 @@ export function GuestPromoBanner() {
         </p>
 
         <div className='flex shrink-0 items-center gap-2'>
-          <Link href='/auth/signup' tabIndex={-1}>
-            <Button variant='primary' size='sm'>
-              Create Account
-            </Button>
+          <Link
+            href='/auth/signup'
+            className='inline-flex h-8 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-medium text-white transition-colors hover:bg-blue-700'
+          >
+            Create Account
           </Link>
-          <Link href='/auth/login' tabIndex={-1}>
-            <Button variant='secondary' size='sm'>
-              Log In
-            </Button>
+          <Link
+            href='/auth/login'
+            className='inline-flex h-8 items-center justify-center rounded-md bg-gray-200 px-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-300'
+          >
+            Log In
           </Link>
           <button
             type='button'
