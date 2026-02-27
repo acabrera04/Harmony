@@ -6,10 +6,13 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import type { Toast } from "@/context/ToastContext";
+
+// Shared exit animation duration — must match the Tailwind `duration-300` class below.
+const EXIT_ANIMATION_MS = 300;
 
 // ─── Type colour map ──────────────────────────────────────────────────────────
 
@@ -30,8 +33,11 @@ const TYPE_ICON: Record<Toast["type"], string> = {
 // ─── Single Toast ─────────────────────────────────────────────────────────────
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  const { cancelAutoDismiss } = useToast();
   // Drive the slide-in / slide-out animation via a mounted flag
   const [visible, setVisible] = useState(false);
+  // Tracks the dismiss-delay timer so we can cancel it if the component unmounts early
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Slide in on mount
   useEffect(() => {
@@ -42,15 +48,24 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   // Slide out just before auto-dismiss fires, so the animation has time to play
   useEffect(() => {
     if (toast.duration <= 0) return;
-    const slideOutDelay = toast.duration - 300;
+    const slideOutDelay = toast.duration - EXIT_ANIMATION_MS;
     const timer = setTimeout(() => setVisible(false), slideOutDelay > 0 ? slideOutDelay : 0);
     return () => clearTimeout(timer);
   }, [toast.duration]);
 
-  // Animate out before actually removing from context
+  // Clear the dismiss delay timer on unmount to avoid calling into context after removal
+  useEffect(() => {
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    };
+  }, []);
+
+  // Cancel the provider's auto-dismiss timer immediately (so it can't fire mid-animation),
+  // animate out, then remove from context once the transition completes.
   const handleDismiss = () => {
+    cancelAutoDismiss(toast.id);
     setVisible(false);
-    setTimeout(onDismiss, 300);
+    dismissTimerRef.current = setTimeout(onDismiss, EXIT_ANIMATION_MS);
   };
 
   return (

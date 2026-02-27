@@ -1,7 +1,7 @@
 /**
  * Toast Context (Issue #35 — Toast Notification System)
  * Manages a stack of toasts with auto-dismiss and manual dismiss.
- * Ref: dev-spec-channel-visibility-toggle.md (consumer: CL-C1.2 VisibilityToggle)
+ * Ref: docs/dev-spec-channel-visibility-toggle.md (consumer: CL-C1.2 VisibilityToggle)
  */
 
 "use client";
@@ -31,6 +31,8 @@ export interface ToastContextValue {
   toasts: Toast[];
   showToast: (options: ShowToastOptions) => void;
   dismissToast: (id: string) => void;
+  /** Cancels the auto-dismiss timer for a toast without removing it from state. */
+  cancelAutoDismiss: (id: string) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -61,6 +63,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  // Cancels the auto-dismiss timer without removing the toast — used by ToastItem
+  // to prevent the provider timer from firing during the manual dismiss animation.
+  const cancelAutoDismiss = useCallback((id: string) => {
+    const timer = timers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timers.current.delete(id);
+    }
+  }, []);
+
   const showToast = useCallback(
     ({ message, type, duration = 3000 }: ShowToastOptions) => {
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -70,19 +82,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       // Only schedule auto-dismiss when duration is positive.
       if (duration > 0) {
-        const timer = setTimeout(() => {
-          timers.current.delete(id);
-          setToasts((prev) => prev.filter((t) => t.id !== id));
-        }, duration);
-
+        const timer = setTimeout(() => dismissToast(id), duration);
         timers.current.set(id, timer);
       }
     },
-    []
+    [dismissToast]
   );
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, dismissToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, dismissToast, cancelAutoDismiss }}>
       {children}
     </ToastContext.Provider>
   );
