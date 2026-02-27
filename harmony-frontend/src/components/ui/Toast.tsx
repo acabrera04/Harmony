@@ -47,10 +47,15 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
     return () => clearTimeout(timer);
   }, [toast.duration]);
 
+  // Animate out before actually removing from context
+  const handleDismiss = () => {
+    setVisible(false);
+    setTimeout(onDismiss, 300);
+  };
+
   return (
     <div
       role="alert"
-      aria-live="assertive"
       className={cn(
         "flex items-start gap-3 min-w-[280px] max-w-sm w-full",
         "rounded-md border px-4 py-3 shadow-lg text-white text-sm",
@@ -69,7 +74,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 
       {/* Dismiss button */}
       <button
-        onClick={onDismiss}
+        onClick={handleDismiss}
         aria-label="Dismiss notification"
         className="shrink-0 ml-1 opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
       >

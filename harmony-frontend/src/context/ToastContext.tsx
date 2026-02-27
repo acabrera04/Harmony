@@ -68,12 +68,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       setToasts((prev) => [...prev, toast]);
 
-      const timer = setTimeout(() => {
-        timers.current.delete(id);
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, duration);
+      // Only schedule auto-dismiss when duration is positive.
+      if (duration > 0) {
+        const timer = setTimeout(() => {
+          timers.current.delete(id);
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, duration);
 
-      timers.current.set(id, timer);
+        timers.current.set(id, timer);
+      }
     },
     []
   );
