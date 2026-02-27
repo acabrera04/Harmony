@@ -6,7 +6,7 @@
 
 "use client";
 
-import { createContext, useCallback, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,6 +43,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   // Track active timers so we can clear them on manual dismiss
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Clear all pending timers on unmount to prevent setState-after-unmount warnings
+  useEffect(() => {
+    return () => {
+      timers.current.forEach((timer) => clearTimeout(timer));
+      timers.current.clear();
+    };
+  }, []);
 
   const dismissToast = useCallback((id: string) => {
     const timer = timers.current.get(id);
