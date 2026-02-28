@@ -224,27 +224,6 @@ function OverviewSection({
   );
 }
 
-// ─── Visibility section ───────────────────────────────────────────────────────
-
-function VisibilitySection({
-  channel,
-  serverSlug,
-  disabled,
-}: {
-  channel: Channel;
-  serverSlug: string;
-  disabled: boolean;
-}) {
-  return (
-    <VisibilityToggle
-      serverSlug={serverSlug}
-      channelSlug={channel.slug}
-      initialVisibility={channel.visibility}
-      disabled={disabled}
-    />
-  );
-}
-
 // ─── Coming-soon stub ─────────────────────────────────────────────────────────
 
 function ComingSoonSection({ label }: { label: string }) {
@@ -375,7 +354,12 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
           )}
           {activeSection === 'permissions' && <ComingSoonSection label='Permissions' />}
           {activeSection === 'visibility' && (
-            <VisibilitySection channel={channel} serverSlug={serverSlug} disabled={!isAdmin()} />
+            <VisibilityToggle
+              serverSlug={serverSlug}
+              channelSlug={channel.slug}
+              initialVisibility={channel.visibility}
+              disabled={!isAdmin()}
+            />
           )}
         </div>
       </main>

@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
 import { ChannelVisibility } from '@/types';
@@ -105,6 +105,14 @@ interface ConfirmModalProps {
 }
 
 function ConfirmPrivateModal({ onConfirm, onCancel }: ConfirmModalProps) {
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel();
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onCancel]);
+
   return (
     <div
       role='dialog'
@@ -125,6 +133,8 @@ function ConfirmPrivateModal({ onConfirm, onCancel }: ConfirmModalProps) {
         </p>
         <div className='flex gap-3'>
           <button
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
             type='button'
             onClick={onCancel}
             className='flex-1 rounded px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-[#40444b]'
@@ -169,6 +179,8 @@ export function VisibilityToggle({
   const [showConfirm, setShowConfirm] = useState(false);
   // Re-entrancy lock — prevents concurrent saves from a fast double-click.
   const isSavingRef = useRef(false);
+  // Refs for roving tabindex arrow-key navigation.
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   async function applyVisibility(visibility: ChannelVisibility) {
     if (isSavingRef.current) return;
@@ -210,6 +222,21 @@ export function VisibilityToggle({
     setPending(null);
   }
 
+  function handleKeyDown(e: React.KeyboardEvent, index: number) {
+    const count = OPTIONS.length;
+    let nextIndex: number | null = null;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      nextIndex = (index + 1) % count;
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      nextIndex = (index - 1 + count) % count;
+    }
+    if (nextIndex !== null) {
+      e.preventDefault();
+      buttonRefs.current[nextIndex]?.focus();
+      handleSelect(OPTIONS[nextIndex].value);
+    }
+  }
+
   return (
     <>
       {showConfirm && <ConfirmPrivateModal onConfirm={handleConfirm} onCancel={handleCancel} />}
@@ -228,18 +255,21 @@ export function VisibilityToggle({
           aria-label='Channel visibility'
           className='space-y-2'
         >
-          {OPTIONS.map(opt => {
+          {OPTIONS.map((opt, idx) => {
             const isSelected = selected === opt.value;
             const isDisabled = disabled || isLoading;
 
             return (
               <button
                 key={opt.value}
+                ref={(el) => { buttonRefs.current[idx] = el; }}
                 type='button'
                 role='radio'
                 aria-checked={isSelected}
                 disabled={isDisabled}
+                tabIndex={isSelected ? 0 : -1}
                 onClick={() => handleSelect(opt.value)}
+                onKeyDown={(e) => handleKeyDown(e, idx)}
                 className={cn(
                   'flex w-full items-start gap-4 rounded-md border px-4 py-3 text-left',
                   'transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',
