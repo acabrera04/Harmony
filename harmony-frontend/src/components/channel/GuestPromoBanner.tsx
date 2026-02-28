@@ -1,51 +1,101 @@
 /**
  * Channel Component: GuestPromoBanner
- * Non-intrusive banner encouraging guests to join the community
+ * Non-intrusive sticky bottom banner encouraging guests to join Harmony.
+ * Dismiss state persists for the browser session via sessionStorage.
  * Based on dev spec C1.4 GuestPromoBanner
  */
 
-import { Button } from '@/components/ui/Button';
+'use client';
 
-interface GuestPromoBannerProps {
-  serverName: string;
-  channelName: string;
-  memberCount?: number;
-  onJoinClick?: () => void;
-  onDismiss?: () => void;
+import { useState, useCallback, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+
+const DISMISS_KEY = 'harmony_guest_banner_dismissed';
+
+function isDismissedInStorage(): boolean {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === 'true';
+  } catch {
+    return false;
+  }
 }
 
-export function GuestPromoBanner({
-  serverName,
-  channelName,
-  memberCount,
-  onJoinClick,
-  onDismiss,
-}: GuestPromoBannerProps) {
-  return (
-    <div className='sticky top-0 z-10 border-b border-gray-200 bg-blue-50 p-4'>
-      <div className='mx-auto flex max-w-4xl items-center justify-between'>
-        <div className='flex-1'>
-          <h3 className='font-semibold text-gray-900'>
-            You&apos;re viewing #{channelName} as a guest
-          </h3>
-          <p className='text-sm text-gray-600'>
-            Join <span className='font-medium'>{serverName}</span>
-            {memberCount && ` with ${memberCount.toLocaleString()} members`} to participate in the
-            conversation.
-          </p>
-        </div>
+export function GuestPromoBanner() {
+  // useSyncExternalStore with a server snapshot of `true` (hidden) prevents
+  // hydration mismatch: SSR and initial client render both produce null, then
+  // React reconciles with the real client snapshot after hydration — no
+  // setState-in-effect needed.
+  const storageDismissed = useSyncExternalStore(
+    () => () => {},       // sessionStorage has no change events
+    isDismissedInStorage, // client snapshot
+    () => true,           // server snapshot: always hidden
+  );
 
-        <div className='flex gap-2'>
-          <Button variant='primary' onClick={onJoinClick}>
-            Join Server
-          </Button>
-          {onDismiss && (
-            <Button variant='ghost' onClick={onDismiss}>
-              ✕
-            </Button>
-          )}
+  // Tracks in-memory dismiss for the current render cycle, covering the case
+  // where sessionStorage.setItem throws (private browsing, etc.).
+  const [manuallyDismissed, setManuallyDismissed] = useState(false);
+
+  const handleDismiss = useCallback(() => {
+    try {
+      sessionStorage.setItem(DISMISS_KEY, 'true');
+    } catch {
+      // sessionStorage unavailable — still dismiss in-memory
+    }
+    setManuallyDismissed(true);
+  }, []);
+
+  if (storageDismissed || manuallyDismissed) return null;
+
+  return (
+    <aside
+      aria-label="Sign-up promotion"
+      className='sticky bottom-0 z-20 border-t border-[#2a2d31] bg-[#2f3136] px-4 py-3 shadow-lg'
+    >
+      <div className='mx-auto flex max-w-4xl items-center justify-between gap-4'>
+        <p className='flex-1 text-sm text-gray-300'>
+          Enjoying this conversation?{' '}
+          <span className='font-semibold text-white'>Join Harmony</span> to participate, save
+          messages, and access exclusive channels.
+        </p>
+
+        <div className='flex shrink-0 items-center gap-2'>
+          <Link
+            href='/auth/signup'
+            className='inline-flex h-8 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-medium text-white transition-colors hover:bg-blue-700'
+          >
+            Create Account
+          </Link>
+          <Link
+            href='/auth/login'
+            className='inline-flex h-8 items-center justify-center rounded-md bg-gray-200 px-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-300'
+          >
+            Log In
+          </Link>
+          <button
+            type='button'
+            onClick={handleDismiss}
+            className='ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-[#40444b] hover:text-white'
+            aria-label='Dismiss banner'
+          >
+            <svg
+              xmlns='http://www.w3.org/2000/svg'
+              width='16'
+              height='16'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              aria-hidden='true'
+              focusable='false'
+            >
+              <line x1='18' y1='6' x2='6' y2='18' />
+              <line x1='6' y1='6' x2='18' y2='18' />
+            </svg>
+          </button>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
