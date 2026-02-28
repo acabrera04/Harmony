@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { saveChannelSettings } from '@/app/settings/[serverSlug]/[channelSlug]/actions';
+import { VisibilityToggle } from '@/components/channel/VisibilityToggle';
 import type { Channel } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -223,6 +224,27 @@ function OverviewSection({
   );
 }
 
+// ─── Visibility section ───────────────────────────────────────────────────────
+
+function VisibilitySection({
+  channel,
+  serverSlug,
+  disabled,
+}: {
+  channel: Channel;
+  serverSlug: string;
+  disabled: boolean;
+}) {
+  return (
+    <VisibilityToggle
+      serverSlug={serverSlug}
+      channelSlug={channel.slug}
+      initialVisibility={channel.visibility}
+      disabled={disabled}
+    />
+  );
+}
+
 // ─── Coming-soon stub ─────────────────────────────────────────────────────────
 
 function ComingSoonSection({ label }: { label: string }) {
@@ -352,7 +374,9 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
             <OverviewSection channel={channel} serverSlug={serverSlug} onSave={setDisplayName} />
           )}
           {activeSection === 'permissions' && <ComingSoonSection label='Permissions' />}
-          {activeSection === 'visibility' && <ComingSoonSection label='Visibility' />}
+          {activeSection === 'visibility' && (
+            <VisibilitySection channel={channel} serverSlug={serverSlug} disabled={!isAdmin()} />
+          )}
         </div>
       </main>
     </div>
