@@ -87,6 +87,11 @@ export function HarmonyShell({
   const router = useRouter();
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
   const [localServers, setLocalServers] = useState<Server[]>(servers);
+  const [prevServers, setPrevServers] = useState<Server[]>(servers);
+  if (prevServers !== servers) {
+    setPrevServers(servers);
+    setLocalServers(servers);
+  }
 
   const handleServerCreated = useCallback(
     (server: Server, defaultChannel: Channel) => {
