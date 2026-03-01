@@ -36,6 +36,8 @@ export async function createServerAction(
   });
 
   revalidatePath('/channels', 'layout');
+  revalidatePath('/c', 'layout');
+  revalidatePath('/settings', 'layout');
 
   return { server, defaultChannel };
 }
