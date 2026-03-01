@@ -172,9 +172,11 @@ export function ServerRail({
 
       {/* Add Server */}
       <button
+        type='button'
         title='Add a Server'
         aria-label='Add a Server'
         className='group relative flex items-center'
+        disabled={!onAddServer}
         onClick={onAddServer}
       >
         <div className='flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#36393f] text-[#3ba55c] transition-all duration-200 group-hover:rounded-[16px] group-hover:bg-[#3ba55c] group-hover:text-white'>
