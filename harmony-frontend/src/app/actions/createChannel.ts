@@ -11,9 +11,8 @@ import { createChannel } from '@/services/channelService';
 
 export interface CreateChannelInput {
   serverId: string;
-  /** Normalised slug — must be [a-z0-9-], no leading/trailing hyphens. */
+  /** Normalised slug — must be [a-z0-9-], no leading/trailing hyphens. Display name is derived from this. */
   slug: string;
-  name: string;
   type: ChannelType;
   visibility: ChannelVisibility;
   topic?: string;
@@ -40,7 +39,9 @@ export async function createChannelAction(input: CreateChannelInput): Promise<Ch
     throw new Error('Invalid channel name');
   }
 
-  // TODO (#71): add server-side auth check here before production.
+  // TODO (#71): This action has no server-side auth check. Anyone who can call
+  // it can create channels. Enforce a server-verifiable session + role check
+  // before this reaches production. (Same gap exists in actions.ts / updateVisibility.ts.)
 
   return createChannel({
     serverId: input.serverId,

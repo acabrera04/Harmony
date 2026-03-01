@@ -214,7 +214,6 @@ export function CreateChannelModal({
       const newChannel = await createChannelAction({
         serverId,
         slug,
-        name: slug,
         type,
         visibility,
         topic: topic.trim() || undefined,

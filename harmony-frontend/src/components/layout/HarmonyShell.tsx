@@ -74,12 +74,11 @@ export function HarmonyShell({
   }
   // Local channels state so newly created channels appear immediately in the sidebar.
   const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
-  // Reset when navigating to a different server (channels prop changes).
-  const [prevServerId, setPrevServerId] = useState(currentServer.id);
-  if (prevServerId !== currentServer.id) {
-    setPrevServerId(currentServer.id);
+  // Sync whenever the prop changes (server navigation or revalidatePath refresh) so
+  // localChannels never goes stale relative to server-fetched data.
+  useEffect(() => {
     setLocalChannels(channels);
-  }
+  }, [channels, currentServer.id]);
   // Channel creation modal state.
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(ChannelType.TEXT);
