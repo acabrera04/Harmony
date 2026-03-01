@@ -116,87 +116,87 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4'
       onClick={creating ? undefined : onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="create-server-title"
+      role='dialog'
+      aria-modal='true'
+      aria-labelledby='create-server-title'
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md rounded-lg bg-[#36393f] p-6 shadow-xl"
+        className='w-full max-w-md rounded-lg bg-[#36393f] p-6 shadow-xl'
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKeyDownModal}
       >
-        <h2 id="create-server-title" className="mb-1 text-xl font-bold text-white">
+        <h2 id='create-server-title' className='mb-1 text-xl font-bold text-white'>
           Create a Server
         </h2>
-        <p className="mb-5 text-sm text-gray-400">
+        <p className='mb-5 text-sm text-gray-400'>
           Give your server a name and an optional description.
         </p>
 
         <form onSubmit={handleSubmit}>
           {/* Server name */}
           <label
-            htmlFor="server-name"
-            className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300"
+            htmlFor='server-name'
+            className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300'
           >
-            Server Name <span className="text-red-400">*</span>
+            Server Name <span className='text-red-400'>*</span>
           </label>
           <input
             ref={nameInputRef}
-            id="server-name"
-            type="text"
+            id='server-name'
+            type='text'
             value={name}
             onChange={e => { setName(e.target.value); setError(''); }}
-            placeholder="My Awesome Server"
+            placeholder='My Awesome Server'
             disabled={creating}
             maxLength={100}
-            className="mb-1 w-full rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50"
+            className='mb-1 w-full rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50'
           />
           {slug && (
-            <p className="mb-4 text-xs text-gray-500">
-              Slug: <span className="text-gray-400">{slug}</span>
+            <p className='mb-4 text-xs text-gray-500'>
+              Slug: <span className='text-gray-400'>{slug}</span>
             </p>
           )}
-          {!slug && <div className="mb-4" />}
+          {!slug && <div className='mb-4' />}
 
           {/* Description */}
           <label
-            htmlFor="server-description"
-            className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300"
+            htmlFor='server-description'
+            className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300'
           >
             Description
           </label>
           <textarea
-            id="server-description"
+            id='server-description'
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="What is this server about?"
+            placeholder='What is this server about?'
             disabled={creating}
             rows={3}
-            className="mb-4 w-full resize-none rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50"
+            className='mb-4 w-full resize-none rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50'
           />
 
           {/* Error */}
           {error && (
-            <p className="mb-3 text-sm text-red-400">{error}</p>
+            <p className='mb-3 text-sm text-red-400'>{error}</p>
           )}
 
           {/* Buttons */}
-          <div className="flex justify-end gap-3">
+          <div className='flex justify-end gap-3'>
             <button
-              type="button"
+              type='button'
               onClick={onClose}
               disabled={creating}
-              className="rounded px-4 py-2 text-sm font-medium text-gray-300 hover:text-white disabled:opacity-50"
+              className='rounded px-4 py-2 text-sm font-medium text-gray-300 hover:text-white disabled:opacity-50'
             >
               Cancel
             </button>
             <button
-              type="submit"
+              type='submit'
               disabled={creating || !name.trim()}
-              className="rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4752c4] disabled:opacity-50"
+              className='rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4752c4] disabled:opacity-50'
             >
               {creating ? 'Creating…' : 'Create'}
             </button>
