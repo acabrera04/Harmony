@@ -3,13 +3,20 @@ import { getServers, getServerMembers } from '@/services/serverService';
 import { getChannels } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
 import { HarmonyShell } from '@/components/layout/HarmonyShell';
+import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 
 interface ChannelPageContentProps {
   serverSlug: string;
   channelSlug: string;
+  /** When true, uses the /c basePath so sidebar links stay on the guest route. */
+  isGuestView?: boolean;
 }
 
-export async function ChannelPageContent({ serverSlug, channelSlug }: ChannelPageContentProps) {
+export async function ChannelPageContent({
+  serverSlug,
+  channelSlug,
+  isGuestView = false,
+}: ChannelPageContentProps) {
   const servers = await getServers();
   const server = servers.find(s => s.slug === serverSlug);
   if (!server) notFound();
@@ -31,7 +38,7 @@ export async function ChannelPageContent({ serverSlug, channelSlug }: ChannelPag
 
   const members = await getServerMembers(server.id);
 
-  return (
+  const shell = (
     <HarmonyShell
       servers={servers}
       currentServer={server}
@@ -40,7 +47,13 @@ export async function ChannelPageContent({ serverSlug, channelSlug }: ChannelPag
       currentChannel={channel}
       messages={sortedMessages}
       members={members}
-      basePath='/channels'
+      basePath={isGuestView ? '/c' : '/channels'}
     />
+  );
+
+  return (
+    <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+      {shell}
+    </VisibilityGuard>
   );
 }

@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
 import { ChannelVisibility } from '@/types';
@@ -105,8 +105,55 @@ interface ConfirmModalProps {
 }
 
 function ConfirmPrivateModal({ onConfirm, onCancel }: ConfirmModalProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  // Focus the cancel button on open and restore the previously focused element on close.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    cancelRef.current?.focus();
+    return () => {
+      previouslyFocused?.focus();
+    };
+  }, []);
+
+  // Trap focus inside the modal and handle Escape.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onCancel();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const container = containerRef.current;
+      if (!container) return;
+      const focusable = Array.from(
+        container.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
     <div
+      ref={containerRef}
       role='dialog'
       aria-modal='true'
       aria-labelledby='confirm-private-title'
@@ -125,6 +172,7 @@ function ConfirmPrivateModal({ onConfirm, onCancel }: ConfirmModalProps) {
         </p>
         <div className='flex gap-3'>
           <button
+            ref={cancelRef}
             type='button'
             onClick={onCancel}
             className='flex-1 rounded px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-[#40444b]'
@@ -167,8 +215,15 @@ export function VisibilityToggle({
   const [pending, setPending] = useState<ChannelVisibility | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  // Tracks which option owns tabIndex=0 for roving tabindex. Kept separate from
+  // `selected` so arrow keys can move focus without immediately triggering saves.
+  const [focusedIdx, setFocusedIdx] = useState(() =>
+    Math.max(0, OPTIONS.findIndex((o) => o.value === initialVisibility)),
+  );
   // Re-entrancy lock — prevents concurrent saves from a fast double-click.
   const isSavingRef = useRef(false);
+  // Refs for roving tabindex arrow-key navigation.
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   async function applyVisibility(visibility: ChannelVisibility) {
     if (isSavingRef.current) return;
@@ -177,6 +232,7 @@ export function VisibilityToggle({
     try {
       await updateChannelVisibility(serverSlug, channelSlug, visibility);
       setSelected(visibility);
+      setFocusedIdx(OPTIONS.findIndex((o) => o.value === visibility));
       showToast({ message: 'Channel visibility updated.', type: 'success' });
     } catch (err) {
       showToast({
@@ -191,6 +247,7 @@ export function VisibilityToggle({
 
   function handleSelect(value: ChannelVisibility) {
     if (disabled || isLoading || value === selected) return;
+    setFocusedIdx(OPTIONS.findIndex((o) => o.value === value));
     if (value === ChannelVisibility.PRIVATE) {
       setPending(value);
       setShowConfirm(true);
@@ -210,6 +267,29 @@ export function VisibilityToggle({
     setPending(null);
   }
 
+  function handleKeyDown(e: React.KeyboardEvent, index: number) {
+    // Space/Enter commits the focused option (triggers save or confirmation modal).
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      handleSelect(OPTIONS[index].value);
+      return;
+    }
+    // Arrow keys only move focus — selection requires explicit Space/Enter.
+    // This prevents accidental saves while keyboard-browsing the options.
+    const count = OPTIONS.length;
+    let nextIndex: number | null = null;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      nextIndex = (index + 1) % count;
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      nextIndex = (index - 1 + count) % count;
+    }
+    if (nextIndex !== null) {
+      e.preventDefault();
+      setFocusedIdx(nextIndex);
+      buttonRefs.current[nextIndex]?.focus();
+    }
+  }
+
   return (
     <>
       {showConfirm && <ConfirmPrivateModal onConfirm={handleConfirm} onCancel={handleCancel} />}
@@ -226,20 +306,24 @@ export function VisibilityToggle({
         <div
           role='radiogroup'
           aria-label='Channel visibility'
+          aria-busy={isLoading}
           className='space-y-2'
         >
-          {OPTIONS.map(opt => {
+          {OPTIONS.map((opt, idx) => {
             const isSelected = selected === opt.value;
             const isDisabled = disabled || isLoading;
 
             return (
               <button
                 key={opt.value}
+                ref={(el) => { buttonRefs.current[idx] = el; }}
                 type='button'
                 role='radio'
                 aria-checked={isSelected}
                 disabled={isDisabled}
+                tabIndex={idx === focusedIdx ? 0 : -1}
                 onClick={() => handleSelect(opt.value)}
+                onKeyDown={(e) => handleKeyDown(e, idx)}
                 className={cn(
                   'flex w-full items-start gap-4 rounded-md border px-4 py-3 text-left',
                   'transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',

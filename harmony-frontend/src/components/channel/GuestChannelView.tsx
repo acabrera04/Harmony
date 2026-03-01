@@ -7,11 +7,13 @@
 
 import { notFound } from 'next/navigation';
 import { getServer, getServerMembers } from '@/services/serverService';
-import { getChannels } from '@/services/channelService';
+import { getChannel } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
+import { AuthRedirect } from '@/components/channel/AuthRedirect';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 import { MessageList } from '@/components/channel/MessageList';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
+import { ChannelVisibility } from '@/types';
 import type { Server, Channel } from '@/types';
 
 // ─── Guest Header ─────────────────────────────────────────────────────────────
@@ -82,21 +84,22 @@ interface GuestChannelViewProps {
 }
 
 export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannelViewProps) {
-  const server = await getServer(serverSlug);
-  if (!server) notFound();
+  const [server, channel] = await Promise.all([
+    getServer(serverSlug),
+    getChannel(serverSlug, channelSlug),
+  ]);
+  if (!server || !channel) notFound();
 
-  const serverChannels = await getChannels(server.id);
-  const channel = serverChannels.find(c => c.slug === channelSlug);
-  if (!channel) notFound();
-
-  const [{ messages }, members] = await Promise.all([
-    getMessages(channel.id),
+  const isPrivate = channel.visibility === ChannelVisibility.PRIVATE;
+  const [members, { messages }] = await Promise.all([
     getServerMembers(server.id),
+    isPrivate ? Promise.resolve({ messages: [] }) : getMessages(channel.id),
   ]);
   const sortedMessages = [...messages].reverse();
 
   return (
     <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
+      <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />
       <GuestHeader server={server} memberCount={members.length} />
 
       <VisibilityGuard visibility={channel.visibility} isLoading={false}>
@@ -105,7 +108,7 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
 
           <div className='flex flex-1 flex-col overflow-hidden'>
             <MessageList key={channel.id} channel={channel} messages={sortedMessages} />
-            <GuestPromoBanner />
+            <GuestPromoBanner serverName={server.name} memberCount={members.length} />
           </div>
         </div>
       </VisibilityGuard>

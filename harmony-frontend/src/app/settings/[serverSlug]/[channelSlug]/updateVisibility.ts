@@ -27,7 +27,9 @@ export async function updateChannelVisibility(
     throw new Error('Channel not found');
   }
 
-  // TODO (#71): Add server-side admin auth check before reaching production.
+  // TODO (#71): This action has no server-side auth check. Anyone who can call
+  // it can mutate channel visibility. Enforce a server-verifiable session + role
+  // check before this reaches production. (Same gap exists in actions.ts.)
 
   await updateVisibility(channel.id, visibility);
 

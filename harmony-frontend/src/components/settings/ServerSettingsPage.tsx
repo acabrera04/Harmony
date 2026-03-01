@@ -1,18 +1,17 @@
 /**
- * Channel Settings Page (M1 Admin Dashboard — CL-C1.1 ChannelSettings)
- * Client component — handles sidebar nav, auth guard, and editable Overview section.
- * Ref: dev-spec-channel-visibility-toggle.md
+ * Server Settings Page (Admin Dashboard)
+ * Client component — handles sidebar nav, auth guard, Overview, and Danger Zone.
+ * Mirrors the structure of ChannelSettingsPage.
  */
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { saveChannelSettings } from '@/app/settings/[serverSlug]/[channelSlug]/actions';
-import { VisibilityToggle } from '@/components/channel/VisibilityToggle';
-import type { Channel } from '@/types';
+import { saveServerSettings, deleteServerAction } from '@/app/settings/[serverSlug]/actions';
+import type { Server } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
 
@@ -25,53 +24,38 @@ const BG = {
 
 // ─── Sidebar sections ─────────────────────────────────────────────────────────
 
-type Section = 'overview' | 'permissions' | 'visibility';
+type Section = 'overview' | 'danger-zone';
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'permissions', label: 'Permissions' },
-  { id: 'visibility', label: 'Visibility' },
+  { id: 'danger-zone', label: 'Danger Zone' },
 ];
 
 // ─── Overview section ─────────────────────────────────────────────────────────
 
 function OverviewSection({
-  channel,
-  serverSlug,
+  server,
   onSave,
 }: {
-  channel: Channel;
-  serverSlug: string;
+  server: Server;
   onSave: (savedName: string) => void;
 }) {
-  const [name, setName] = useState(channel.name);
-  const [topic, setTopic] = useState(channel.topic ?? '');
-  const [description, setDescription] = useState(channel.description ?? '');
+  const [name, setName] = useState(server.name);
+  const [description, setDescription] = useState(server.description ?? '');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Synchronous re-entrancy lock: prevents two rapid clicks from dispatching
-  // concurrent saves before React can re-render and disable the button.
   const isSavingRef = useRef(false);
-  // Always reflects the current channel.id regardless of closure age —
-  // used to guard stale async saves that complete after a channel switch.
-  const currentChannelIdRef = useRef(channel.id);
-  currentChannelIdRef.current = channel.id;
-  // Monotonically-incrementing token: only the latest save invocation can apply
-  // post-await state updates, preventing older in-flight saves from overwriting
-  // results from a newer one (e.g. channel A → B → A rapid save scenario).
+  const currentServerIdRef = useRef(server.id);
+  currentServerIdRef.current = server.id;
   const saveCounterRef = useRef(0);
 
-  // Render-phase derived-state reset: when the channel changes (e.g. navigating
-  // between channel settings without unmounting), reset all form fields immediately
-  // so stale values from the previous channel don't persist for even one render.
-  const [prevChannelId, setPrevChannelId] = useState(channel.id);
-  if (prevChannelId !== channel.id) {
-    setPrevChannelId(channel.id);
-    setName(channel.name);
-    setTopic(channel.topic ?? '');
-    setDescription(channel.description ?? '');
+  const [prevServerId, setPrevServerId] = useState(server.id);
+  if (prevServerId !== server.id) {
+    setPrevServerId(server.id);
+    setName(server.name);
+    setDescription(server.description ?? '');
     setSaved(false);
     setSaveError(null);
     setSaving(false);
@@ -82,46 +66,36 @@ function OverviewSection({
     }
   }
 
-  useEffect(
-    () => () => {
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    },
-    [],
-  );
-
   async function handleSave() {
     if (isSavingRef.current) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setSaveError('Channel name cannot be empty');
+      setSaveError('Server name cannot be empty');
       return;
     }
-    // Capture the channel being saved so we can ignore completion if the user
-    // navigates to a different channel before this async request resolves.
-    const savedForChannelId = channel.id;
+    const savedForServerId = server.id;
     const thisToken = ++saveCounterRef.current;
     isSavingRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
-      await saveChannelSettings(serverSlug, channel.slug, {
+      await saveServerSettings(server.slug, {
         name: trimmedName,
-        topic: topic.trim(),
         description: description.trim(),
       });
-      if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken)
+      if (currentServerIdRef.current !== savedForServerId || saveCounterRef.current !== thisToken)
         return;
       setSaved(true);
       onSave(trimmedName);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken)
+      if (currentServerIdRef.current !== savedForServerId || saveCounterRef.current !== thisToken)
         return;
       setSaveError(err instanceof Error ? err.message : 'Failed to save changes');
     } finally {
       if (
-        currentChannelIdRef.current === savedForChannelId &&
+        currentServerIdRef.current === savedForServerId &&
         saveCounterRef.current === thisToken
       ) {
         isSavingRef.current = false;
@@ -133,19 +107,19 @@ function OverviewSection({
   return (
     <div className='max-w-lg space-y-6'>
       <div>
-        <h2 className='mb-4 text-xl font-semibold text-white'>Channel Overview</h2>
+        <h2 className='mb-4 text-xl font-semibold text-white'>Server Overview</h2>
       </div>
 
-      {/* Channel Name */}
+      {/* Server Name */}
       <div>
         <label
-          htmlFor='channel-name'
+          htmlFor='server-name'
           className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300'
         >
-          Channel Name
+          Server Name
         </label>
         <input
-          id='channel-name'
+          id='server-name'
           type='text'
           value={name}
           onChange={e => setName(e.target.value)}
@@ -157,42 +131,20 @@ function OverviewSection({
         />
       </div>
 
-      {/* Topic */}
-      <div>
-        <label
-          htmlFor='channel-topic'
-          className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300'
-        >
-          Channel Topic
-        </label>
-        <input
-          id='channel-topic'
-          type='text'
-          value={topic}
-          onChange={e => setTopic(e.target.value)}
-          placeholder='Let members know what this channel is about'
-          className={cn(
-            'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
-            'focus:ring-2 focus:ring-[#5865f2]',
-            BG.input,
-          )}
-        />
-      </div>
-
       {/* Description */}
       <div>
         <label
-          htmlFor='channel-description'
+          htmlFor='server-description'
           className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300'
         >
           Description
         </label>
         <textarea
-          id='channel-description'
+          id='server-description'
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={4}
-          placeholder='Add a longer description for this channel'
+          placeholder='What is this server about?'
           className={cn(
             'w-full resize-none rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
             'focus:ring-2 focus:ring-[#5865f2]',
@@ -224,14 +176,78 @@ function OverviewSection({
   );
 }
 
-// ─── Coming-soon stub ─────────────────────────────────────────────────────────
+// ─── Danger Zone section ──────────────────────────────────────────────────────
 
-function ComingSoonSection({ label }: { label: string }) {
+function DangerZoneSection({ server }: { server: Server }) {
+  const [confirmStep, setConfirmStep] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteServerAction(server.slug);
+      // deleteServerAction redirects — execution won't reach here on success
+    } catch (err) {
+      setDeleting(false);
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete server');
+    }
+  }
+
   return (
-    <div className='flex flex-col items-center justify-center py-16 text-center'>
-      <div className='mb-3 text-4xl'>🚧</div>
-      <p className='text-lg font-semibold text-white'>{label}</p>
-      <p className='mt-1 text-sm text-gray-400'>This section is coming soon.</p>
+    <div className='max-w-lg space-y-6'>
+      <h2 className='mb-4 text-xl font-semibold text-white'>Danger Zone</h2>
+
+      <div className='rounded border border-red-500/40 bg-red-950/20 p-4'>
+        <p className='mb-1 font-medium text-red-400'>Delete this server</p>
+        <p className='mb-4 text-sm text-gray-400'>
+          Permanently deletes <span className='font-semibold text-white'>{server.name}</span> and
+          all its channels. This action cannot be undone.
+        </p>
+
+        {!confirmStep ? (
+          <button
+            type='button'
+            onClick={() => setConfirmStep(true)}
+            className='rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
+          >
+            Delete Server
+          </button>
+        ) : (
+          <div className='space-y-3'>
+            <p className='text-sm font-medium text-red-300'>
+              Are you sure? This cannot be undone.
+            </p>
+            <div className='flex gap-2'>
+              <button
+                type='button'
+                onClick={handleDelete}
+                disabled={deleting}
+                className='rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-60'
+              >
+                {deleting ? 'Deleting…' : 'Yes, Delete Server'}
+              </button>
+              <button
+                type='button'
+                onClick={() => {
+                  setConfirmStep(false);
+                  setDeleteError(null);
+                }}
+                disabled={deleting}
+                className='rounded bg-[#4f545c] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#686d73] focus:outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-60'
+              >
+                Cancel
+              </button>
+            </div>
+            {deleteError && (
+              <p role='alert' className='text-sm text-red-400'>
+                {deleteError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -253,39 +269,26 @@ function LoadingScreen() {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-export interface ChannelSettingsPageProps {
-  channel: Channel;
+export interface ServerSettingsPageProps {
+  server: Server;
   serverSlug: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPageProps) {
+export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPageProps) {
   const { isAdmin, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('overview');
-  const [displayName, setDisplayName] = useState(channel.name);
+  const [displayName, setDisplayName] = useState(server.name);
 
-  // Render-phase derived-state reset: keep sidebar heading and back-button text
-  // in sync when channel prop changes without unmounting this component.
-  const [prevChannelId, setPrevChannelId] = useState(channel.id);
-  if (prevChannelId !== channel.id) {
-    setPrevChannelId(channel.id);
-    setDisplayName(channel.name);
-    setActiveSection('overview');
-  }
-
-  const backHref = `/channels/${serverSlug}/${channel.slug}`;
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated || !isAdmin()) {
-      router.replace(backHref);
-    }
-  }, [isLoading, isAuthenticated, isAdmin, router, backHref]);
+  const backHref = `/channels/${serverSlug}`;
 
   if (isLoading) return <LoadingScreen />;
-  if (!isAuthenticated || !isAdmin()) return <LoadingScreen />;
+  if (!isAuthenticated || !isAdmin()) {
+    router.replace(backHref);
+    return <LoadingScreen />;
+  }
 
   return (
     <div className={cn('flex h-screen overflow-hidden', BG.base)}>
@@ -293,10 +296,10 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
       <aside
         className={cn('flex w-60 flex-shrink-0 flex-col overflow-y-auto px-2 py-4', BG.sidebar)}
       >
-        {/* Channel name heading */}
+        {/* Server name heading */}
         <div className='mb-2 px-2'>
           <p className='text-xs font-semibold uppercase tracking-wide text-gray-400'>
-            #{displayName}
+            {displayName}
           </p>
         </div>
 
@@ -313,6 +316,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
                 activeSection === id
                   ? cn(BG.active, 'font-medium text-white')
                   : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
+                id === 'danger-zone' && activeSection !== 'danger-zone' && 'text-red-400 hover:text-red-300',
               )}
             >
               {label}
@@ -343,24 +347,18 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
             >
               <path d='m15 18-6-6 6-6' />
             </svg>
-            Back to #{displayName}
+            Back to {displayName}
           </button>
         </div>
 
         {/* Section content */}
         <div className='px-10 py-8'>
           {activeSection === 'overview' && (
-            <OverviewSection channel={channel} serverSlug={serverSlug} onSave={setDisplayName} />
+            <OverviewSection key={server.id}
+            server={server}
+            onSave={setDisplayName} />
           )}
-          {activeSection === 'permissions' && <ComingSoonSection label='Permissions' />}
-          {activeSection === 'visibility' && (
-            <VisibilityToggle
-              serverSlug={serverSlug}
-              channelSlug={channel.slug}
-              initialVisibility={channel.visibility}
-              disabled={!isAdmin()}
-            />
-          )}
+          {activeSection === 'danger-zone' && <DangerZoneSection server={server} />}
         </div>
       </main>
     </div>
