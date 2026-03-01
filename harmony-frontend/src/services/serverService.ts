@@ -3,12 +3,14 @@
  * References: dev-spec-channel-visibility-toggle.md
  */
 
-import type { Server, User } from '@/types';
+import type { Server, User, CreateServerInput } from '@/types';
 import { mockServers, mockUsers } from '@/mocks';
 
 // ─── In-memory store (mutated by write operations) ────────────────────────────
 
-const servers: Server[] = [...mockServers];
+const g = globalThis as typeof globalThis & { __harmonyServers?: Server[] };
+g.__harmonyServers ??= [...mockServers];
+const servers: Server[] = g.__harmonyServers;
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
@@ -33,4 +35,35 @@ export async function getServer(slug: string): Promise<Server | null> {
 export async function getServerMembers(_serverId: string): Promise<User[]> {
   // Simulate membership — real API would filter by _serverId
   return [...mockUsers];
+}
+
+/**
+ * Creates a new server and appends it to the in-memory store.
+ */
+export async function createServer(input: CreateServerInput): Promise<Server> {
+  const slug = input.name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  const existing = servers.find(s => s.slug === slug);
+  if (existing) {
+    throw new Error('A server with this name already exists.');
+  }
+
+  const newServer: Server = {
+    id: `server-${Date.now()}`,
+    name: input.name.trim(),
+    slug,
+    ownerId: 'user-001',
+    description: input.description?.trim() ?? '',
+    memberCount: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  servers.push(newServer);
+  return { ...newServer };
 }
