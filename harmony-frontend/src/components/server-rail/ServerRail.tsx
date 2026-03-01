@@ -92,12 +92,14 @@ export function ServerRail({
   allChannels,
   currentServerId,
   basePath,
+  onAddServer,
 }: {
   servers: Server[];
   /** All channels across every server — used to derive the default channel slug per server. */
   allChannels: Channel[];
   currentServerId: string;
   basePath: string;
+  onAddServer?: () => void;
 }) {
   // Memoized so the map is only rebuilt when allChannels changes, not on every
   // parent re-render (e.g. search/menu toggles in HarmonyShell).
@@ -168,12 +170,12 @@ export function ServerRail({
       {/* Divider before Add Server */}
       <div className='mx-auto h-0.5 w-8 rounded-full bg-[#36393f]' />
 
-      {/* Add Server placeholder */}
+      {/* Add Server */}
       <button
         title='Add a Server'
         aria-label='Add a Server'
-        className='group relative flex items-center cursor-not-allowed'
-        disabled
+        className='group relative flex items-center'
+        onClick={onAddServer}
       >
         <div className='flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#36393f] text-[#3ba55c] transition-all duration-200 group-hover:rounded-[16px] group-hover:bg-[#3ba55c] group-hover:text-white'>
           <svg
