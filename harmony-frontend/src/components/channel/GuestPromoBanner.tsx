@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,22 +30,30 @@ interface GuestPromoBannerProps {
 export function GuestPromoBanner({ serverName, memberCount }: GuestPromoBannerProps) {
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
-  // Lazy initialiser reads sessionStorage once on first render (client only).
-  // SSR returns true (hidden) so the banner never flashes during hydration.
-  const [dismissed, setDismissed] = useState(() =>
-    typeof window === 'undefined' ? true : isDismissedInStorage(),
+  // useSyncExternalStore with a server snapshot of `true` (hidden) prevents
+  // hydration mismatch: SSR and initial client render both produce null, then
+  // React reconciles with the real client snapshot after hydration — no
+  // setState-in-effect needed.
+  const storageDismissed = useSyncExternalStore(
+    () => () => {},       // sessionStorage has no change events
+    isDismissedInStorage, // client snapshot
+    () => true,           // server snapshot: always hidden
   );
 
+  // Tracks in-memory dismiss for the current render cycle, covering the case
+  // where sessionStorage.setItem throws (private browsing, etc.).
+  const [manuallyDismissed, setManuallyDismissed] = useState(false);
+
   const handleDismiss = useCallback(() => {
-    setDismissed(true);
     try {
       sessionStorage.setItem(DISMISS_KEY, 'true');
     } catch {
-      // sessionStorage unavailable (e.g. private browsing) — still dismiss in-memory
+      // sessionStorage unavailable — still dismiss in-memory
     }
+    setManuallyDismissed(true);
   }, []);
 
-  if (dismissed || isAuthenticated) return null;
+  if (storageDismissed || manuallyDismissed || isAuthenticated) return null;
 
   const returnUrl = encodeURIComponent(pathname);
 
