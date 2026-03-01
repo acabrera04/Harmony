@@ -88,6 +88,10 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
       setError('Server name must be 100 characters or fewer.');
       return;
     }
+    if (!nameToSlug(trimmed)) {
+      setError('Server name must contain at least one letter or number.');
+      return;
+    }
 
     setError('');
     setCreating(true);
