@@ -16,7 +16,9 @@ import { MessageInput } from '@/components/channel/MessageInput';
 import { MessageList } from '@/components/channel/MessageList';
 import { ServerRail } from '@/components/server-rail/ServerRail';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
+import { CreateChannelModal } from '@/components/channel/CreateChannelModal';
 import { useAuth } from '@/hooks/useAuth';
+import { ChannelType } from '@/types';
 import type { Server, Channel, Message, User } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -70,6 +72,17 @@ export function HarmonyShell({
     setPrevChannelId(currentChannel.id);
     setLocalMessages(messages);
   }
+  // Local channels state so newly created channels appear immediately in the sidebar.
+  const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
+  // Reset when navigating to a different server (channels prop changes).
+  const [prevServerId, setPrevServerId] = useState(currentServer.id);
+  if (prevServerId !== currentServer.id) {
+    setPrevServerId(currentServer.id);
+    setLocalChannels(channels);
+  }
+  // Channel creation modal state.
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(ChannelType.TEXT);
 
   const { user: authUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
@@ -111,13 +124,17 @@ export function HarmonyShell({
       {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
       <ChannelSidebar
         server={currentServer}
-        channels={channels}
+        channels={localChannels}
         currentChannelId={currentChannel.id}
         currentUser={currentUser}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         basePath={basePath}
         isAuthenticated={isAuthenticated}
+        onCreateChannel={(defaultType) => {
+          setCreateChannelDefaultType(defaultType);
+          setIsCreateChannelOpen(true);
+        }}
       />
 
       {/* 3. Main column */}
@@ -162,6 +179,16 @@ export function HarmonyShell({
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
       />
+
+      {isCreateChannelOpen && (
+        <CreateChannelModal
+          serverId={currentServer.id}
+          existingChannels={localChannels}
+          defaultType={createChannelDefaultType}
+          onCreated={newChannel => setLocalChannels(prev => [...prev, newChannel])}
+          onClose={() => setIsCreateChannelOpen(false)}
+        />
+      )}
     </div>
   );
 }

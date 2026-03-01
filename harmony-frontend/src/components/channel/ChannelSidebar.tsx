@@ -65,37 +65,58 @@ function CategoryHeader({
   label,
   isCollapsed,
   onToggle,
+  onAdd,
+  addLabel,
 }: {
   label: string;
   isCollapsed: boolean;
   onToggle: () => void;
+  /** When provided, renders a "+" button visible on hover (admins only). */
+  onAdd?: () => void;
+  addLabel?: string;
 }) {
   return (
-    <button
-      onClick={onToggle}
-      aria-expanded={!isCollapsed}
-      className='group mb-1 flex w-full items-center gap-0.5 rounded px-1 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 hover:text-gray-200'
-    >
-      {/* Caret: points down when expanded, right when collapsed */}
-      <svg
-        className={cn(
-          'h-3 w-3 flex-shrink-0 transition-transform duration-150',
-          isCollapsed && '-rotate-90',
-        )}
-        viewBox='0 0 24 24'
-        fill='none'
+    <div className='group/cat mb-1 flex items-center'>
+      <button
+        onClick={onToggle}
+        aria-expanded={!isCollapsed}
+        className='flex flex-1 items-center gap-0.5 rounded px-1 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 hover:text-gray-200'
       >
-        <path
-          d='m6 9 6 6 6-6'
-          stroke='currentColor'
-          strokeWidth={2}
-          strokeLinecap='round'
-          strokeLinejoin='round'
+        {/* Caret: points down when expanded, right when collapsed */}
+        <svg
+          className={cn(
+            'h-3 w-3 flex-shrink-0 transition-transform duration-150',
+            isCollapsed && '-rotate-90',
+          )}
+          viewBox='0 0 24 24'
           fill='none'
-        />
-      </svg>
-      <span className='ml-0.5'>{label}</span>
-    </button>
+        >
+          <path
+            d='m6 9 6 6 6-6'
+            stroke='currentColor'
+            strokeWidth={2}
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            fill='none'
+          />
+        </svg>
+        <span className='ml-0.5'>{label}</span>
+      </button>
+
+      {/* Add channel "+" — only rendered for admins, visible on category hover */}
+      {onAdd && (
+        <button
+          type='button'
+          onClick={onAdd}
+          aria-label={addLabel ?? `Add channel`}
+          className='ml-auto rounded p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-gray-200 group-hover/cat:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]'
+        >
+          <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} strokeLinecap='round' strokeLinejoin='round'>
+            <path d='M12 5v14M5 12h14' />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -112,6 +133,12 @@ export interface ChannelSidebarProps {
   isAuthenticated: boolean;
   /** URL base path for channel links — defaults to "/c" */
   basePath?: string;
+  /**
+   * Called when an admin clicks the "+" button next to a category header.
+   * Receives the default ChannelType for that category.
+   * Only shown when the current user is owner/admin.
+   */
+  onCreateChannel?: (defaultType: ChannelType) => void;
 }
 
 export function ChannelSidebar({
@@ -123,9 +150,14 @@ export function ChannelSidebar({
   onClose,
   isAuthenticated,
   basePath = '/c',
+  onCreateChannel,
 }: ChannelSidebarProps) {
   const [textCollapsed, setTextCollapsed] = useState(false);
   const [voiceCollapsed, setVoiceCollapsed] = useState(false);
+
+  const isAdmin =
+    isAuthenticated &&
+    (currentUser.role === 'owner' || currentUser.role === 'admin');
 
   const textChannels = channels.filter(
     c => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT,
@@ -176,6 +208,8 @@ export function ChannelSidebar({
                 label='Text Channels'
                 isCollapsed={textCollapsed}
                 onToggle={() => setTextCollapsed(v => !v)}
+                onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.TEXT) : undefined}
+                addLabel='Add text channel'
               />
               {!textCollapsed &&
                 textChannels.map(channel => {
@@ -216,6 +250,8 @@ export function ChannelSidebar({
                 label='Voice Channels'
                 isCollapsed={voiceCollapsed}
                 onToggle={() => setVoiceCollapsed(v => !v)}
+                onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined}
+                addLabel='Add voice channel'
               />
               {!voiceCollapsed &&
                 voiceChannels.map(channel => (
