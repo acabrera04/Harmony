@@ -17,6 +17,8 @@ import { MessageList } from '@/components/channel/MessageList';
 import { ServerRail } from '@/components/server-rail/ServerRail';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
 import type { Server, Channel, Message, User } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -82,6 +84,23 @@ export function HarmonyShell({
     role: 'guest',
   };
 
+  const router = useRouter();
+  const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
+  const [localServers, setLocalServers] = useState<Server[]>(servers);
+  const [prevServers, setPrevServers] = useState<Server[]>(servers);
+  if (prevServers !== servers) {
+    setPrevServers(servers);
+    setLocalServers(servers);
+  }
+
+  const handleServerCreated = useCallback(
+    (server: Server, defaultChannel: Channel) => {
+      setLocalServers(prev => [...prev, server]);
+      router.push(`${basePath}/${server.slug}/${defaultChannel.slug}`);
+    },
+    [basePath, router],
+  );
+
   const handleMessageSent = useCallback((msg: Message) => {
     setLocalMessages(prev => [...prev, msg]);
   }, []);
@@ -102,10 +121,17 @@ export function HarmonyShell({
     <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
       {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
       <ServerRail
-        servers={servers}
+        servers={localServers}
         allChannels={allChannels}
         currentServerId={currentServer.id}
         basePath={basePath}
+        onAddServer={isAuthLoading ? undefined : () => {
+          if (!isAuthenticated) {
+            router.push('/auth/login');
+            return;
+          }
+          setIsCreateServerOpen(true);
+        }}
       />
 
       {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
@@ -155,6 +181,12 @@ export function HarmonyShell({
           />
         </div>
       </div>
+
+      <CreateServerModal
+        isOpen={isCreateServerOpen}
+        onClose={() => setIsCreateServerOpen(false)}
+        onCreated={handleServerCreated}
+      />
 
       <SearchModal
         messages={localMessages}

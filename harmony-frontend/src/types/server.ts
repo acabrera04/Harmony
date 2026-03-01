@@ -26,3 +26,8 @@ export interface ServerDTO {
   memberCount: number;
   publicChannelCount?: number;
 }
+
+export interface CreateServerInput {
+  name: string;
+  description?: string;
+}
