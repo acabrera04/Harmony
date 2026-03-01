@@ -120,7 +120,13 @@ export function HarmonyShell({
         allChannels={allChannels}
         currentServerId={currentServer.id}
         basePath={basePath}
-        onAddServer={() => setIsCreateServerOpen(true)}
+        onAddServer={() => {
+          if (!isAuthenticated) {
+            router.push('/auth/login');
+            return;
+          }
+          setIsCreateServerOpen(true);
+        }}
       />
 
       {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
