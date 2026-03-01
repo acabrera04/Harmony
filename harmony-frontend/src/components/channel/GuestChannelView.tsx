@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getServer, getServerMembers } from '@/services/serverService';
 import { getChannels } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
+import { AuthRedirect } from '@/components/channel/AuthRedirect';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 import { MessageList } from '@/components/channel/MessageList';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
@@ -97,6 +98,7 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
 
   return (
     <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
+      <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />
       <GuestHeader server={server} memberCount={members.length} />
 
       <VisibilityGuard visibility={channel.visibility} isLoading={false}>
