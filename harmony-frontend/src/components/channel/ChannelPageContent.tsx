@@ -4,6 +4,8 @@ import { getChannels } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
 import { HarmonyShell } from '@/components/layout/HarmonyShell';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
+import { AuthRedirect } from '@/components/channel/AuthRedirect';
+import { ChannelVisibility } from '@/types';
 
 interface ChannelPageContentProps {
   serverSlug: string;
@@ -24,6 +26,22 @@ export async function ChannelPageContent({
   const serverChannels = await getChannels(server.id);
   const channel = serverChannels.find(c => c.slug === channelSlug);
   if (!channel) notFound();
+
+  const channelsPath = `/channels/${serverSlug}/${channelSlug}`;
+
+  // For PRIVATE channels in guest view, skip expensive fetches — VisibilityGuard
+  // renders AccessDeniedPage for unauthenticated users, and AuthRedirect handles
+  // the case where an authenticated user reaches this guest route.
+  if (isGuestView && channel.visibility === ChannelVisibility.PRIVATE) {
+    return (
+      <>
+        <AuthRedirect to={channelsPath} />
+        <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+          <></>
+        </VisibilityGuard>
+      </>
+    );
+  }
 
   // Gather all channels across servers for cross-server navigation
   const allChannels = (
@@ -53,9 +71,12 @@ export async function ChannelPageContent({
 
   if (isGuestView) {
     return (
-      <VisibilityGuard visibility={channel.visibility} isLoading={false}>
-        {shell}
-      </VisibilityGuard>
+      <>
+        <AuthRedirect to={channelsPath} />
+        <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+          {shell}
+        </VisibilityGuard>
+      </>
     );
   }
 

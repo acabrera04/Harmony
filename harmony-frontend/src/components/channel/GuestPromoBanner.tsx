@@ -9,6 +9,8 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 const DISMISS_KEY = 'harmony_guest_banner_dismissed';
 
@@ -26,6 +28,8 @@ export function GuestPromoBanner() {
   const [dismissed, setDismissed] = useState(() =>
     typeof window === 'undefined' ? true : isDismissedInStorage(),
   );
+  const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -36,7 +40,9 @@ export function GuestPromoBanner() {
     }
   }, []);
 
-  if (dismissed) return null;
+  if (dismissed || isAuthenticated) return null;
+
+  const returnUrl = encodeURIComponent(pathname);
 
   return (
     <aside
@@ -52,13 +58,13 @@ export function GuestPromoBanner() {
 
         <div className='flex shrink-0 items-center gap-2'>
           <Link
-            href='/auth/signup'
+            href={`/auth/signup?returnUrl=${returnUrl}`}
             className='inline-flex h-8 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-medium text-white transition-colors hover:bg-blue-700'
           >
             Create Account
           </Link>
           <Link
-            href='/auth/login'
+            href={`/auth/login?returnUrl=${returnUrl}`}
             className='inline-flex h-8 items-center justify-center rounded-md bg-gray-200 px-3 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-300'
           >
             Log In
