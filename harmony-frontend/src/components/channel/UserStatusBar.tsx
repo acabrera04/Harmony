@@ -11,6 +11,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { User, UserStatus } from '@/types';
@@ -42,8 +43,10 @@ export interface UserStatusBarProps {
 export function UserStatusBar({ currentUser, isAuthenticated }: UserStatusBarProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const pathname = usePathname();
 
   const userInitial = currentUser.username?.[0]?.toUpperCase() ?? '?';
+  const settingsHref = `/settings?returnTo=${encodeURIComponent(pathname)}`;
 
   return (
     <div className='flex h-[52px] flex-shrink-0 items-center gap-2 bg-[#292b2f] px-2'>
@@ -146,7 +149,7 @@ export function UserStatusBar({ currentUser, isAuthenticated }: UserStatusBarPro
         {/* Settings gear */}
         {isAuthenticated ? (
           <Link
-            href='/settings'
+            href={settingsHref}
             title='User Settings'
             aria-label='User Settings'
             className='rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white'

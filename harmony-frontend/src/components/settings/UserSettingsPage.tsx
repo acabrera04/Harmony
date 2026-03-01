@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import type { UserStatus } from '@/types';
+import { isChannelGuestAccessible } from '@/app/settings/actions';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
 
@@ -260,7 +261,25 @@ function AccountSection() {
 
 // ─── Logout section ───────────────────────────────────────────────────────────
 
-function LogoutSection() {
+const DEFAULT_CHANNEL = '/c/harmony-hq/general';
+
+/** Safely decodes a URI component; returns null on malformed input. */
+function safeDecodeURIComponent(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
+/** Parses a /c/[serverSlug]/[channelSlug] path. Returns null for other paths. */
+function parseChannelPath(path: string): { serverSlug: string; channelSlug: string } | null {
+  const match = path.match(/^\/c\/([^/]+)\/([^/]+)/);
+  if (!match) return null;
+  return { serverSlug: match[1], channelSlug: match[2] };
+}
+
+function LogoutSection({ returnTo }: { returnTo?: string }) {
   const { logout } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -268,12 +287,37 @@ function LogoutSection() {
   async function handleLogout() {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
+
+    // Perform logout first. If it fails, bail early.
     try {
       await logout();
-      router.replace('/auth/login');
     } catch {
       setIsLoggingOut(false);
+      return;
     }
+
+    // Determine post-logout destination: return to the previous channel if
+    // it's a public channel (guest view), otherwise fall back to default.
+    let destination = DEFAULT_CHANNEL;
+    if (returnTo) {
+      const decoded = safeDecodeURIComponent(returnTo);
+      if (decoded) {
+        const parsed = parseChannelPath(decoded);
+        if (parsed) {
+          try {
+            const accessible = await isChannelGuestAccessible(
+              parsed.serverSlug,
+              parsed.channelSlug,
+            );
+            if (accessible) destination = decoded;
+          } catch {
+            // Visibility check failed; fall back to default channel
+          }
+        }
+      }
+    }
+
+    router.replace(destination);
   }
 
   return (
@@ -297,7 +341,7 @@ function LogoutSection() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function UserSettingsPage() {
+export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('account');
@@ -351,7 +395,9 @@ export function UserSettingsPage() {
 
         <div className='mt-auto pt-4'>
           <button
-            onClick={() => router.push('/c/harmony-hq/general')}
+            onClick={() =>
+              router.push(returnTo ? (safeDecodeURIComponent(returnTo) ?? DEFAULT_CHANNEL) : DEFAULT_CHANNEL)
+            }
             className='w-full rounded px-2 py-1.5 text-left text-sm text-gray-400 transition-colors hover:bg-[#3d4148] hover:text-white'
           >
             ← Back to Harmony
@@ -363,7 +409,7 @@ export function UserSettingsPage() {
       <main className='flex-1 overflow-y-auto p-8' aria-label='Settings content'>
         <div className='mx-auto max-w-xl'>
           {activeSection === 'account' && <AccountSection />}
-          {activeSection === 'logout' && <LogoutSection />}
+          {activeSection === 'logout' && <LogoutSection returnTo={returnTo} />}
         </div>
       </main>
     </div>

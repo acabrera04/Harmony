@@ -5,6 +5,11 @@
 
 import { UserSettingsPage } from '@/components/settings/UserSettingsPage';
 
-export default function SettingsPage() {
-  return <UserSettingsPage />;
+interface PageProps {
+  searchParams: Promise<{ returnTo?: string }>;
+}
+
+export default async function SettingsPage({ searchParams }: PageProps) {
+  const { returnTo } = await searchParams;
+  return <UserSettingsPage returnTo={returnTo} />;
 }
