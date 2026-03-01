@@ -146,7 +146,9 @@ export function HarmonyShell({
               isReadOnly={currentUser.role === 'guest'}
               onMessageSent={handleMessageSent}
             />
-            {!isAuthLoading && !isAuthenticated && <GuestPromoBanner />}
+            {!isAuthLoading && !isAuthenticated && (
+              <GuestPromoBanner serverName={currentServer.name} memberCount={members.length} />
+            )}
           </div>
           <MembersSidebar
             members={members}

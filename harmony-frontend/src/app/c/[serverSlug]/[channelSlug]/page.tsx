@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { GuestChannelView } from '@/components/channel/GuestChannelView';
 import { getServer } from '@/services/serverService';
-import { getChannels } from '@/services/channelService';
-import { ChannelVisibility } from '@/types';
+import { getChannel, ChannelVisibility } from '@/services/channelService';
 
 interface PageProps {
   params: Promise<{ serverSlug: string; channelSlug: string }>;
@@ -10,10 +9,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { serverSlug, channelSlug } = await params;
-  const server = await getServer(serverSlug);
-  const channel = server
-    ? (await getChannels(server.id)).find(c => c.slug === channelSlug)
-    : undefined;
+  const [server, channel] = await Promise.all([
+    getServer(serverSlug),
+    getChannel(serverSlug, channelSlug),
+  ]);
 
   const channelName = channel?.name ?? channelSlug;
   const serverName = server?.name ?? serverSlug;
