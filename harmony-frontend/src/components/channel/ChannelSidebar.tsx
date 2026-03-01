@@ -151,7 +151,9 @@ export function ChannelSidebar({
       (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT) &&
       (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
   );
-  const voiceChannels = channels.filter(c => c.type === ChannelType.VOICE);
+  const voiceChannels = channels.filter(
+    c => c.type === ChannelType.VOICE && (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
+  );
 
   return (
     <>
