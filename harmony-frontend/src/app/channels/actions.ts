@@ -15,8 +15,17 @@ export async function createServerAction(
   if (!trimmed) throw new Error('Server name is required.');
   if (trimmed.length > 100) throw new Error('Server name must be 100 characters or fewer.');
 
-  const server = await createServer({ name: trimmed, description });
+  let sanitizedDescription: string | undefined;
+  if (typeof description === 'undefined') {
+    sanitizedDescription = undefined;
+  } else if (typeof description === 'string') {
+    const descTrimmed = description.trim();
+    sanitizedDescription = descTrimmed || undefined;
+  } else {
+    throw new Error('Invalid server description');
+  }
 
+  const server = await createServer({ name: trimmed, description: sanitizedDescription });
   const defaultChannel = await createChannel({
     serverId: server.id,
     name: 'general',
