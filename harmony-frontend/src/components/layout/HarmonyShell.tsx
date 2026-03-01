@@ -187,7 +187,16 @@ export function HarmonyShell({
           serverId={currentServer.id}
           existingChannels={localChannels}
           defaultType={createChannelDefaultType}
-          onCreated={newChannel => setLocalChannels(prev => [...prev, newChannel])}
+          onCreated={newChannel =>
+            setLocalChannels(prev => {
+              // Insert before voice channels so text/announcement channels stay grouped correctly.
+              const insertIdx = newChannel.type === ChannelType.VOICE
+                ? prev.length
+                : prev.findIndex(c => c.type === ChannelType.VOICE);
+              const at = insertIdx === -1 ? prev.length : insertIdx;
+              return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
+            })
+          }
           onClose={() => setIsCreateChannelOpen(false)}
         />
       )}
