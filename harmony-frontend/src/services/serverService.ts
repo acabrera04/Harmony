@@ -3,6 +3,7 @@
  * References: dev-spec-channel-visibility-toggle.md
  */
 
+import { cache } from 'react';
 import type { Server, User, CreateServerInput } from '@/types';
 import { mockServers, mockUsers } from '@/mocks';
 
@@ -24,9 +25,9 @@ export async function getServers(): Promise<Server[]> {
 /**
  * Returns a single server by its slug, or null if not found.
  */
-export async function getServer(slug: string): Promise<Server | null> {
+export const getServer = cache(async (slug: string): Promise<Server | null> => {
   return servers.find(s => s.slug === slug) ?? null;
-}
+});
 
 /**
  * Returns all members (users) of a server by server ID.

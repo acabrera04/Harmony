@@ -14,7 +14,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ChannelVisibility } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -81,6 +81,8 @@ function VisibilityError({ message }: { message?: string }) {
 
 function AccessDeniedPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const returnUrl = encodeURIComponent(pathname);
 
   return (
     <div className='flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8'>
@@ -110,13 +112,13 @@ function AccessDeniedPage() {
         {/* CTAs */}
         <div className='flex w-full flex-col gap-2'>
           <Link
-            href='/auth/signup'
+            href={`/auth/signup?returnUrl=${returnUrl}`}
             className='flex w-full items-center justify-center rounded-md bg-[#5865f2] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#4752c4]'
           >
             Create Account
           </Link>
           <Link
-            href='/auth/login'
+            href={`/auth/login?returnUrl=${returnUrl}`}
             className='flex w-full items-center justify-center rounded-md border border-white/20 bg-[#40444b] px-4 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:bg-[#3d4148]'
           >
             Log In

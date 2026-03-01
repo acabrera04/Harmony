@@ -147,9 +147,13 @@ export function ChannelSidebar({
   const [voiceCollapsed, setVoiceCollapsed] = useState(false);
 
   const textChannels = channels.filter(
-    c => c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT,
+    c =>
+      (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT) &&
+      (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
   );
-  const voiceChannels = channels.filter(c => c.type === ChannelType.VOICE);
+  const voiceChannels = channels.filter(
+    c => c.type === ChannelType.VOICE && (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
+  );
 
   return (
     <>

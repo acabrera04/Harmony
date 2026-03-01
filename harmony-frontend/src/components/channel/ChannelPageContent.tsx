@@ -8,7 +8,7 @@ import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 interface ChannelPageContentProps {
   serverSlug: string;
   channelSlug: string;
-  /** When true, wraps content in VisibilityGuard to deny guest access to PRIVATE channels. */
+  /** When true, uses the /c basePath so sidebar links stay on the guest route. */
   isGuestView?: boolean;
 }
 
@@ -51,13 +51,9 @@ export async function ChannelPageContent({
     />
   );
 
-  if (isGuestView) {
-    return (
-      <VisibilityGuard visibility={channel.visibility} isLoading={false}>
-        {shell}
-      </VisibilityGuard>
-    );
-  }
-
-  return shell;
+  return (
+    <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+      {shell}
+    </VisibilityGuard>
+  );
 }
