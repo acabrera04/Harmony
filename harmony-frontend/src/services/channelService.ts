@@ -4,6 +4,7 @@
  * References: dev-spec-channel-visibility-toggle.md
  */
 
+import { cache } from 'react';
 import { ChannelVisibility, type Channel } from '@/types';
 import { mockChannels, mockServers } from '@/mocks';
 
@@ -33,12 +34,12 @@ export async function getChannels(serverId: string): Promise<Channel[]> {
 /**
  * Returns a single channel by server slug + channel slug, or null if not found.
  */
-export async function getChannel(serverSlug: string, channelSlug: string): Promise<Channel | null> {
+export const getChannel = cache(async (serverSlug: string, channelSlug: string): Promise<Channel | null> => {
   // #c36: mockServers is now a static import at module scope — no dynamic import needed
   const server = mockServers.find(s => s.slug === serverSlug);
   if (!server) return null;
   return channels.find(c => c.serverId === server.id && c.slug === channelSlug) ?? null;
-}
+});
 
 /**
  * Updates the visibility of a channel in-memory so it persists for the session.

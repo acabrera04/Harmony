@@ -21,7 +21,8 @@ function LoginForm() {
 
     try {
       await login(username, password);
-      const returnUrl = searchParams.get('returnUrl')?.replace(/^\/c\//, '/channels/');
+      const raw = searchParams.get('returnUrl') ?? '';
+      const returnUrl = raw.startsWith('/') ? raw.replace(/^\/c\//, '/channels/') : null;
       router.push(returnUrl ?? '/channels/harmony-hq/general');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
