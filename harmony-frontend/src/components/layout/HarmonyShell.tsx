@@ -125,7 +125,7 @@ export function HarmonyShell({
         allChannels={allChannels}
         currentServerId={currentServer.id}
         basePath={basePath}
-        onAddServer={() => {
+        onAddServer={isAuthLoading ? undefined : () => {
           if (!isAuthenticated) {
             router.push('/auth/login');
             return;
