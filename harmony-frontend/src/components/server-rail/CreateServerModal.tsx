@@ -46,11 +46,11 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
   useEffect(() => {
     if (!isOpen) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !creating) onClose();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, creating]);
 
   // Focus trap
   const handleKeyDownModal = useCallback(
@@ -117,7 +117,7 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onClose}
+      onClick={creating ? undefined : onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-server-title"
