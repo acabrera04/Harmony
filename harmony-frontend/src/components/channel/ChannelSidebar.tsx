@@ -19,6 +19,25 @@ import type { Server, Channel, User } from '@/types';
 const BG_SIDEBAR = 'bg-[#2f3136]';
 const BG_ACTIVE = 'bg-[#3d4148]';
 
+// ─── Gear icon ────────────────────────────────────────────────────────────────
+
+function GearIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn('h-4 w-4', className)}
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      strokeWidth={2}
+      aria-hidden='true'
+      focusable='false'
+    >
+      <path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' />
+      <circle cx='12' cy='12' r='3' />
+    </svg>
+  );
+}
+
 // ─── Channel type icons ───────────────────────────────────────────────────────
 
 function ChannelIcon({ type }: { type: ChannelType }) {
@@ -157,15 +176,28 @@ export function ChannelSidebar({
         {/* Server name header */}
         <div className='flex h-12 flex-shrink-0 items-center border-b border-black/20 px-4 font-semibold text-white shadow-sm'>
           <span className='truncate'>{server.name}</span>
-          <svg
-            className='ml-auto h-4 w-4 flex-shrink-0 text-gray-400'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth={2}
-          >
-            <path d='m6 9 6 6 6-6' />
-          </svg>
+          {currentUser.role === 'owner' || currentUser.role === 'admin' ? (
+            <Link
+              href={`/settings/${server.slug}`}
+              title='Server settings'
+              aria-label='Server settings'
+              className='ml-auto flex-shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
+            >
+              <GearIcon />
+            </Link>
+          ) : (
+            <svg
+              className='ml-auto h-4 w-4 flex-shrink-0 text-gray-400'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth={2}
+              aria-hidden='true'
+              focusable='false'
+            >
+              <path d='m6 9 6 6 6-6' />
+            </svg>
+          )}
         </div>
 
         {/* Channel list */}
