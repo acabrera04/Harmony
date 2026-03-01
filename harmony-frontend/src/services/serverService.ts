@@ -38,6 +38,36 @@ export async function getServerMembers(_serverId: string): Promise<User[]> {
 }
 
 /**
+ * Updates editable metadata (name, description, icon) of a server in-memory.
+ * slug is intentionally excluded — renaming the slug would break existing URLs.
+ */
+export async function updateServer(
+  slug: string,
+  patch: Partial<Pick<Server, 'name' | 'description' | 'icon'>>,
+): Promise<Server> {
+  const index = servers.findIndex(s => s.slug === slug);
+  if (index === -1) {
+    throw new Error(`Server not found: ${slug}`);
+  }
+  servers[index] = {
+    ...servers[index],
+    ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
+    updatedAt: new Date().toISOString(),
+  };
+  return { ...servers[index] };
+}
+
+/**
+ * Deletes a server by slug. Returns true if deleted, false if not found.
+ */
+export async function deleteServer(slug: string): Promise<boolean> {
+  const index = servers.findIndex(s => s.slug === slug);
+  if (index === -1) return false;
+  servers.splice(index, 1);
+  return true;
+}
+
+/**
  * Creates a new server and appends it to the in-memory store.
  */
 export async function createServer(input: CreateServerInput): Promise<Server> {
