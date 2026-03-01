@@ -395,9 +395,21 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
 
         <div className='mt-auto pt-4'>
           <button
-            onClick={() =>
-              router.push(returnTo ? (safeDecodeURIComponent(returnTo) ?? DEFAULT_CHANNEL) : DEFAULT_CHANNEL)
-            }
+            onClick={() => {
+              const raw = safeDecodeURIComponent(returnTo ?? '');
+              let dest = DEFAULT_CHANNEL;
+              if (raw) {
+                try {
+                  const url = new URL(raw, window.location.origin);
+                  if (url.origin === window.location.origin) {
+                    dest = url.pathname + url.search + url.hash;
+                  }
+                } catch {
+                  // invalid URL, fall back to default
+                }
+              }
+              router.push(dest);
+            }}
             className='w-full rounded px-2 py-1.5 text-left text-sm text-gray-400 transition-colors hover:bg-[#3d4148] hover:text-white'
           >
             ← Back to Harmony
