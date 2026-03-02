@@ -245,7 +245,7 @@ export function CreateChannelModal({
         role='dialog'
         aria-modal='true'
         aria-labelledby={titleId}
-        className='w-full max-w-md rounded-lg bg-[#36393f] shadow-xl'
+        className='w-full max-w-md rounded-lg bg-[#1a1a1a] shadow-xl'
       >
         {/* Header */}
         <div className='flex items-center justify-between border-b border-black/20 px-6 py-4'>
@@ -259,7 +259,7 @@ export function CreateChannelModal({
             type='button'
             onClick={onClose}
             aria-label='Close dialog'
-            className='rounded p-1.5 text-gray-400 transition-colors hover:bg-[#40444b] hover:text-gray-200'
+            className='rounded p-1.5 text-gray-400 transition-colors hover:bg-[#2a2a2a] hover:text-gray-200'
           >
             <svg className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round'>
               <path d='M18 6 6 18M6 6l12 12' />
@@ -290,10 +290,10 @@ export function CreateChannelModal({
                   }}
                   disabled={isLoading}
                   className={cn(
-                    'flex flex-1 items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',
+                    'flex flex-1 items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#AAFF00]',
                     type === opt.value
-                      ? 'border-[#5865f2] bg-[#5865f2]/20 text-white'
-                      : 'border-[#40444b] bg-[#2f3136] text-gray-400 hover:border-[#5865f2]/50 hover:text-gray-200',
+                      ? 'border-[#AAFF00] bg-[#AAFF00]/20 text-white'
+                      : 'border-[#2a2a2a] bg-[#111111] text-gray-400 hover:border-[#AAFF00]/50 hover:text-gray-200',
                     isLoading && 'cursor-not-allowed opacity-50',
                   )}
                 >
@@ -315,8 +315,8 @@ export function CreateChannelModal({
             {/* Prefix "#" is decorative — the real label is above */}
             <div
               className={cn(
-                'flex items-center rounded-md bg-[#202225] px-3 py-2 ring-1 transition-all',
-                error ? 'ring-red-500' : 'ring-[#40444b] focus-within:ring-[#5865f2]',
+                'flex items-center rounded-md bg-[#0a0a0a] px-3 py-2 ring-1 transition-all',
+                error ? 'ring-red-500' : 'ring-[#2a2a2a] focus-within:ring-[#AAFF00]',
               )}
             >
               <span className='mr-1.5 text-gray-400 select-none' aria-hidden='true'>#</span>
@@ -371,7 +371,7 @@ export function CreateChannelModal({
               placeholder='What is this channel about?'
               maxLength={1024}
               disabled={isLoading}
-              className='w-full rounded-md bg-[#202225] px-3 py-2 text-sm text-white placeholder-gray-500 ring-1 ring-[#40444b] transition-all focus:outline-none focus:ring-[#5865f2] disabled:opacity-50'
+              className='w-full rounded-md bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder-gray-500 ring-1 ring-[#2a2a2a] transition-all focus:outline-none focus:ring-[#AAFF00] disabled:opacity-50'
             />
           </div>
 
@@ -395,15 +395,15 @@ export function CreateChannelModal({
                     onClick={() => setVisibility(opt.value)}
                     disabled={isLoading}
                     className={cn(
-                      'flex w-full items-start gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',
+                      'flex w-full items-start gap-3 rounded-md border px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#AAFF00]',
                       isSelected
-                        ? 'border-[#5865f2] bg-[#5865f2]/20 text-white'
-                        : 'border-[#40444b] bg-[#2f3136] text-gray-300 hover:border-[#5865f2]/50 hover:bg-[#36393f]',
+                        ? 'border-[#AAFF00] bg-[#AAFF00]/20 text-white'
+                        : 'border-[#2a2a2a] bg-[#111111] text-gray-300 hover:border-[#AAFF00]/50 hover:bg-[#1a1a1a]',
                       isLoading && 'cursor-not-allowed opacity-50',
                     )}
                   >
                     <span
-                      className={cn('mt-0.5 shrink-0', isSelected ? 'text-[#5865f2]' : 'text-gray-400')}
+                      className={cn('mt-0.5 shrink-0', isSelected ? 'text-[#AAFF00]' : 'text-gray-400')}
                     >
                       {opt.icon}
                     </span>
@@ -412,7 +412,7 @@ export function CreateChannelModal({
                       <span className='text-xs text-gray-400'>{opt.description}</span>
                     </span>
                     {isSelected && (
-                      <span className='mt-0.5 shrink-0 text-[#5865f2]'>
+                      <span className='mt-0.5 shrink-0 text-[#AAFF00]'>
                         <CheckIcon />
                       </span>
                     )}
@@ -433,14 +433,14 @@ export function CreateChannelModal({
               type='button'
               onClick={onClose}
               disabled={isLoading}
-              className='rounded px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-[#40444b] disabled:opacity-50'
+              className='rounded px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-[#2a2a2a] disabled:opacity-50'
             >
               Cancel
             </button>
             <button
               type='submit'
               disabled={isLoading || !slug}
-              className='flex items-center gap-2 rounded bg-[#5865f2] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4752c4] disabled:cursor-not-allowed disabled:opacity-50'
+              className='flex items-center gap-2 rounded bg-[#AAFF00] px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-[#88CC00] disabled:cursor-not-allowed disabled:opacity-50'
             >
               {isLoading && <SpinnerIcon />}
               {isLoading ? 'Creating…' : 'Create Channel'}
