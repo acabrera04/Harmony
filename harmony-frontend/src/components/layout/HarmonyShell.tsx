@@ -61,7 +61,7 @@ export function HarmonyShell({
   members,
   basePath = '/c',
 }: HarmonyShellProps) {
-  const [isMembersOpen, setIsMembersOpen] = useState(true);
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -73,6 +73,8 @@ export function HarmonyShell({
   if (prevChannelId !== currentChannel.id) {
     setPrevChannelId(currentChannel.id);
     setLocalMessages(messages);
+    setIsMenuOpen(false);
+    setIsMembersOpen(false);
   }
   // Local channels state so newly created channels appear immediately in the sidebar.
   const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
@@ -120,6 +122,13 @@ export function HarmonyShell({
     setLocalMessages(prev => [...prev, msg]);
   }, []);
 
+  // Open members sidebar by default on desktop; keep closed on mobile to avoid overlay on load.
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 640px)').matches) {
+      setIsMembersOpen(true);
+    }
+  }, []);
+
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -140,6 +149,7 @@ export function HarmonyShell({
         allChannels={allChannels}
         currentServerId={currentServer.id}
         basePath={basePath}
+        isMobileVisible={isMenuOpen}
         onAddServer={isAuthLoading ? undefined : () => {
           if (!isAuthenticated) {
             router.push('/auth/login');
