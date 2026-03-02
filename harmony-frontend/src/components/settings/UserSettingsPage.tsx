@@ -62,14 +62,13 @@ function AccountSection() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Sync when user prop changes (e.g., context update)
-  const [prevUser, setPrevUser] = useState(user);
-  if (user !== prevUser) {
-    setPrevUser(user);
-    setDisplayName(user?.displayName ?? '');
-    setStatus(user?.status ?? 'online');
+  // Sync controlled inputs when the user prop changes (e.g., after a save).
+  useEffect(() => {
+    if (!user) return;
+    setDisplayName(user.displayName ?? '');
+    setStatus(user.status ?? 'online');
     setIsDirty(false);
-  }
+  }, [user]);
 
   if (!user) return null;
 
@@ -288,16 +287,8 @@ function LogoutSection({ returnTo }: { returnTo?: string }) {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
 
-    // Perform logout first. If it fails, bail early.
-    try {
-      await logout();
-    } catch {
-      setIsLoggingOut(false);
-      return;
-    }
-
-    // Determine post-logout destination: return to the previous channel if
-    // it's a public channel (guest view), otherwise fall back to default.
+    // Determine post-logout destination before clearing the session so that a
+    // future auth-aware version of isChannelGuestAccessible would still work.
     let destination = DEFAULT_CHANNEL;
     if (returnTo) {
       const decoded = safeDecodeURIComponent(returnTo);
@@ -315,6 +306,14 @@ function LogoutSection({ returnTo }: { returnTo?: string }) {
           }
         }
       }
+    }
+
+    // Perform logout. If it fails, bail early.
+    try {
+      await logout();
+    } catch {
+      setIsLoggingOut(false);
+      return;
     }
 
     router.replace(destination);

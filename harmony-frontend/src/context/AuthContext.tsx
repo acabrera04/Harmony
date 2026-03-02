@@ -87,6 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(AUTH_STORAGE_KEY);
   }, []);
 
+  // Empty deps is intentional: authService.updateCurrentUser operates on the
+  // service's own in-memory currentUser (not the React `user` state), so this
+  // callback never reads `user` from the closure. If the service and React state
+  // were ever decoupled, the guard inside authService would surface the bug.
   const updateUser = useCallback(
     async (patch: Partial<Pick<User, 'displayName' | 'status'>>) => {
       const updated = await authService.updateCurrentUser(patch);
