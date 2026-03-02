@@ -76,7 +76,10 @@ export function HarmonyShell({
     setPrevChannelId(currentChannel.id);
     setLocalMessages(messages);
     setIsMenuOpen(false);
-    setIsMembersOpen(false);
+    // Only auto-close the members sidebar on mobile so desktop keeps it open by default.
+    if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 640px)').matches) {
+      setIsMembersOpen(false);
+    }
   }
   // Local channels state so newly created channels appear immediately in the sidebar.
   const [localChannels, setLocalChannels] = useState<Channel[]>(channels);

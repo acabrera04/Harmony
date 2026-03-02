@@ -338,6 +338,24 @@ function LogoutSection({ returnTo }: { returnTo?: string }) {
   );
 }
 
+// ─── Navigation helper ────────────────────────────────────────────────────────
+
+/** Resolve a `returnTo` query-param into a same-origin path, falling back to DEFAULT_CHANNEL. */
+function resolveReturnTo(returnTo: string | undefined): string {
+  const raw = safeDecodeURIComponent(returnTo ?? '');
+  if (raw) {
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin === window.location.origin) {
+        return url.pathname + url.search + url.hash;
+      }
+    } catch {
+      // invalid URL, fall back to default
+    }
+  }
+  return DEFAULT_CHANNEL;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
@@ -369,11 +387,14 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
         <div
           className='fixed inset-0 z-20 bg-black/40 sm:hidden'
           onClick={() => setIsSidebarOpen(false)}
+          aria-hidden='true'
+          role='presentation'
         />
       )}
 
       {/* Sidebar */}
       <nav
+        id='settings-sidebar'
         className={cn(
           'w-60 flex-shrink-0 flex-col p-4',
           BG.sidebar,
@@ -410,21 +431,7 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
 
         <div className='mt-auto pt-4'>
           <button
-            onClick={() => {
-              const raw = safeDecodeURIComponent(returnTo ?? '');
-              let dest = DEFAULT_CHANNEL;
-              if (raw) {
-                try {
-                  const url = new URL(raw, window.location.origin);
-                  if (url.origin === window.location.origin) {
-                    dest = url.pathname + url.search + url.hash;
-                  }
-                } catch {
-                  // invalid URL, fall back to default
-                }
-              }
-              router.push(dest);
-            }}
+            onClick={() => router.push(resolveReturnTo(returnTo))}
             className='w-full rounded px-2 py-1.5 text-left text-sm text-gray-400 transition-colors hover:bg-[#3d4148] hover:text-white'
           >
             ← Back to Harmony
@@ -441,29 +448,17 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
             onClick={() => setIsSidebarOpen(true)}
             className='flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#3d4148] hover:text-white'
             aria-label='Open settings menu'
+            aria-expanded={isSidebarOpen}
+            aria-controls='settings-sidebar'
           >
-            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true'>
+            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true' focusable='false'>
               <path fillRule='evenodd' d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' clipRule='evenodd' />
             </svg>
           </button>
           <span className='ml-2 text-sm font-semibold text-gray-300'>User Settings</span>
           <button
             type='button'
-            onClick={() => {
-              const raw = safeDecodeURIComponent(returnTo ?? '');
-              let dest = DEFAULT_CHANNEL;
-              if (raw) {
-                try {
-                  const url = new URL(raw, window.location.origin);
-                  if (url.origin === window.location.origin) {
-                    dest = url.pathname + url.search + url.hash;
-                  }
-                } catch {
-                  // invalid URL, fall back to default
-                }
-              }
-              router.push(dest);
-            }}
+            onClick={() => router.push(resolveReturnTo(returnTo))}
             className='ml-auto flex items-center gap-1 text-sm text-gray-400 hover:text-white'
           >
             <svg
@@ -475,6 +470,7 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
               strokeLinecap='round'
               strokeLinejoin='round'
               aria-hidden='true'
+              focusable='false'
             >
               <path d='M18 6 6 18M6 6l12 12' />
             </svg>

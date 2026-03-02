@@ -296,11 +296,14 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
         <div
           className='fixed inset-0 z-20 bg-black/40 sm:hidden'
           onClick={() => setIsSidebarOpen(false)}
+          aria-hidden='true'
+          role='presentation'
         />
       )}
 
       {/* Settings sidebar */}
       <aside
+        id='settings-sidebar'
         className={cn(
           'w-60 flex-shrink-0 flex-col overflow-y-auto px-2 py-4',
           BG.sidebar,
@@ -349,8 +352,10 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
             onClick={() => setIsSidebarOpen(true)}
             className='mr-2 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#3d4148] hover:text-white sm:hidden'
             aria-label='Open settings menu'
+            aria-expanded={isSidebarOpen}
+            aria-controls='settings-sidebar'
           >
-            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true'>
+            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true' focusable='false'>
               <path fillRule='evenodd' d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' clipRule='evenodd' />
             </svg>
           </button>
