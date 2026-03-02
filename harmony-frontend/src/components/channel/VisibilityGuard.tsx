@@ -22,7 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 function VisibilityLoading() {
   return (
-    <div className='flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8'>
+    <div className='flex h-screen flex-1 items-center justify-center bg-[#1a1a1a] p-8'>
       <div className='flex flex-col items-center gap-3 text-gray-400'>
         <svg
           className='h-8 w-8 animate-spin'
@@ -43,7 +43,7 @@ function VisibilityLoading() {
 
 function VisibilityError({ message }: { message?: string }) {
   return (
-    <div className='flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8'>
+    <div className='flex h-screen flex-1 items-center justify-center bg-[#1a1a1a] p-8'>
       <div className='flex max-w-sm flex-col items-center gap-4 text-center'>
         {/* Icon */}
         <div className='flex h-14 w-14 items-center justify-center rounded-full bg-[#f04747]/20'>
@@ -68,7 +68,7 @@ function VisibilityError({ message }: { message?: string }) {
 
         <Link
           href='/'
-          className='rounded-md bg-[#5865f2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752c4]'
+          className='rounded-md bg-[#AAFF00] px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-[#88CC00]'
         >
           Go home
         </Link>
@@ -85,10 +85,10 @@ function AccessDeniedPage() {
   const returnUrl = encodeURIComponent(pathname);
 
   return (
-    <div className='flex h-screen flex-1 items-center justify-center bg-[#36393f] p-8'>
+    <div className='flex h-screen flex-1 items-center justify-center bg-[#1a1a1a] p-8'>
       <div className='flex max-w-sm flex-col items-center gap-5 text-center'>
         {/* Lock icon */}
-        <div className='flex h-16 w-16 items-center justify-center rounded-full bg-[#40444b]'>
+        <div className='flex h-16 w-16 items-center justify-center rounded-full bg-[#2a2a2a]'>
           <svg
             className='h-8 w-8 text-gray-300'
             viewBox='0 0 24 24'
@@ -113,13 +113,13 @@ function AccessDeniedPage() {
         <div className='flex w-full flex-col gap-2'>
           <Link
             href={`/auth/signup?returnUrl=${returnUrl}`}
-            className='flex w-full items-center justify-center rounded-md bg-[#5865f2] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#4752c4]'
+            className='flex w-full items-center justify-center rounded-md bg-[#AAFF00] px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-[#88CC00]'
           >
             Create Account
           </Link>
           <Link
             href={`/auth/login?returnUrl=${returnUrl}`}
-            className='flex w-full items-center justify-center rounded-md border border-white/20 bg-[#40444b] px-4 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:bg-[#3d4148]'
+            className='flex w-full items-center justify-center rounded-md border border-white/20 bg-[#2a2a2a] px-4 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:bg-[#222222]'
           >
             Log In
           </Link>

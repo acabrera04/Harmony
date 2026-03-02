@@ -159,7 +159,7 @@ function ConfirmPrivateModal({ onConfirm, onCancel }: ConfirmModalProps) {
       aria-labelledby='confirm-private-title'
       className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4'
     >
-      <div className='w-full max-w-sm rounded-lg bg-[#36393f] p-6 shadow-xl'>
+      <div className='w-full max-w-sm rounded-lg bg-[#1a1a1a] p-6 shadow-xl'>
         <div className='mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20'>
           <LockIcon />
         </div>
@@ -175,7 +175,7 @@ function ConfirmPrivateModal({ onConfirm, onCancel }: ConfirmModalProps) {
             ref={cancelRef}
             type='button'
             onClick={onCancel}
-            className='flex-1 rounded px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-[#40444b]'
+            className='flex-1 rounded px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-[#2a2a2a]'
           >
             Cancel
           </button>
@@ -326,10 +326,10 @@ export function VisibilityToggle({
                 onKeyDown={(e) => handleKeyDown(e, idx)}
                 className={cn(
                   'flex w-full items-start gap-4 rounded-md border px-4 py-3 text-left',
-                  'transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',
+                  'transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#AAFF00]',
                   isSelected
-                    ? 'border-[#5865f2] bg-[#5865f2]/20 text-white'
-                    : 'border-[#40444b] bg-[#2f3136] text-gray-300 hover:border-[#5865f2]/50 hover:bg-[#36393f]',
+                    ? 'border-[#AAFF00] bg-[#AAFF00]/20 text-white'
+                    : 'border-[#2a2a2a] bg-[#111111] text-gray-300 hover:border-[#AAFF00]/50 hover:bg-[#1a1a1a]',
                   isDisabled && 'cursor-not-allowed opacity-50',
                 )}
               >
@@ -337,7 +337,7 @@ export function VisibilityToggle({
                 <span
                   className={cn(
                     'mt-0.5',
-                    isSelected ? 'text-[#5865f2]' : 'text-gray-400',
+                    isSelected ? 'text-[#AAFF00]' : 'text-gray-400',
                   )}
                 >
                   {opt.icon}
@@ -351,7 +351,7 @@ export function VisibilityToggle({
 
                 {/* Selected indicator */}
                 {isSelected && (
-                  <span className='ml-auto mt-0.5 shrink-0 text-[#5865f2]' aria-hidden='true'>
+                  <span className='ml-auto mt-0.5 shrink-0 text-[#AAFF00]' aria-hidden='true'>
                     <svg
                       className='h-5 w-5'
                       viewBox='0 0 24 24'
