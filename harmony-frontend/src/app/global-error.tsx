@@ -27,10 +27,10 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
         <meta charSet='utf-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1' />
         <style>{`
-          .retry-btn:hover { background-color: #4752c4; }
-          .retry-btn:focus-visible { outline: 2px solid #5865f2; outline-offset: 2px; }
-          .support-link:hover { color: #7983f5; }
-          .support-link:focus-visible { outline: 2px solid #5865f2; outline-offset: 2px; border-radius: 2px; }
+          .retry-btn:hover { background-color: #88CC00; }
+          .retry-btn:focus-visible { outline: 2px solid #AAFF00; outline-offset: 2px; }
+          .support-link:hover { color: #88CC00; }
+          .support-link:focus-visible { outline: 2px solid #AAFF00; outline-offset: 2px; border-radius: 2px; }
         `}</style>
       </head>
       <body
@@ -41,9 +41,9 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'column',
-          backgroundColor: '#36393f',
-          color: '#dcddde',
-          fontFamily: 'Inter, Open Sans, Arial, Helvetica, sans-serif',
+          backgroundColor: '#1a1a1a',
+          color: '#e0e0e0',
+          fontFamily: 'JetBrains Mono, monospace',
           textAlign: 'center',
           padding: '1rem',
         }}
@@ -52,7 +52,7 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
           style={{
             fontSize: '4rem',
             fontWeight: 900,
-            color: '#5865f2',
+            color: '#AAFF00',
             userSelect: 'none',
             margin: 0,
           }}
@@ -76,14 +76,14 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
             marginTop: '0.5rem',
             maxWidth: '24rem',
             fontSize: '0.875rem',
-            color: '#72767d',
+            color: '#666666',
           }}
         >
           We&apos;re having trouble loading this page. If this keeps happening, please reach out at{' '}
           <a
             href='mailto:support@harmony.app'
             className='support-link'
-            style={{ color: '#5865f2', textDecoration: 'underline' }}
+            style={{ color: '#AAFF00', textDecoration: 'underline' }}
           >
             support@harmony.app
           </a>
@@ -96,8 +96,8 @@ export default function ServerErrorPage({ error, reset }: ServerErrorPageProps) 
           style={{
             marginTop: '2rem',
             padding: '0.625rem 1.25rem',
-            backgroundColor: '#5865f2',
-            color: '#ffffff',
+            backgroundColor: '#AAFF00',
+            color: 'black',
             border: 'none',
             borderRadius: '0.375rem',
             fontSize: '0.875rem',
