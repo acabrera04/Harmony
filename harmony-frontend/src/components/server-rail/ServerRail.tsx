@@ -93,6 +93,7 @@ export function ServerRail({
   currentServerId,
   basePath,
   onAddServer,
+  isMobileVisible = false,
 }: {
   servers: Server[];
   /** All channels across every server — used to derive the default channel slug per server. */
@@ -100,6 +101,8 @@ export function ServerRail({
   currentServerId: string;
   basePath: string;
   onAddServer?: () => void;
+  /** When true, the rail is shown on mobile (inside the menu drawer). */
+  isMobileVisible?: boolean;
 }) {
   // Memoized so the map is only rebuilt when allChannels changes, not on every
   // parent re-render (e.g. search/menu toggles in HarmonyShell).
@@ -128,7 +131,12 @@ export function ServerRail({
   return (
     <nav
       aria-label='Servers'
-      className='hidden sm:flex w-[72px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto py-3 bg-[#202225]'
+      className={cn(
+        'w-[72px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto py-3 bg-[#202225]',
+        isMobileVisible
+          ? 'fixed inset-y-0 left-0 z-30 flex sm:static sm:z-auto'
+          : 'hidden sm:flex',
+      )}
     >
       {/* Home button */}
       <Link

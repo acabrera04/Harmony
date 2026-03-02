@@ -338,12 +338,31 @@ function LogoutSection({ returnTo }: { returnTo?: string }) {
   );
 }
 
+// ─── Navigation helper ────────────────────────────────────────────────────────
+
+/** Resolve a `returnTo` query-param into a same-origin path, falling back to DEFAULT_CHANNEL. */
+function resolveReturnTo(returnTo: string | undefined): string {
+  const raw = safeDecodeURIComponent(returnTo ?? '');
+  if (raw) {
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin === window.location.origin) {
+        return url.pathname + url.search + url.hash;
+      }
+    } catch {
+      // invalid URL, fall back to default
+    }
+  }
+  return DEFAULT_CHANNEL;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('account');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -363,9 +382,24 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
 
   return (
     <div className={cn('flex min-h-screen', BG.base)}>
+      {/* Mobile sidebar backdrop */}
+      {isSidebarOpen && (
+        <div
+          className='fixed inset-0 z-20 bg-black/40 sm:hidden'
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden='true'
+          role='presentation'
+        />
+      )}
+
       {/* Sidebar */}
       <nav
-        className={cn('flex w-60 flex-shrink-0 flex-col p-4', BG.sidebar)}
+        id='settings-sidebar'
+        className={cn(
+          'w-60 flex-shrink-0 flex-col p-4',
+          BG.sidebar,
+          isSidebarOpen ? 'fixed inset-y-0 left-0 z-30 flex' : 'hidden sm:flex',
+        )}
         aria-label='Settings navigation'
       >
         <p className='mb-2 px-2 text-xs font-bold uppercase tracking-wide text-gray-400'>
@@ -375,7 +409,10 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
           {SECTIONS.map(section => (
             <li key={section.id}>
               <button
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => {
+                  setActiveSection(section.id);
+                  setIsSidebarOpen(false);
+                }}
                 className={cn(
                   'w-full rounded px-2 py-1.5 text-left text-sm font-medium transition-colors',
                   activeSection === section.id
@@ -394,21 +431,7 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
 
         <div className='mt-auto pt-4'>
           <button
-            onClick={() => {
-              const raw = safeDecodeURIComponent(returnTo ?? '');
-              let dest = DEFAULT_CHANNEL;
-              if (raw) {
-                try {
-                  const url = new URL(raw, window.location.origin);
-                  if (url.origin === window.location.origin) {
-                    dest = url.pathname + url.search + url.hash;
-                  }
-                } catch {
-                  // invalid URL, fall back to default
-                }
-              }
-              router.push(dest);
-            }}
+            onClick={() => router.push(resolveReturnTo(returnTo))}
             className='w-full rounded px-2 py-1.5 text-left text-sm text-gray-400 transition-colors hover:bg-[#3d4148] hover:text-white'
           >
             ← Back to Harmony
@@ -417,10 +440,49 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
       </nav>
 
       {/* Content */}
-      <main className='flex-1 overflow-y-auto p-8' aria-label='Settings content'>
-        <div className='mx-auto max-w-xl'>
-          {activeSection === 'account' && <AccountSection />}
-          {activeSection === 'logout' && <LogoutSection returnTo={returnTo} />}
+      <main className='flex-1 overflow-y-auto' aria-label='Settings content'>
+        {/* Mobile top bar with sidebar toggle and back button */}
+        <div className='flex h-12 flex-shrink-0 items-center border-b border-black/20 px-4 sm:hidden'>
+          <button
+            type='button'
+            onClick={() => setIsSidebarOpen(true)}
+            className='flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#3d4148] hover:text-white'
+            aria-label='Open settings menu'
+            aria-expanded={isSidebarOpen}
+            aria-controls='settings-sidebar'
+          >
+            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true' focusable='false'>
+              <path fillRule='evenodd' d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' clipRule='evenodd' />
+            </svg>
+          </button>
+          <span className='ml-2 text-sm font-semibold text-gray-300'>User Settings</span>
+          <button
+            type='button'
+            onClick={() => router.push(resolveReturnTo(returnTo))}
+            className='ml-auto flex items-center gap-1 text-sm text-gray-400 hover:text-white'
+          >
+            <svg
+              className='h-4 w-4'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth={2}
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              aria-hidden='true'
+              focusable='false'
+            >
+              <path d='M18 6 6 18M6 6l12 12' />
+            </svg>
+            Close
+          </button>
+        </div>
+
+        <div className='p-4 sm:p-8'>
+          <div className='mx-auto max-w-xl'>
+            {activeSection === 'account' && <AccountSection />}
+            {activeSection === 'logout' && <LogoutSection returnTo={returnTo} />}
+          </div>
         </div>
       </main>
     </div>

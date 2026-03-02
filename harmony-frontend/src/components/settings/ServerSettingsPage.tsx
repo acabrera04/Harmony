@@ -281,6 +281,7 @@ export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPagePro
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('overview');
   const [displayName, setDisplayName] = useState(server.name);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const backHref = `/channels/${serverSlug}`;
 
@@ -292,9 +293,24 @@ export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPagePro
 
   return (
     <div className={cn('flex h-screen overflow-hidden', BG.base)}>
+      {/* Mobile sidebar backdrop */}
+      {isSidebarOpen && (
+        <div
+          className='fixed inset-0 z-20 bg-black/40 sm:hidden'
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden='true'
+          role='presentation'
+        />
+      )}
+
       {/* Settings sidebar */}
       <aside
-        className={cn('flex w-60 flex-shrink-0 flex-col overflow-y-auto px-2 py-4', BG.sidebar)}
+        id='settings-sidebar'
+        className={cn(
+          'w-60 flex-shrink-0 flex-col overflow-y-auto px-2 py-4',
+          BG.sidebar,
+          isSidebarOpen ? 'fixed inset-y-0 left-0 z-30 flex' : 'hidden sm:flex',
+        )}
       >
         {/* Server name heading */}
         <div className='mb-2 px-2'>
@@ -309,7 +325,10 @@ export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPagePro
             <button
               key={id}
               type='button'
-              onClick={() => setActiveSection(id)}
+              onClick={() => {
+                setActiveSection(id);
+                setIsSidebarOpen(false);
+              }}
               aria-current={activeSection === id ? 'page' : undefined}
               className={cn(
                 'w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors',
@@ -328,7 +347,20 @@ export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPagePro
       {/* Main content */}
       <main className='flex flex-1 flex-col overflow-y-auto'>
         {/* Top bar with back button */}
-        <div className='flex h-12 flex-shrink-0 items-center border-b border-black/20 px-6'>
+        <div className='flex h-12 flex-shrink-0 items-center border-b border-black/20 px-4 sm:px-6'>
+          {/* Mobile sidebar toggle */}
+          <button
+            type='button'
+            onClick={() => setIsSidebarOpen(true)}
+            className='mr-2 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#3d4148] hover:text-white sm:hidden'
+            aria-label='Open settings menu'
+            aria-expanded={isSidebarOpen}
+            aria-controls='settings-sidebar'
+          >
+            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true' focusable='false'>
+              <path fillRule='evenodd' d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' clipRule='evenodd' />
+            </svg>
+          </button>
           <button
             type='button'
             onClick={() => router.push(backHref)}
@@ -352,7 +384,7 @@ export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPagePro
         </div>
 
         {/* Section content */}
-        <div className='px-10 py-8'>
+        <div className='px-4 py-6 sm:px-10 sm:py-8'>
           {activeSection === 'overview' && (
             <OverviewSection key={server.id}
             server={server}

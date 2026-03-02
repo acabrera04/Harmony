@@ -61,7 +61,9 @@ export function HarmonyShell({
   members,
   basePath = '/c',
 }: HarmonyShellProps) {
-  const [isMembersOpen, setIsMembersOpen] = useState(true);
+  const [isMembersOpen, setIsMembersOpen] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
+  );
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -73,6 +75,11 @@ export function HarmonyShell({
   if (prevChannelId !== currentChannel.id) {
     setPrevChannelId(currentChannel.id);
     setLocalMessages(messages);
+    setIsMenuOpen(false);
+    // Only auto-close the members sidebar on mobile so desktop keeps it open by default.
+    if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 640px)').matches) {
+      setIsMembersOpen(false);
+    }
   }
   // Local channels state so newly created channels appear immediately in the sidebar.
   const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
@@ -140,6 +147,7 @@ export function HarmonyShell({
         allChannels={allChannels}
         currentServerId={currentServer.id}
         basePath={basePath}
+        isMobileVisible={isMenuOpen}
         onAddServer={isAuthLoading ? undefined : () => {
           if (!isAuthenticated) {
             router.push('/auth/login');
