@@ -61,7 +61,9 @@ export function HarmonyShell({
   members,
   basePath = '/c',
 }: HarmonyShellProps) {
-  const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [isMembersOpen, setIsMembersOpen] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
+  );
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -120,13 +122,6 @@ export function HarmonyShell({
 
   const handleMessageSent = useCallback((msg: Message) => {
     setLocalMessages(prev => [...prev, msg]);
-  }, []);
-
-  // Open members sidebar by default on desktop; keep closed on mobile to avoid overlay on load.
-  useEffect(() => {
-    if (window.matchMedia('(min-width: 640px)').matches) {
-      setIsMembersOpen(true);
-    }
   }, []);
 
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
