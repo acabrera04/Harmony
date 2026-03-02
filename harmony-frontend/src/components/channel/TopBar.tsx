@@ -180,7 +180,7 @@ export function TopBar({
   const settingsHref = `/settings/${serverSlug}/${channel.slug}`;
 
   return (
-    <header className='flex h-12 items-center gap-2 border-b border-black/20 bg-[#36393f] px-4 shadow-sm'>
+    <header className='flex h-12 items-center gap-2 border-b border-black/20 bg-[#1a1a1a] px-4 shadow-sm'>
       {/* ── Hamburger (mobile only) ── */}
       <button
         onClick={onMenuToggle}

@@ -57,9 +57,9 @@ function groupMessages(messages: Message[]): MessageGroup[] {
 function DateSeparator({ label }: { label: string }) {
   return (
     <div className='flex items-center gap-4 px-4 py-2'>
-      <hr className='flex-1 border-[#40444b]' />
+      <hr className='flex-1 border-[#2a2a2a]' />
       <span className='text-xs font-medium text-gray-400'>{label}</span>
-      <hr className='flex-1 border-[#40444b]' />
+      <hr className='flex-1 border-[#2a2a2a]' />
     </div>
   );
 }
@@ -113,7 +113,7 @@ export function MessageList({ channel, messages }: MessageListProps) {
     >
       {/* Channel welcome header */}
       <div className='px-4 pb-4'>
-        <div className='flex h-16 w-16 items-center justify-center rounded-full bg-[#40444b]'>
+        <div className='flex h-16 w-16 items-center justify-center rounded-full bg-[#2a2a2a]'>
           <svg
             className='h-8 w-8 text-white'
             viewBox='0 0 24 24'
