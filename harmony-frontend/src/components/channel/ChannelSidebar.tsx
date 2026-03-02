@@ -16,8 +16,8 @@ import type { Server, Channel, User } from '@/types';
 
 // ─── Colour tokens (Discord palette) ─────────────────────────────────────────
 
-const BG_SIDEBAR = 'bg-[#2f3136]';
-const BG_ACTIVE = 'bg-[#3d4148]';
+const BG_SIDEBAR = 'bg-[#111111]';
+const BG_ACTIVE = 'bg-[#222222]';
 
 // ─── Gear icon ────────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ function CategoryHeader({
           type='button'
           onClick={onAdd}
           aria-label={addLabel ?? `Add channel`}
-          className='ml-auto rounded p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-gray-200 group-hover/cat:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]'
+          className='ml-auto rounded p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-gray-200 group-hover/cat:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AAFF00]'
         >
           <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} strokeLinecap='round' strokeLinejoin='round' aria-hidden='true' focusable='false'>
             <path d='M12 5v14M5 12h14' />
