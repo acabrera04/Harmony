@@ -144,7 +144,7 @@ export function HarmonyShell({
       {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
       <a
         href='#main-content'
-        className='sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:bg-[#5865f2] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:outline-none'
+        className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#5865f2] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none'
       >
         Skip to content
       </a>
