@@ -16,7 +16,9 @@ import { MessageInput } from '@/components/channel/MessageInput';
 import { MessageList } from '@/components/channel/MessageList';
 import { ServerRail } from '@/components/server-rail/ServerRail';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
+import { CreateChannelModal } from '@/components/channel/CreateChannelModal';
 import { useAuth } from '@/hooks/useAuth';
+import { ChannelType } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
 import type { Server, Channel, Message, User } from '@/types';
@@ -72,6 +74,19 @@ export function HarmonyShell({
     setPrevChannelId(currentChannel.id);
     setLocalMessages(messages);
   }
+  // Local channels state so newly created channels appear immediately in the sidebar.
+  const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
+  // Track the channels prop reference so localChannels resets whenever the server
+  // passes a fresh array (server navigation or revalidatePath refresh) — same
+  // render-time derivation pattern used above for localMessages/prevChannelId.
+  const [prevChannelsProp, setPrevChannelsProp] = useState(channels);
+  if (prevChannelsProp !== channels) {
+    setPrevChannelsProp(channels);
+    setLocalChannels(channels);
+  }
+  // Channel creation modal state.
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(ChannelType.TEXT);
 
   const { user: authUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
@@ -137,13 +152,17 @@ export function HarmonyShell({
       {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
       <ChannelSidebar
         server={currentServer}
-        channels={channels}
+        channels={localChannels}
         currentChannelId={currentChannel.id}
         currentUser={currentUser}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         basePath={basePath}
         isAuthenticated={isAuthenticated}
+        onCreateChannel={(defaultType) => {
+          setCreateChannelDefaultType(defaultType);
+          setIsCreateChannelOpen(true);
+        }}
       />
 
       {/* 3. Main column */}
@@ -196,6 +215,25 @@ export function HarmonyShell({
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
       />
+
+      {isCreateChannelOpen && (
+        <CreateChannelModal
+          serverId={currentServer.id}
+          existingChannels={localChannels}
+          defaultType={createChannelDefaultType}
+          onCreated={newChannel =>
+            setLocalChannels(prev => {
+              // Insert before voice channels so text/announcement channels stay grouped correctly.
+              const insertIdx = newChannel.type === ChannelType.VOICE
+                ? prev.length
+                : prev.findIndex(c => c.type === ChannelType.VOICE);
+              const at = insertIdx === -1 ? prev.length : insertIdx;
+              return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
+            })
+          }
+          onClose={() => setIsCreateChannelOpen(false)}
+        />
+      )}
     </div>
   );
 }
