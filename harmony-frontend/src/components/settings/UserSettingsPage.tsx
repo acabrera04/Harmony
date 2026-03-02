@@ -17,10 +17,10 @@ import { isChannelGuestAccessible } from '@/app/settings/actions';
 // ─── Discord colour tokens ────────────────────────────────────────────────────
 
 const BG = {
-  base: 'bg-[#313338]',
-  sidebar: 'bg-[#2f3136]',
-  active: 'bg-[#3d4148]',
-  input: 'bg-[#1e1f22]',
+  base: 'bg-[#111111]',
+  sidebar: 'bg-[#111111]',
+  active: 'bg-[#222222]',
+  input: 'bg-[#0d0d0d]',
 };
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -116,9 +116,9 @@ function AccountSection() {
       <h2 className='text-xl font-semibold text-white'>My Account</h2>
 
       {/* Profile card */}
-      <div className='rounded-lg bg-[#1e1f22] p-4'>
+      <div className='rounded-lg bg-[#0d0d0d] p-4'>
         {/* Banner + avatar row */}
-        <div className='relative mb-12 h-16 rounded-t-lg bg-[#5865f2]'>
+        <div className='relative mb-12 h-16 rounded-t-lg bg-[#AAFF00]'>
           <div className='absolute -bottom-10 left-4'>
             <div className='relative'>
               {user.avatar ? (
@@ -127,17 +127,17 @@ function AccountSection() {
                   alt={user.username}
                   width={80}
                   height={80}
-                  className='h-20 w-20 rounded-full ring-4 ring-[#1e1f22]'
+                  className='h-20 w-20 rounded-full ring-4 ring-[#0d0d0d]'
                   unoptimized
                 />
               ) : (
-                <div className='flex h-20 w-20 items-center justify-center rounded-full bg-[#5865f2] text-2xl font-bold text-white ring-4 ring-[#1e1f22]'>
+                <div className='flex h-20 w-20 items-center justify-center rounded-full bg-[#AAFF00] text-2xl font-bold text-black ring-4 ring-[#0d0d0d]'>
                   {userInitial}
                 </div>
               )}
               <span
                 className={cn(
-                  'absolute bottom-1 right-1 h-4 w-4 rounded-full ring-2 ring-[#1e1f22]',
+                  'absolute bottom-1 right-1 h-4 w-4 rounded-full ring-2 ring-[#0d0d0d]',
                   STATUS_COLOR[user.status],
                 )}
                 title={STATUS_LABEL[user.status]}
@@ -152,7 +152,7 @@ function AccountSection() {
             {user.displayName ?? user.username}
           </p>
           <p className='text-sm text-gray-400'>#{user.username}</p>
-          <span className='mt-1 inline-block rounded bg-[#3d4148] px-2 py-0.5 text-xs font-medium text-gray-300 capitalize'>
+          <span className='mt-1 inline-block rounded bg-[#222222] px-2 py-0.5 text-xs font-medium text-gray-300 capitalize'>
             {user.role}
           </span>
         </div>
@@ -178,7 +178,7 @@ function AccountSection() {
             value={displayName}
             onChange={handleDisplayNameChange}
             maxLength={32}
-            className='w-full max-w-sm rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2]'
+            className='w-full max-w-sm rounded bg-[#0d0d0d] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#AAFF00]'
             placeholder={user.username}
           />
           <p className='mt-1 text-xs text-gray-500'>
@@ -203,7 +203,7 @@ function AccountSection() {
               id='status'
               value={status}
               onChange={handleStatusChange}
-              className='rounded bg-[#1e1f22] px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-[#5865f2]'
+              className='rounded bg-[#0d0d0d] px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-[#AAFF00]'
             >
               {ALL_STATUSES.map(s => (
                 <option key={s} value={s}>
@@ -372,8 +372,8 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
 
   if (isLoading) {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-[#313338]'>
-        <div className='h-8 w-8 animate-spin rounded-full border-2 border-[#5865f2] border-t-transparent' />
+      <div className='flex min-h-screen items-center justify-center bg-[#111111]'>
+        <div className='h-8 w-8 animate-spin rounded-full border-2 border-[#AAFF00] border-t-transparent' />
       </div>
     );
   }
@@ -418,8 +418,8 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
                   activeSection === section.id
                     ? cn(BG.active, 'text-white')
                     : section.danger
-                      ? 'text-red-400 hover:bg-[#3d4148] hover:text-red-300'
-                      : 'text-gray-300 hover:bg-[#3d4148] hover:text-white',
+                      ? 'text-red-400 hover:bg-[#222222] hover:text-red-300'
+                      : 'text-gray-300 hover:bg-[#222222] hover:text-white',
                 )}
                 aria-current={activeSection === section.id ? 'page' : undefined}
               >
@@ -432,7 +432,7 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
         <div className='mt-auto pt-4'>
           <button
             onClick={() => router.push(resolveReturnTo(returnTo))}
-            className='w-full rounded px-2 py-1.5 text-left text-sm text-gray-400 transition-colors hover:bg-[#3d4148] hover:text-white'
+            className='w-full rounded px-2 py-1.5 text-left text-sm text-gray-400 transition-colors hover:bg-[#222222] hover:text-white'
           >
             ← Back to Harmony
           </button>
@@ -446,7 +446,7 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
           <button
             type='button'
             onClick={() => setIsSidebarOpen(true)}
-            className='flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#3d4148] hover:text-white'
+            className='flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#222222] hover:text-white'
             aria-label='Open settings menu'
             aria-expanded={isSidebarOpen}
             aria-controls='settings-sidebar'

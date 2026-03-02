@@ -14,13 +14,13 @@ import { saveChannelSettings } from '@/app/settings/[serverSlug]/[channelSlug]/a
 import { VisibilityToggle } from '@/components/channel/VisibilityToggle';
 import type { Channel } from '@/types';
 
-// ─── Discord colour tokens ────────────────────────────────────────────────────
+// ─── Marathon colour tokens ───────────────────────────────────────────────────
 
 const BG = {
-  base: 'bg-[#313338]',
-  sidebar: 'bg-[#2f3136]',
-  active: 'bg-[#3d4148]',
-  input: 'bg-[#1e1f22]',
+  base: 'bg-[#111111]',
+  sidebar: 'bg-[#111111]',
+  active: 'bg-[#222222]',
+  input: 'bg-[#0d0d0d]',
 };
 
 // ─── Sidebar sections ─────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ function OverviewSection({
           onChange={e => setName(e.target.value)}
           className={cn(
             'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
-            'focus:ring-2 focus:ring-[#5865f2]',
+            'focus:ring-2 focus:ring-[#AAFF00]',
             BG.input,
           )}
         />
@@ -173,7 +173,7 @@ function OverviewSection({
           placeholder='Let members know what this channel is about'
           className={cn(
             'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
-            'focus:ring-2 focus:ring-[#5865f2]',
+            'focus:ring-2 focus:ring-[#AAFF00]',
             BG.input,
           )}
         />
@@ -195,7 +195,7 @@ function OverviewSection({
           placeholder='Add a longer description for this channel'
           className={cn(
             'w-full resize-none rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
-            'focus:ring-2 focus:ring-[#5865f2]',
+            'focus:ring-2 focus:ring-[#AAFF00]',
             BG.input,
           )}
         />
@@ -208,8 +208,8 @@ function OverviewSection({
           onClick={handleSave}
           disabled={saving}
           className={cn(
-            'rounded px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2] transition-colors disabled:opacity-60',
-            saved ? 'bg-[#3ba55c] hover:bg-[#2d8a4d]' : 'bg-[#5865f2] hover:bg-[#4752c4]',
+            'rounded px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-[#AAFF00] transition-colors disabled:opacity-60',
+            saved ? 'bg-[#00FF88] hover:bg-[#00CC66]' : 'bg-[#AAFF00] hover:bg-[#88CC00]',
           )}
         >
           {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Changes'}
@@ -245,7 +245,7 @@ function LoadingScreen() {
       role='status'
       aria-live='polite'
     >
-      <div className='h-8 w-8 animate-spin rounded-full border-4 border-[#5865f2] border-t-transparent' />
+      <div className='h-8 w-8 animate-spin rounded-full border-4 border-[#AAFF00] border-t-transparent' />
       <span className='sr-only'>Loading…</span>
     </div>
   );
@@ -333,7 +333,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
                 'w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors',
                 activeSection === id
                   ? cn(BG.active, 'font-medium text-white')
-                  : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
+                  : 'text-gray-400 hover:bg-[#222222] hover:text-gray-200',
               )}
             >
               {label}
@@ -350,7 +350,7 @@ export function ChannelSettingsPage({ channel, serverSlug }: ChannelSettingsPage
           <button
             type='button'
             onClick={() => setIsSidebarOpen(true)}
-            className='mr-2 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#3d4148] hover:text-white sm:hidden'
+            className='mr-2 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:bg-[#222222] hover:text-white sm:hidden'
             aria-label='Open settings menu'
             aria-expanded={isSidebarOpen}
             aria-controls='settings-sidebar'
