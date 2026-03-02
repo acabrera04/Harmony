@@ -60,12 +60,12 @@ export function GuestPromoBanner({ serverName, memberCount }: GuestPromoBannerPr
   return (
     <aside
       aria-label='Join server promotion'
-      className='sticky bottom-0 z-20 border-t border-[#2a2d31] bg-[#2f3136] px-4 py-3 shadow-lg'
+      className='sticky bottom-0 z-20 border-t border-[#1a1a1a] bg-[#111111] px-4 py-3 shadow-lg'
     >
       <div className='mx-auto flex max-w-4xl items-center gap-3'>
         {/* Server icon — first letter avatar */}
         <div
-          className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white'
+          className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#AAFF00] text-sm font-bold text-black'
           aria-hidden='true'
         >
           {serverName[0].toUpperCase()}
@@ -81,21 +81,21 @@ export function GuestPromoBanner({ serverName, memberCount }: GuestPromoBannerPr
         <div className='flex shrink-0 items-center gap-2'>
           <Link
             href={`/auth/signup?returnUrl=${returnUrl}`}
-            className='inline-flex h-8 items-center justify-center rounded-md bg-[#5865f2] px-3 text-sm font-medium text-white transition-colors hover:bg-[#4752c4]'
+            className='inline-flex h-8 items-center justify-center rounded-md bg-[#AAFF00] px-3 text-sm font-medium text-black transition-colors hover:bg-[#88CC00]'
           >
             <span className='hidden sm:inline'>Create Account</span>
             <span className='sm:hidden'>Join</span>
           </Link>
           <Link
             href={`/auth/login?returnUrl=${returnUrl}`}
-            className='inline-flex h-8 items-center justify-center rounded-md border border-white/20 bg-[#40444b] px-3 text-sm font-medium text-gray-200 transition-colors hover:bg-[#3d4148]'
+            className='inline-flex h-8 items-center justify-center rounded-md border border-white/20 bg-[#2a2a2a] px-3 text-sm font-medium text-gray-200 transition-colors hover:bg-[#222222]'
           >
             Log In
           </Link>
           <button
             type='button'
             onClick={handleDismiss}
-            className='ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-[#40444b] hover:text-white'
+            className='ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-[#2a2a2a] hover:text-white'
             aria-label='Dismiss banner'
           >
             <svg

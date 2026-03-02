@@ -20,9 +20,9 @@ import type { Server, Channel } from '@/types';
 
 function GuestHeader({ server, memberCount }: { server: Server; memberCount: number }) {
   return (
-    <header className='flex h-14 shrink-0 items-center gap-3 border-b border-black/20 bg-[#2f3136] px-4'>
+    <header className='flex h-14 shrink-0 items-center gap-3 border-b border-black/20 bg-[#111111] px-4'>
       {/* Harmony logo wordmark */}
-      <span className='text-lg font-bold text-[#5865f2]'>Harmony</span>
+      <span className='text-lg font-bold text-[#AAFF00]'>Harmony</span>
 
       {/* Divider */}
       <span className='text-gray-600' aria-hidden='true'>
@@ -53,7 +53,7 @@ function GuestHeader({ server, memberCount }: { server: Server; memberCount: num
 
 function ChannelHeader({ channel }: { channel: Channel }) {
   return (
-    <div className='flex shrink-0 items-center gap-2 border-b border-black/20 bg-[#36393f] px-4 py-3'>
+    <div className='flex shrink-0 items-center gap-2 border-b border-black/20 bg-[#1a1a1a] px-4 py-3'>
       <svg
         className='h-5 w-5 shrink-0 text-gray-400'
         viewBox='0 0 24 24'
@@ -98,7 +98,7 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
   const sortedMessages = [...messages].reverse();
 
   return (
-    <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
+    <div className='flex h-screen flex-col overflow-hidden bg-[#1a1a1a] font-sans'>
       <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />
       <GuestHeader server={server} memberCount={members.length} />
 
