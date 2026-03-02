@@ -61,10 +61,10 @@ function ServerPill({
       />
       <div
         className={cn(
-          'flex h-12 w-12 items-center justify-center rounded-[24px] transition-all duration-200 text-white font-bold text-sm overflow-hidden',
+          'flex h-12 w-12 items-center justify-center rounded-[24px] transition-all duration-200 text-black font-bold text-sm overflow-hidden',
           isActive
-            ? 'rounded-[16px] bg-[#5865f2]'
-            : 'bg-[#36393f] group-hover:rounded-[16px] group-hover:bg-[#5865f2]',
+            ? 'rounded-[16px] bg-[#AAFF00]'
+            : 'bg-[#1a1a1a] group-hover:rounded-[16px] group-hover:bg-[#AAFF00]',
         )}
       >
         {server.icon && !iconError ? (
@@ -132,7 +132,7 @@ export function ServerRail({
     <nav
       aria-label='Servers'
       className={cn(
-        'w-[72px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto py-3 bg-[#202225]',
+        'w-[72px] flex-shrink-0 flex-col items-center gap-2 overflow-y-auto py-3 bg-[#0a0a0a]',
         isMobileVisible
           ? 'fixed inset-y-0 left-0 z-30 flex sm:static sm:z-auto'
           : 'hidden sm:flex',
@@ -145,7 +145,7 @@ export function ServerRail({
         title='Home'
         aria-label='Home'
       >
-        <div className='flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#5865f2] text-white transition-all duration-200 group-hover:rounded-[16px]'>
+        <div className='flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#AAFF00] text-black transition-all duration-200 group-hover:rounded-[16px]'>
           <svg
             className='h-6 w-6'
             viewBox='0 0 24 24'
@@ -159,7 +159,7 @@ export function ServerRail({
       </Link>
 
       {/* Divider */}
-      <div className='mx-auto h-0.5 w-8 rounded-full bg-[#36393f]' />
+      <div className='mx-auto h-0.5 w-8 rounded-full bg-[#1a1a1a]' />
 
       {/* Server list */}
       {servers.map(server => {
@@ -176,7 +176,7 @@ export function ServerRail({
       })}
 
       {/* Divider before Add Server */}
-      <div className='mx-auto h-0.5 w-8 rounded-full bg-[#36393f]' />
+      <div className='mx-auto h-0.5 w-8 rounded-full bg-[#1a1a1a]' />
 
       {/* Add Server */}
       <button
@@ -187,7 +187,7 @@ export function ServerRail({
         disabled={!onAddServer}
         onClick={onAddServer}
       >
-        <div className='flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#36393f] text-[#3ba55c] transition-all duration-200 group-hover:rounded-[16px] group-hover:bg-[#3ba55c] group-hover:text-white'>
+        <div className='flex h-12 w-12 items-center justify-center rounded-[24px] bg-[#1a1a1a] text-[#00FF88] transition-all duration-200 group-hover:rounded-[16px] group-hover:bg-[#00FF88] group-hover:text-black'>
           <svg
             className='h-6 w-6'
             viewBox='0 0 24 24'
