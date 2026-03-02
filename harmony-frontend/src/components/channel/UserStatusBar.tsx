@@ -62,7 +62,7 @@ export function UserStatusBar({ currentUser, isAuthenticated }: UserStatusBarPro
             unoptimized
           />
         ) : (
-          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#AAFF00] text-sm font-bold text-black'>
             {userInitial}
           </div>
         )}
@@ -168,7 +168,7 @@ export function UserStatusBar({ currentUser, isAuthenticated }: UserStatusBarPro
           <Link
             href='/auth/login'
             title='Log In'
-            className='rounded bg-[#5865f2] px-2 py-1 text-xs font-medium text-white hover:bg-[#4752c4]'
+            className='rounded bg-[#AAFF00] px-2 py-1 text-xs font-medium text-black hover:bg-[#88CC00]'
           >
             Log In
           </Link>

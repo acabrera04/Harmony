@@ -23,7 +23,7 @@ const STATUS_COLOR: Record<UserStatus, string> = {
 function StatusDot({ status }: { status: UserStatus }) {
   return (
     <span
-      className={cn('block h-2.5 w-2.5 rounded-full ring-2 ring-[#2f3136]', STATUS_COLOR[status])}
+      className={cn('block h-2.5 w-2.5 rounded-full ring-2 ring-[#111111]', STATUS_COLOR[status])}
       aria-label={status}
     />
   );
@@ -95,7 +95,7 @@ function MemberRow({ user }: { user: User }) {
             className='h-8 w-8 rounded-full'
           />
         ) : (
-          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-semibold text-white'>
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#AAFF00] text-sm font-semibold text-black'>
             {user.username.charAt(0).toUpperCase() || '?'}
           </div>
         )}
@@ -141,7 +141,7 @@ export function MembersSidebar({ members, isOpen, onClose }: MembersSidebarProps
       <aside
         aria-label='Members list'
         className={cn(
-          'flex w-60 flex-col bg-[#2f3136]',
+          'flex w-60 flex-col bg-[#111111]',
           // Hidden when closed, visible when open
           !isOpen && 'hidden',
           // Mobile: fixed overlay from right; desktop: static in layout flow
