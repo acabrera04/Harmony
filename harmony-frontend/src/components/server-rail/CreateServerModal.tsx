@@ -124,7 +124,7 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
     >
       <div
         ref={modalRef}
-        className='w-full max-w-md rounded-lg bg-[#36393f] p-6 shadow-xl'
+        className='w-full max-w-md rounded-lg bg-[#1a1a1a] p-6 shadow-xl'
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKeyDownModal}
       >
@@ -152,7 +152,7 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
             placeholder='My Awesome Server'
             disabled={creating}
             maxLength={100}
-            className='mb-1 w-full rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50'
+            className='mb-1 w-full rounded bg-[#0d0d0d] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#AAFF00] disabled:opacity-50'
           />
           {slug && (
             <p className='mb-4 text-xs text-gray-500'>
@@ -175,7 +175,7 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
             placeholder='What is this server about?'
             disabled={creating}
             rows={3}
-            className='mb-4 w-full resize-none rounded bg-[#1e1f22] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#5865f2] disabled:opacity-50'
+            className='mb-4 w-full resize-none rounded bg-[#0d0d0d] px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-[#AAFF00] disabled:opacity-50'
           />
 
           {/* Error */}
@@ -196,7 +196,7 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
             <button
               type='submit'
               disabled={creating || !name.trim()}
-              className='rounded bg-[#5865f2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4752c4] disabled:opacity-50'
+              className='rounded bg-[#AAFF00] px-4 py-2 text-sm font-medium text-black hover:bg-[#88CC00] disabled:opacity-50'
             >
               {creating ? 'Creating…' : 'Create'}
             </button>
