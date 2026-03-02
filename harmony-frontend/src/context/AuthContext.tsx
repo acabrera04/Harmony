@@ -14,6 +14,7 @@ export interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, displayName: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (patch: Partial<Pick<User, 'displayName' | 'status'>>) => Promise<void>;
   isAdmin: () => boolean;
 }
 
@@ -86,6 +87,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem(AUTH_STORAGE_KEY);
   }, []);
 
+  // Empty deps is intentional: authService.updateCurrentUser operates on the
+  // service's own in-memory currentUser (not the React `user` state), so this
+  // callback never reads `user` from the closure. If the service and React state
+  // were ever decoupled, the guard inside authService would surface the bug.
+  const updateUser = useCallback(
+    async (patch: Partial<Pick<User, 'displayName' | 'status'>>) => {
+      const updated = await authService.updateCurrentUser(patch);
+      setUser(updated);
+      sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+    },
+    [],
+  );
+
   const isAdmin = useCallback(() => {
     return user?.role === 'owner' || user?.role === 'admin';
   }, [user]);
@@ -97,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     register,
     logout,
+    updateUser,
     isAdmin,
   };
 

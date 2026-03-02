@@ -94,6 +94,42 @@ export function setCurrentUser(user: User | null): void {
 }
 
 /**
+ * Applies a partial update to the current user's profile fields.
+ * Syncs the change to mockUsers and registered-users sessionStorage so
+ * the update survives logout → login within the same session.
+ * Returns the updated user, or throws if no user is logged in.
+ */
+export async function updateCurrentUser(
+  patch: Partial<Pick<User, 'displayName' | 'status'>>,
+): Promise<User> {
+  if (!currentUser) throw new Error('Not authenticated');
+  currentUser = { ...currentUser, ...patch };
+
+  // Sync to mockUsers array so login() picks up the change
+  const idx = mockUsers.findIndex(u => u.id === currentUser!.id);
+  if (idx !== -1) {
+    mockUsers[idx] = { ...mockUsers[idx], ...patch };
+  }
+
+  // Sync to registered-users sessionStorage (for accounts created this session)
+  try {
+    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
+    if (stored) {
+      const users: User[] = JSON.parse(stored);
+      const regIdx = users.findIndex(u => u.id === currentUser!.id);
+      if (regIdx !== -1) {
+        users[regIdx] = { ...users[regIdx], ...patch };
+        sessionStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+      }
+    }
+  } catch {
+    // sessionStorage unavailable — in-memory update is still applied
+  }
+
+  return { ...currentUser };
+}
+
+/**
  * Simulates logout — clears the in-memory session.
  */
 export async function logout(): Promise<void> {
