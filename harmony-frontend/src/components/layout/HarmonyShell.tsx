@@ -26,8 +26,8 @@ import type { Server, Channel, Message, User } from '@/types';
 // ─── Discord colour tokens ────────────────────────────────────────────────────
 
 const BG = {
-  tertiary: 'bg-[#202225]',
-  primary: 'bg-[#36393f]',
+  tertiary: 'bg-[#0a0a0a]',
+  primary: 'bg-[#1a1a1a]',
 };
 
 // ─── Main Shell ───────────────────────────────────────────────────────────────
@@ -140,11 +140,11 @@ export function HarmonyShell({
   }, []);
 
   return (
-    <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
+    <div className='flex h-screen overflow-hidden bg-[#0a0a0a] font-sans'>
       {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
       <a
         href='#main-content'
-        className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#5865f2] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none'
+        className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#AAFF00] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-black focus-visible:outline-none'
       >
         Skip to content
       </a>
