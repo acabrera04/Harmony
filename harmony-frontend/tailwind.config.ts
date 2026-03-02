@@ -7,17 +7,18 @@ const config = {
   theme: {
     extend: {
       colors: {
-        discord: {
-          'bg-primary': '#36393f', // gray-700 equivalent — main chat background
-          'bg-secondary': '#2f3136', // gray-800 equivalent — sidebar background
-          'bg-tertiary': '#202225', // gray-900 equivalent — server list background
-          'accent': '#5865f2', // Discord blurple — indigo-500 equivalent
-          'text': '#dcddde', // primary text
-          'text-muted': '#72767d', // muted / secondary text
+        marathon: {
+          'bg-primary': '#1a1a1a',
+          'bg-secondary': '#111111',
+          'bg-tertiary': '#0a0a0a',
+          'accent': '#AAFF00',
+          'accent-hover': '#88CC00',
+          'text': '#e0e0e0',
+          'text-muted': '#666666',
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif'],
+        sans: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
     },
   },
