@@ -24,7 +24,7 @@ export default function Loading() {
       {/* Main content */}
       <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Top bar */}
-        <div className='flex h-12 items-center gap-3 border-b border-[#202225] bg-[#1a1a1a] px-4'>
+        <div className='flex h-12 items-center gap-3 border-b border-[#0a0a0a] bg-[#1a1a1a] px-4'>
           <div className='h-4 w-4 animate-pulse rounded bg-[#2a2a2a]' />
           <div className='h-4 w-28 animate-pulse rounded bg-[#2a2a2a]' />
         </div>

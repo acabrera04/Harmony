@@ -36,15 +36,15 @@ function SignupForm() {
   }
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-discord-bg-primary'>
-      <div className='w-full max-w-md rounded-lg bg-discord-bg-secondary p-8 shadow-lg'>
+    <div className='flex min-h-screen items-center justify-center bg-marathon-bg-primary'>
+      <div className='w-full max-w-md rounded-lg bg-marathon-bg-secondary p-8 shadow-lg'>
         <h1 className='mb-2 text-center text-2xl font-bold text-white'>Create an account</h1>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div>
             <label
               htmlFor='username'
-              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+              className='mb-2 block text-xs font-bold uppercase text-marathon-text-muted'
             >
               Username <span className='text-red-400'>*</span>
             </label>
@@ -54,7 +54,7 @@ function SignupForm() {
               required
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+              className='w-full rounded bg-marathon-bg-tertiary p-2.5 text-white placeholder-marathon-text-muted outline-none focus:ring-2 focus:ring-marathon-accent'
               placeholder='Choose a username'
               disabled={isSubmitting}
             />
@@ -63,7 +63,7 @@ function SignupForm() {
           <div>
             <label
               htmlFor='displayName'
-              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+              className='mb-2 block text-xs font-bold uppercase text-marathon-text-muted'
             >
               Display Name
             </label>
@@ -72,7 +72,7 @@ function SignupForm() {
               type='text'
               value={displayName}
               onChange={e => setDisplayName(e.target.value)}
-              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+              className='w-full rounded bg-marathon-bg-tertiary p-2.5 text-white placeholder-marathon-text-muted outline-none focus:ring-2 focus:ring-marathon-accent'
               placeholder='How others see you'
               disabled={isSubmitting}
             />
@@ -81,7 +81,7 @@ function SignupForm() {
           <div>
             <label
               htmlFor='password'
-              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+              className='mb-2 block text-xs font-bold uppercase text-marathon-text-muted'
             >
               Password <span className='text-red-400'>*</span>
             </label>
@@ -91,7 +91,7 @@ function SignupForm() {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+              className='w-full rounded bg-marathon-bg-tertiary p-2.5 text-white placeholder-marathon-text-muted outline-none focus:ring-2 focus:ring-marathon-accent'
               placeholder='Create a password'
               disabled={isSubmitting}
             />
@@ -106,14 +106,14 @@ function SignupForm() {
           <button
             type='submit'
             disabled={isSubmitting}
-            className='w-full rounded bg-discord-accent py-2.5 font-medium text-white transition-colors hover:bg-discord-accent/80 disabled:opacity-50'
+            className='w-full rounded bg-marathon-accent py-2.5 font-medium text-black transition-colors hover:bg-marathon-accent/80 disabled:opacity-50'
           >
             {isSubmitting ? 'Creating account...' : 'Continue'}
           </button>
 
-          <p className='text-sm text-discord-text-muted'>
+          <p className='text-sm text-marathon-text-muted'>
             Already have an account?{' '}
-            <Link href='/auth/login' className='text-discord-accent hover:underline'>
+            <Link href='/auth/login' className='text-marathon-accent hover:underline'>
               Log In
             </Link>
           </p>

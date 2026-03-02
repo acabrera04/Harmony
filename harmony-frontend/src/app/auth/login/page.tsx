@@ -35,10 +35,10 @@ function LoginForm() {
   }
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-discord-bg-primary'>
-      <div className='w-full max-w-md rounded-lg bg-discord-bg-secondary p-8 shadow-lg'>
+    <div className='flex min-h-screen items-center justify-center bg-marathon-bg-primary'>
+      <div className='w-full max-w-md rounded-lg bg-marathon-bg-secondary p-8 shadow-lg'>
         <h1 className='mb-2 text-center text-2xl font-bold text-white'>Welcome back!</h1>
-        <p className='mb-6 text-center text-sm text-discord-text-muted'>
+        <p className='mb-6 text-center text-sm text-marathon-text-muted'>
           We&apos;re so excited to see you again!
         </p>
 
@@ -46,7 +46,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor='username'
-              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+              className='mb-2 block text-xs font-bold uppercase text-marathon-text-muted'
             >
               Username
             </label>
@@ -56,7 +56,7 @@ function LoginForm() {
               required
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+              className='w-full rounded bg-marathon-bg-tertiary p-2.5 text-white placeholder-marathon-text-muted outline-none focus:ring-2 focus:ring-marathon-accent'
               placeholder='Enter your username'
               disabled={isSubmitting}
             />
@@ -65,7 +65,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor='password'
-              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+              className='mb-2 block text-xs font-bold uppercase text-marathon-text-muted'
             >
               Password
             </label>
@@ -75,7 +75,7 @@ function LoginForm() {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+              className='w-full rounded bg-marathon-bg-tertiary p-2.5 text-white placeholder-marathon-text-muted outline-none focus:ring-2 focus:ring-marathon-accent'
               placeholder='Enter your password'
               disabled={isSubmitting}
             />
@@ -90,14 +90,14 @@ function LoginForm() {
           <button
             type='submit'
             disabled={isSubmitting}
-            className='w-full rounded bg-discord-accent py-2.5 font-medium text-white transition-colors hover:bg-discord-accent/80 disabled:opacity-50'
+            className='w-full rounded bg-marathon-accent py-2.5 font-medium text-black transition-colors hover:bg-marathon-accent/80 disabled:opacity-50'
           >
             {isSubmitting ? 'Logging in...' : 'Log In'}
           </button>
 
-          <p className='text-sm text-discord-text-muted'>
+          <p className='text-sm text-marathon-text-muted'>
             Need an account?{' '}
-            <Link href='/auth/signup' className='text-discord-accent hover:underline'>
+            <Link href='/auth/signup' className='text-marathon-accent hover:underline'>
               Register
             </Link>
           </p>
