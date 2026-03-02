@@ -247,36 +247,40 @@ export function ChannelSidebar({
                 onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.TEXT) : undefined}
                 addLabel='Add text channel'
               />
-              {!textCollapsed &&
-                textChannels.map(channel => {
-                  const isActive = channel.id === currentChannelId;
-                  const badge = VISIBILITY_BADGE[channel.visibility];
-                  return (
-                    <Link
-                      key={channel.id}
-                      href={`${basePath}/${server.slug}/${channel.slug}`}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={cn(
-                        'group flex items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors',
-                        isActive
-                          ? cn(BG_ACTIVE, 'text-white')
-                          : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
-                      )}
-                    >
-                      <ChannelIcon type={channel.type} />
-                      <span className='flex-1 truncate'>{channel.name}</span>
-                      {badge && (
-                        <span
-                          className='text-xs opacity-60'
-                          role='img'
-                          aria-label={VISIBILITY_LABEL[channel.visibility]}
+              {!textCollapsed && (
+                <ul className='list-none'>
+                  {textChannels.map(channel => {
+                    const isActive = channel.id === currentChannelId;
+                    const badge = VISIBILITY_BADGE[channel.visibility];
+                    return (
+                      <li key={channel.id}>
+                        <Link
+                          href={`${basePath}/${server.slug}/${channel.slug}`}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={cn(
+                            'group flex items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors',
+                            isActive
+                              ? cn(BG_ACTIVE, 'text-white')
+                              : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
+                          )}
                         >
-                          {badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
+                          <ChannelIcon type={channel.type} />
+                          <span className='flex-1 truncate'>{channel.name}</span>
+                          {badge && (
+                            <span
+                              className='text-xs opacity-60'
+                              role='img'
+                              aria-label={VISIBILITY_LABEL[channel.visibility]}
+                            >
+                              {badge}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           )}
 
@@ -289,16 +293,20 @@ export function ChannelSidebar({
                 onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined}
                 addLabel='Add voice channel'
               />
-              {!voiceCollapsed &&
-                voiceChannels.map(channel => (
-                  <div
-                    key={channel.id}
-                    className='flex cursor-default items-center gap-1.5 rounded px-2 py-1 text-sm text-gray-400 opacity-60'
-                  >
-                    <ChannelIcon type={channel.type} />
-                    <span className='truncate'>{channel.name}</span>
-                  </div>
-                ))}
+              {!voiceCollapsed && (
+                <ul className='list-none'>
+                  {voiceChannels.map(channel => (
+                    <li key={channel.id}>
+                      <div
+                        className='flex cursor-default items-center gap-1.5 rounded px-2 py-1 text-sm text-gray-400 opacity-60'
+                      >
+                        <ChannelIcon type={channel.type} />
+                        <span className='truncate'>{channel.name}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

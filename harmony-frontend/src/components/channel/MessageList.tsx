@@ -102,7 +102,15 @@ export function MessageList({ channel, messages }: MessageListProps) {
   const groups = useMemo(() => groupMessages(messages), [messages]);
 
   return (
-    <div ref={scrollContainerRef} className='flex-1 overflow-y-auto py-4' onScroll={handleScroll}>
+    <div
+      ref={scrollContainerRef}
+      className='flex-1 overflow-y-auto py-4'
+      onScroll={handleScroll}
+      role='log'
+      aria-label={`Messages in #${channel.name}`}
+      aria-live='polite'
+      aria-relevant='additions'
+    >
       {/* Channel welcome header */}
       <div className='px-4 pb-4'>
         <div className='flex h-16 w-16 items-center justify-center rounded-full bg-[#40444b]'>
