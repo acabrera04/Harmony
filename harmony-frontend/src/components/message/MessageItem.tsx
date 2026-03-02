@@ -45,7 +45,7 @@ function ReactionList({ reactions, messageId }: { reactions: Reaction[]; message
  */
 function ActionBar() {
   return (
-    <div className='absolute -top-3 right-4 z-10 flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto'>
+    <div className='absolute -top-3 right-4 z-10 flex items-center rounded-md border border-white/10 bg-[#111111] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto'>
       {/* Reply */}
       <button
         type='button'
@@ -145,7 +145,7 @@ export function MessageItem({
           </span>
         </div>
         <div className='min-w-0 flex-1'>
-          <p className='whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
+          <p className='whitespace-pre-line text-sm leading-relaxed text-[#e0e0e0]'>
             {message.content}
             {message.editedAt && <span className='ml-1 text-[10px] text-gray-500'>(edited)</span>}
           </p>
@@ -171,7 +171,7 @@ export function MessageItem({
             onError={() => setAvatarError(true)}
           />
         ) : (
-          <div className='flex h-10 w-10 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white'>
+          <div className='flex h-10 w-10 items-center justify-center rounded-full bg-[#AAFF00] text-sm font-bold text-black'>
             {authorInitial}
           </div>
         )}
@@ -187,7 +187,7 @@ export function MessageItem({
           </span>
           {message.editedAt && <span className='text-[10px] text-gray-500'>(edited)</span>}
         </div>
-        <p className='mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
+        <p className='mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#e0e0e0]'>
           {message.content}
         </p>
         <ReactionList reactions={message.reactions ?? []} messageId={message.id} />

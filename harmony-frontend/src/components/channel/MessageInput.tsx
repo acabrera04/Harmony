@@ -93,7 +93,7 @@ export function MessageInput({
   if (isReadOnly) {
     return (
       <div className='flex-shrink-0 px-4 pb-6 pt-2'>
-        <div className='rounded-lg bg-[#40444b] px-4 py-3 text-center text-sm text-gray-400'>
+        <div className='rounded-lg bg-[#2a2a2a] px-4 py-3 text-center text-sm text-gray-400'>
           You do not have permission to send messages in this channel.
         </div>
       </div>
@@ -114,7 +114,7 @@ export function MessageInput({
       )}
       <div
         className={cn(
-          'flex items-end gap-1 rounded-lg bg-[#40444b] px-2 py-2',
+          'flex items-end gap-1 rounded-lg bg-[#2a2a2a] px-2 py-2',
           isAtLimit && 'ring-1 ring-red-500/60',
         )}
       >
@@ -141,7 +141,7 @@ export function MessageInput({
           disabled={isSending}
           aria-label={`Message #${channelName}`}
           aria-multiline='true'
-          className='flex-1 resize-none bg-transparent text-sm leading-relaxed text-[#dcddde] placeholder-gray-500 outline-none disabled:opacity-60'
+          className='flex-1 resize-none bg-transparent text-sm leading-relaxed text-[#e0e0e0] placeholder-gray-500 outline-none disabled:opacity-60'
           style={{ maxHeight: '240px', overflowY: 'auto' }}
         />
 
