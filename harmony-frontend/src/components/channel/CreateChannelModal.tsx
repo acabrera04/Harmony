@@ -281,7 +281,13 @@ export function CreateChannelModal({
                   key={opt.value}
                   type='button'
                   aria-pressed={type === opt.value}
-                  onClick={() => setType(opt.value)}
+                  onClick={() => {
+                    setType(opt.value);
+                    // PUBLIC_INDEXABLE is unavailable for voice — reset to the nearest valid option.
+                    if (opt.value === ChannelType.VOICE && visibility === ChannelVisibility.PUBLIC_INDEXABLE) {
+                      setVisibility(ChannelVisibility.PUBLIC_NO_INDEX);
+                    }
+                  }}
                   disabled={isLoading}
                   className={cn(
                     'flex flex-1 items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',
@@ -375,7 +381,10 @@ export function CreateChannelModal({
               Visibility
             </p>
             <div role='radiogroup' aria-label='Channel visibility' className='space-y-2'>
-              {VISIBILITY_OPTIONS.map(opt => {
+              {VISIBILITY_OPTIONS.filter(opt =>
+                // Voice channels have no text content to index, so PUBLIC_INDEXABLE is not applicable.
+                type !== ChannelType.VOICE || opt.value !== ChannelVisibility.PUBLIC_INDEXABLE,
+              ).map(opt => {
                 const isSelected = visibility === opt.value;
                 return (
                   <button
@@ -411,6 +420,11 @@ export function CreateChannelModal({
                 );
               })}
             </div>
+            {type === ChannelType.VOICE && (
+              <p className='mt-2 text-xs text-gray-500'>
+                Voice channels don&apos;t have text content, so search engine indexing isn&apos;t available.
+              </p>
+            )}
           </div>
 
           {/* Footer */}
