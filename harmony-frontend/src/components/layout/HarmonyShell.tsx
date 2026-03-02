@@ -141,6 +141,14 @@ export function HarmonyShell({
 
   return (
     <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
+      {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
+      <a
+        href='#main-content'
+        className='sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded focus:bg-[#5865f2] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:outline-none'
+      >
+        Skip to content
+      </a>
+
       {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
       <ServerRail
         servers={localServers}
@@ -174,7 +182,7 @@ export function HarmonyShell({
       />
 
       {/* 3. Main column */}
-      <div className='flex flex-1 flex-col overflow-hidden'>
+      <main id='main-content' className='flex flex-1 flex-col overflow-hidden' aria-label={`${currentChannel.name} channel`} tabIndex={-1}>
         <TopBar
           channel={currentChannel}
           serverSlug={currentServer.slug}
@@ -209,7 +217,7 @@ export function HarmonyShell({
             onClose={() => setIsMembersOpen(false)}
           />
         </div>
-      </div>
+      </main>
 
       <CreateServerModal
         isOpen={isCreateServerOpen}

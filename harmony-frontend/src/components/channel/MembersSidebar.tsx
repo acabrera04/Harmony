@@ -176,9 +176,13 @@ export function MembersSidebar({ members, isOpen, onClose }: MembersSidebarProps
                 {ROLE_LABEL[role]} — {users.length}
               </p>
               <div className='space-y-0.5'>
-                {users.map(user => (
-                  <MemberRow key={user.id} user={user} />
-                ))}
+                <ul className='list-none space-y-0.5'>
+                  {users.map(user => (
+                    <li key={user.id}>
+                      <MemberRow user={user} />
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           ))}
