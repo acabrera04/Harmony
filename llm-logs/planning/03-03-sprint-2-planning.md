@@ -2,8 +2,8 @@
 
 > **Session ID:** `40a9935e-1efa-4ec1-8c0e-b30ffdf8c276`
 > **Started:** 3/2/2026, 11:38:53 AM
-> **Duration:** 1574m 43s
-> **Exported:** 3/3/2026, 1:53:37 PM
+> **Duration:** 1849m 52s
+> **Exported:** 3/3/2026, 6:28:46 PM
 
 <sub>⏱️ 6s</sub>
 
@@ -5729,30 +5729,6 @@ Authorization error, you may need to run /login
 
 ---
 
-<sub>⏱️ 1570m 59s</sub>
-
-### ℹ️ Info
-
-🧪 Experimental mode is enabled. These features are not stable, may have bugs, and may be removed in the future.
-
----
-
-<sub>⏱️ 1570m 59s</sub>
-
-### ℹ️ Info
-
-Error auto updating: Failed to fetch latest release: HttpError
-
----
-
-<sub>⏱️ 1571m 0s</sub>
-
-### ℹ️ Info
-
-Environment loaded: 1 custom instruction, 2 MCP servers, 1 plugin, 6 skills, Visual Studio Code connected
-
----
-
 <sub>⏱️ 1572m 20s</sub>
 
 ### 👤 User
@@ -5761,49 +5737,7 @@ Try again, you ran into an issue
 
 ---
 
-<sub>⏱️ 1572m 24s</sub>
-
-### 💭 Reasoning
-
-*The user wants me to redo the PLAN.md update cleanly. The renumbering got messy. Let me regenerate the entire file from the session plan, or better yet, just rewrite the file cleanly using the SQL todos as the source of truth.
-
-Let me think about the correct numbering and structure:
-
-1. Backend Project Scaffold & Dev Environment (acabrera04)
-2. P4 Deliverables — Dev Spec Update & Architecture Document (acabrera04)
-3. Database Schema & Prisma Migrations (declanblanc)
-4. Authentication System — JWT (Aiden-Barrera)
-
-
-5. User Service & API (FardeenI)
-6. Server Service & API (AvanishKulkarni)
-7. Channel Service & API (declanblanc)
-8. Message Service & API (FardeenI)
-9. Role-Based Permission & Authorization (Aiden-Barrera)
-10. Server Membership Service (AvanishKulkarni)
-11. Database Seed Data (acabrera04)
-12. Channel Visibility Toggle Service (declanblanc)
-13. Visibility Audit Log Service (Aiden-Barrera)
-14. Sitemap & SEO Data Endpoints (AvanishKulkarni)
-15. Public REST API — Guest Channel View (FardeenI)
-16. Redis Caching Layer (AvanishKulkarni)
-17. Rate Limiting Middleware (Aiden-Barrera)
-18. Event Bus — Redis Pub/Sub (acabrera04)
-19. Attachment Service & Storage (FardeenI)
-20. Frontend Integration — Authentication (Aiden-Barrera)
-21. Frontend Integration — Servers & Channels (declanblanc)
-22. Frontend Integration — Messages (FardeenI)
-23. Frontend Integration — Guest Public View (acabrera04)
-24. Frontend Integration — Visibility Toggle (AvanishKulkarni)
-25. API Input Validation & Error Handling (acabrera04)
-26. Next.js Auth Middleware (declanblanc)
-27. Backend README (AvanishKulkarni)
-
-Now I'm mapping out the dependency chain — each task builds on specific prerequisites, with the core database and authentication pieces forming the foundation that everything else relies on.*
-
----
-
-<sub>⏱️ 1572m 34s</sub>
+<sub>⏱️ 1573m 55s</sub>
 
 ### 💬 Copilot
 
@@ -6256,11 +6190,447 @@ $ cp /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md /Users/allen/.copilot/
 
 ---
 
-<sub>⏱️ 1574m 19s</sub>
+<sub>⏱️ 1574m 21s</sub>
 
 ### 💬 Copilot
 
 Clean rewrite done. 27 issues, sequential numbering #1–#27. Key change: **#2 (Dev Specs & Architecture Document)** is now in Week 1 due March 4, blocking all service issues (#3–#10) so devs code against the blueprint.
+
+---
+
+<sub>⏱️ 1846m 22s</sub>
+
+### ℹ️ Info
+
+Environment loaded: 1 custom instruction, 1 agent, 1 plugin, 6 skills
+
+---
+
+<sub>⏱️ 1847m 15s</sub>
+
+### 👤 User
+
+Verify that all the issues for this plan will allow this project to be hostabel on AWS
+
+---
+
+<sub>⏱️ 1847m 22s</sub>
+
+### 💭 Reasoning
+
+*The user wants me to verify that the plan covers everything needed to deploy on AWS. Let me think about what's needed for AWS hosting and check against the current issues.
+
+From the P4 PDF: "Your backends will (eventually) be deployed to Amazon Web Services (AWS). Let that influence your choice of external backend services, especially if the cost is zero or minimal. In P4, you need to mock any calls to external services."
+
+So for P4, they don't need to actually deploy to AWS yet - that's P6. But they need to make sure the architecture choices are AWS-compatible. Let me think about what's needed:
+
+1. **PostgreSQL** → AWS RDS (free tier available) ✅
+
+
+2. **Redis** → AWS ElastiCache (or just Redis on EC2) ✅
+3. **Node.js backend** → AWS EC2, ECS, or Lambda ✅
+4. **Docker Compose** → Need Dockerfiles for containerized deployment ⚠️
+5. **File storage (attachments)** → Should use S3-compatible storage, not local filesystem ⚠️
+6. **Environment configuration** → Need proper env var management for AWS ⚠️
+7. **CDN** → CloudFront instead of CloudFlare on AWS ✅ (just config)
+8. **10 simultaneous users** → Need to verify the infrastructure can handle this load ⚠️
+
+Looking at the current issues, I'm noticing some critical gaps between what's been built and what's actually AWS-ready. The backend scaffold has Docker Compose for local development, but I'm not seeing explicit Dockerfiles for the backend service itself, and the attachment service is still using local filesystem storage instead of mocking S3 or using a compatible interface. There's also no health check endpoint for the load balancer, though the P4 requirement to mock external services should cover most of that.*
+
+---
+
+<sub>⏱️ 1847m 35s</sub>
+
+### ✅ `view`
+
+**view the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md (lines 26-36)
+
+<details>
+<summary>11 lines</summary>
+
+```
+26. **1. Backend Project Scaffold & Dev Environment**
+27. - Set up Node.js backend (Express + tRPC), TypeScript config, project structure
+28. - Docker Compose for PostgreSQL + Redis local dev
+29. - Shared types package or import from frontend types
+30. - Dev server with hot reload (ts-node-dev or tsx)
+31. - Set up Jest testing framework with TypeScript support (ts-jest)
+32. - Update CI workflow (.github/workflows/ci.yml) — add backend job: install, lint, build, test (parallel with existing frontend job)
+33. - Labels: backend, setup, prerequisite, week-1
+34. - Assignee: acabrera04
+35. - Due: March 3
+36.
+```
+
+</details>
+
+
+---
+
+<sub>⏱️ 1847m 38s</sub>
+
+### ✅ `view`
+
+**view the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md (lines 223-235)
+
+<details>
+<summary>13 lines</summary>
+
+```
+223. **19. Attachment Service & File Storage**
+224. - Attachment metadata CRUD (create, list by message)
+225. - File upload endpoint with local filesystem storage for dev
+226. - Content-type and size validation
+227. - URL generation for serving attachments
+228. - Wire into message service for attachment embedding
+229. - Labels: backend, feature, week-2
+230. - Assignee: FardeenI
+231. - Due: March 11
+232. - Depends on: #8
+233. 
+234. ---
+235.
+```
+
+</details>
+
+
+---
+
+<sub>⏱️ 1847m 39s</sub>
+
+### 💬 Copilot
+
+Here's the AWS readiness audit:
+
+| Concern | Status | Gap? |
+|---------|--------|------|
+| **PostgreSQL** → AWS RDS | ✅ Prisma is DB-agnostic, works with RDS | No |
+| **Redis** → AWS ElastiCache | ✅ Standard Redis client, swappable | No |
+| **Node.js runtime** → EC2/ECS/Fargate | ⚠️ No Dockerfile for the backend itself | **Yes** |
+| **File storage** → S3 | ⚠️ #19 says "local filesystem storage" | **Yes** |
+| **Health check endpoint** → ALB target group | ⚠️ No health check route | **Yes** |
+| **Env var config** → AWS Secrets Manager / Parameter Store | ⚠️ Not explicit in scaffold | **Minor** |
+| **10 concurrent users** (P4 requirement) | ✅ Express handles this natively | No |
+| **CORS config** → Frontend on different origin | ⚠️ Not mentioned anywhere | **Yes** |
+| **CDN** → CloudFront | ✅ Just config, no code change | No |
+
+**4 gaps to fix:**
+
+1. **#1 Scaffold** — needs a production `Dockerfile` for the backend (ECS/Fargate deployment) and proper env var management (`.env.example` with all required vars)
+2. **#19 Attachments** — should use an S3-compatible storage interface with a local mock for dev. That way it swaps to real S3 on AWS without code changes.
+3. **#1 or #25** — needs a `GET /api/health` endpoint for ALB health checks
+4. **#1 Scaffold** — needs CORS middleware configured for frontend origin
+
+Want me to update those issues in the plan?
+
+---
+
+<sub>⏱️ 1848m 28s</sub>
+
+### 👤 User
+
+Check the html page from this site https://kelloggm.github.io/martinjkellogg.com/teaching/cs485-sp26/projects/p6.html to see how we will be deploying on AWS to make accurate decisions
+
+---
+
+<sub>⏱️ 1848m 39s</sub>
+
+### ✅ `web_fetch`
+
+**https://kelloggm.github.io/martinjkellogg.com/teaching/cs485-sp26/projects/p6.html**
+
+<details>
+<summary>Arguments</summary>
+
+```json
+{
+  "url": "https://kelloggm.github.io/martinjkellogg.com/teaching/cs485-sp26/projects/p6.html",
+  "max_length": 15000
+}
+```
+
+</details>
+
+<details>
+<summary>86 lines</summary>
+
+```
+Contents of https://kelloggm.github.io/martinjkellogg.com/teaching/cs485-sp26/projects/p6.html:
+## [](#p6-deployment)P6: Deployment **Due Sunday, 19 April 2026, 11:59PM AoE.**
+
+## [](#project-6-deployment)Project 6: Deployment
+
+## [](#learning-goals)Learning Goals
+
+*   Learn how to package an application for deployment to the cloud.
+*   Learn how to deploy a frontend and backend application to Amazon Web Services (AWS)
+*   Learn how to automate deployment using GitHub continuous deployment.
+
+## [](#project-context)Project Context
+
+In P1, you defined requirements and user stories. In P2, you expanded some of those stories into detailed development specifications. In P3, you implemented two user stories for the front end of your application. In P4, you implemented two dev specs for the back end of your application. In P5, you wrote unit tests for two core frontend and two core backend files/classes. In P6, you will deploy the frontend and backend of your application to AWS.
+
+By the end of this sprint, you will set up a publicly visible deployment of your application. You will then automate deployment so that every time you commit code to your repository, GitHub will run the test cases and if successful, will deploy the updated application to AWS.
+
+Remember to use the LLMs as much as possible to generate your deliverables. You may not modify any generated code directly, only by prompting the LLM. **You should use formalized LLM prompts, such as those we introduced in class.** These will make the LLM output more reliable.
+
+* * *
+
+## [](#deliverables)Deliverables
+
+You will begin by setting up your AWS account. You will need AWS access for all steps of this project.
+
+None of the steps in P6 should cost you any money, however the AWS account setup will likely require a credit card to be charged in case you incur any costs. Be assured that whenever we’ve done this before, we’ve spent at most 20-30 cents total. If you find that AWS has billed you anywhere near USD $1, immediately turn off any applications you have already deployed and reach out to the instructors for help.
+
+Next, you will set up your application to run with AWS [Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html). AWS Lambda lets you run server code without having to deal with actual server machines. It’s a “serverless” computing service. You will modify your backend to run on AWS Lambda.
+
+Your backend should publish its public interfaces via REST API. You will use AWS [API Gateway](https://aws.amazon.com/api-gateway/) to expose your public endpoints for web users (or applications) to interact with.
+
+Next, you will use AWS Amplify to host your frontend application. Amplify will store and serve static web assets, like HTML, CSS, and JS files, that comprise your application frontend.
+
+!!! note If you are building a VS Code Extension, you will [deploy](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) your frontend to the VS Code Extension Marketplace.
+
+Now is the time to implement integration tests. These are tests that exercise the frontend to backend (and vice versa) code paths in your app. You will learn to run these integration tests on localhost and in the cloud and run them on every checkin.
+
+At the end, you will set up GitHub actions to deploy your frontend code to Amplify and your backend code to Lambda after each pull request has been approved.
+
+### [](#1-create-an-aws-account)1\. Create an AWS account
+
+Go to the [AWS Console](https://console.aws.amazon.com) and create an account. If one person on your team already has an AWS account, you can use that one. Log into the AWS Console with your new account.
+
+### [](#2-use-aws-lambda-to-run-your-backend-code)2\. Use AWS Lambda to run your backend code
+
+To use Lambda, you will
+
+*   Write (slightly stylized) code that executes functions on certain events (e.g., the invocation of a given REST endpoint)
+*   Package up your code (i.e., put it all in a ZIP file)
+*   Upload the packaged code to AWS
+
+Ask your LLM to modify your backend code so that it executes as a lambda function. Eventually, that lambda function will execute _when your REST API’s public interface endpoints receive post requests_. To start with, though, you should become familiar with Lambda, then package up your Lambda code, deploy it, and make sure you can invoke it using the AWS command-line interface (CLI).
+
+#### [](#1-use-the-aws-console-to-experiment-with-lambda)1\. Use the AWS console to experiment with Lambda
+
+Ask your LLM for detailed instructions on how to use AWS Lambda to set up a dummy application that you can invoke. This will help you get familiar with AWS Lambda when you have to set up your own application. If your LLM proves unhelpful, read the official [AWS documentation](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html).
+
+#### [](#2-package-and-invoke-your-lambda-code-using-the-aws-cli)2\. Package and invoke your Lambda code using the AWS CLI
+
+Ask your LLM to teach you how to package your Javascript code for deployment on AWS and upload it with the AWS CLI. If your LLM is unhelpful, you can read the official [AWS documentation](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html#nodejs-package-create-update). There is some additional documentation in the Lambda section of the official [AWS API Gateway tutorial](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway-tutorial.html#services-apigateway-tutorial-function).
+
+#### [](#3-integrate-your-lambda-code-with-the-rest-api)3\. Integrate your Lambda code with the REST API
+
+Ask your LLM to teach you how to modify the Lambda code so that it is invoked by requests to your API’s public interface functions. If your LLM is not helpful, read the Lambda section of the official [AWS API Gateway tutorial](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway-tutorial.html#services-apigateway-tutorial).
+
+### [](#3-use-api-gateway-to-create-a-rest-api)3\. Use API Gateway to create a REST API
+
+[AWS API Gateway](https://aws.amazon.com/api-gateway/) makes it simple to spin up an API. [A web API](https://blog.postman.com/what-is-an-api-endpoint/) exposes endpoints that users (or applications) can interact with. You are going to create a [REST API](https://www.redhat.com/en/topics/api/what-is-a-rest-api) for the backend of your app that exposes all of your public interfaces functions.
+
+Ask your LLM to teach you how to create your REST API with AWS API Gateway. If your LLM is unhelpful, read through this [tutorial](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway-tutorial.html#services-apigateway-tutorial-api).
+
+After setting up AWS API Gateway, locate the API call logic in your frontend code (where it currently calls localhost). Replace the localhost URL with the API Gateway endpoint URL. Note, edit the code carefully to preserve a version of the app that runs locally for easier testing.
+
+### [](#4-host-your-frontend-code)4\. Host your frontend code
+
+[AWS Amplify](https://aws.amazon.com/amplify/) makes it easy to e.g., deploy app frontends and integrate with version control. In this assignment, you will use Amplify to manage deployment of the frontend of your calculator application.
+
+Your task is to set up Amplify to host the application frontend.
+
+To complete this part of the assignment, refer to the [AWS Amplify tutorial](https://docs.aws.amazon.com/amplify/latest/userguide/getting-started-next.html) for deploying a web application by connecting Amplify to your GitHub repository.
+
+If you are building a VS Code Extension, do not follow the AWS Amplify directions. Instead, you will deploy the frontend of your extension to the VS Code Extension Marketplace. To complete this deployment, you will follow these [instructions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension). First, install the vsce command line tool, create an Azure DevOps personal access token, define your team as a publisher, and publish your extension. Make sure to say that the cost of your extension is USD $0.
+
+Be sure to have your LLM do all this work for you!
+
+!!! note When this course is over, please remember to unpublish your extension from the VS Code Extension Marketplace.
+
+### [](#5-integration-testing)5\. Integration testing
+
+Ask your LLM to write an English-language test specification for the code pathways that require the execution of frontend and backend code together. Each specification should contain a list of all functionality that needs to be tested, followed by a table of tests. Each row of the table should describe the purpose of the test, the test inputs to the function, and the test output that is expected if the test passes. You must write at least one integration test for every code pathway that spans frontend and backend functionality.
+
+Generate integration tests for each row of your test specification using your LLM.
+
+Test out your full app on your local machine first. Run your npm scripts to setup and start the frontend and backend of your application on localhost, then execute the integration tests with your testing framework.
+
+!!! note Some integrations tests will fail when run on localhost, but work fine when deployed on the Internet. Please take a note of these and condition their execution to run only when deployed in the desired environment.
+
+Finally, create a new test configuration that uses the URLs of the deployed frontend and backend hosted by the AWS Cloud. Rerun your integration tests on your deployed app and fix any bugs that pop up until the entire app is working as desired.
+
+### [](#6-automate-your-integration-tests)6\. Automate your integration tests
+
+Ask your LLM to create a new GitHub Action that runs your integration tests on every commit. Store the YAML workflow file in the .github/workflows directory. Name it run-integration-tests.yml. It should check out your code, set up the application environment for frontend and backend (e.g., install Node.js if needed), install dependencies, and then execute your tests.
+
+1.  For CI instructions to run tests with Jest, check out [Dennis O’Keefe’s blog](https://www.dennisokeeffe.com/blog/2021-10-27-jest-with-github-actions).
+2.  For CI instructions with VS Code extensions, check out [these instructions](https://code.visualstudio.com/api/working-with-extensions/continuous-integration).
+
+Check in your YAML file to the GitHub repository.
+
+Ask your LLM to test out your CI code by making a change to one of the source code files in the frontend and one backend source code file. Commit the change to Git, push to the remote repository, create a pull request on GitHub, and accept the pull request. Finally, go to the GitHub repository on the web and click on the Actions tab on the navigation bar. You’ll see all the workflows on the left and workflow runs on the right. If you have a green checkmark next to a workflow run, that means it worked! If there is a red cross, then it did not. Click on the workflow run to see exactly what got executed in GitHub’s “terminal window” and find out what went wrong. Fix the problem and try again until each of your two GitHub actions run successfully.
+
+### [](#7-adopt-good-github-hygiene)7\. Adopt good GitHub hygiene
+
+Git is a very powerful and flexible version control system. One best practice you will follow is to create a new _feature_ branch whenever you start working on a new coding task. _Never_ work directly on the main branch. When your feature is done and your CI GitHub Actions (unit tests and integration tests) have passed their tests, create a pull request on GitHub to push the changes from the feature branch to main.
+
+As configured by default, anyone with access to your repo can push whatever garbage they want to the main branch. That’s not good! It’s important to make sure code that actually gets deployed has been thoroughly tested and reviewed (to catch everything from mistakes to intentional back doors!). In this assignment, you must block merges to main until your code is reviewed and passes CI.
+
+To protect your main branch, navigate to the Settings tab in your GitHub repo and click on Branches (on the lefthand side). You’ll see two options: (1) Add branch ruleset and (2) Add classic branch protection rule. Add a classic branch protection rule that protects main from direct, unreviewed commits: first check the box to require a pull request before merging and second check the box to require status checks to pass before merging. Select your CI testing workflows here as the relevant status checks. Finally,
+
+### [](#8-use-github-actions-to-automatically-deploy-on-each-push-to-main)8\. Use Github actions to automatically deploy on each push to main
+
+After getting hands on experience with each service, you will use a Github action to deploy updates automatically on each push to your main branch.
+
+The CD pipeline will perform the following tasks:
+
+*   Deploy the packaged backend Lambda code.
+*   Redeploy the frontend (to Amplify or the VS Code Extension Marketplace).
+
+In order to do this, you will need to allow Github to authenticate to AWS. Follow the [Github documentation](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions) to safely use your AWS secrets in CD. This [AWS blog post](https://aws.amazon.com/blogs/compute/using-github-actions-to-deploy-serverless-applications/) describes some (basic) best practices for generating and handling AWS authentication secrets in CI; navigate to the “Configuring AWS credentials in GitHub” section of the tutorial.
+
+#### [](#deploying-backend-code)Deploying backend code
+
+Your LLM should create a [Github workflow](https://docs.github.com/en/actions/writing-workflows) named deploy-aws-lambda.yml that takes the follow steps:
+
+*   Checks out the code, sets up Node, and installs dependencies.
+*   Packages the code for lambda deployment.
+*   Uses the AWS CLI to update the lambda code (giving the CLI access to your authentication secret and AWS region through the environment).
+
+#### [](#deploying-frontend-code)Deploying frontend code
+
+Your LLM should create a Github workflow named deploy-aws-amplify.yml that takes the following steps:
+
+*   Checks out the code, sets up Node, and builds the code.
+*   Triggers AWS Amplify to redeploy the latest frontend version from your repository. See the [AWS documentation](https://docs.aws.amazon.com/amplify/latest/userguide/setting-up-GitHub-access.html) for more.
+
+If you are publishing a VS Code Extension, your workflow will be named deploy-extension.yml. It should simply package up your extension and publish it to the marketplace.
+
+### [](#9-wrap-it-up)9\. Wrap it up
+
+Edit the README.md file for your project.
+
+1.  Provide instructions for web users of your app to run your application.
+2.  Provide all the instructions needed for a random person on the Internet who forks your codebase to set up AWS to deploy your application.
+
+### [](#10-reflection)10\. Reflection
+
+Without your LLM, write a 500-word (i.e., one-page) reflection on:
+
+1.  Ho
+
+<note>Content truncated. Call the fetch tool with a start_index of 15000 to get more content.</note>
+```
+
+</details>
+
+
+---
+
+<sub>⏱️ 1848m 39s</sub>
+
+### ℹ️ Info
+
+Compacting conversation history...
+
+---
+
+<sub>⏱️ 1848m 43s</sub>
+
+### 💬 Copilot
+
+Key takeaway from P6:
+
+- **Backend** → **AWS Lambda** (serverless, not containers)
+- **Frontend** → **AWS Amplify** (static hosting connected to GitHub)
+- **API** → **AWS API Gateway** (REST, routes to Lambda)
+- **No Docker/ECS/Fargate** — Lambda is a ZIP upload, not a container
+- **No RDS** — not mentioned; Lambda typically uses DynamoDB or connects to RDS, but the P6 doesn't specify a managed DB
+- **CI/CD** → GitHub Actions deploys to Lambda + Amplify on push to main
+
+This changes my AWS assessment significantly:
+
+| What we have in plan | P6 reality | Action needed? |
+|---|---|---|
+| Docker Compose for local dev | ✅ Fine for local dev | No |
+| Dockerfile for backend | ❌ Not needed — Lambda uses ZIP packages | Remove from concern |
+| Express server | ⚠️ Needs Lambda adapter (e.g., `serverless-http` or `@vendia/serverless-express`) | **Yes — add to #1** |
+| PostgreSQL via Prisma | ⚠️ Works with RDS but Lambda cold starts + connection pooling is tricky. Plan should note this | **Minor note** |
+| Redis | ⚠️ ElastiCache works but adds VPC complexity for Lambda. Consider if truly needed in P6 or can be simplified | **Note for awareness** |
+| Health check endpoint | ❌ Not needed — API Gateway handles this | Remove from concern |
+| CORS | ⚠️ Still needed — Amplify frontend calls API Gateway on different domain | **Yes — add to #1** |
+
+The only real change needed is in **#1 (Scaffold)**: structure the Express app so it can be wrapped with a Lambda adapter (like `serverless-http`) for P6 deployment. This is a one-line wrapper — if we build a normal Express app now, adding `module.exports.handler = serverless(app)` later is trivial.
+
+---
+
+<sub>⏱️ 1849m 2s</sub>
+
+### ✅ `edit`
+
+**edit the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 1849m 5s</sub>
+
+### 💬 Copilot
+
+Also update #19 (Attachments) to use an S3-compatible interface instead of raw filesystem:
+
+---
+
+<sub>⏱️ 1849m 11s</sub>
+
+### ✅ `edit`
+
+**edit the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 1849m 16s</sub>
+
+### ✅ `bash`
+
+**Sync to session state**
+
+$ cp /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md /Users/allen/.copilot/session-state/40a9935e-1efa-4ec1-8c0e-b30ffdf8c276/plan.md
+
+```
+
+<exited with exit code 0>
+```
+
+
+---
+
+<sub>⏱️ 1849m 19s</sub>
+
+### 💬 Copilot
+
+Updated. Per the P6 spec, AWS deployment uses **Lambda + API Gateway + Amplify** (serverless, not containers). Two changes made:
+
+**#1 Scaffold** — added:
+- Structure Express app for `serverless-http` wrapping (Lambda-ready)
+- CORS middleware (Amplify frontend will be on a different domain than API Gateway)
+
+**#19 Attachments** — changed local filesystem to **S3-compatible interface** (mock locally, swap to real S3 on AWS)
+
+Everything else is already compatible — Express/tRPC works fine behind Lambda, Prisma works with RDS, and the REST public API maps cleanly to API Gateway routes. Docker Compose stays for local dev only.
 
 ---
 

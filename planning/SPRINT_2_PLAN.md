@@ -26,6 +26,8 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 **1. Backend Project Scaffold & Dev Environment**
 - Set up Node.js backend (Express + tRPC), TypeScript config, project structure
 - Docker Compose for PostgreSQL + Redis local dev
+- Structure Express app to be wrappable with `serverless-http` for future AWS Lambda deployment (P6)
+- Configure CORS middleware for cross-origin frontend requests
 - Shared types package or import from frontend types
 - Dev server with hot reload (ts-node-dev or tsx)
 - Set up Jest testing framework with TypeScript support (ts-jest)
@@ -222,7 +224,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 
 **19. Attachment Service & File Storage**
 - Attachment metadata CRUD (create, list by message)
-- File upload endpoint with local filesystem storage for dev
+- File upload endpoint using S3-compatible storage interface (use local filesystem or MinIO for dev, swaps to real S3 on AWS)
 - Content-type and size validation
 - URL generation for serving attachments
 - Wire into message service for attachment embedding
