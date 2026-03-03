@@ -19,7 +19,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 
 ## Issues (27 total)
 
-> **Note:** Every backend service/module issue (#3–#18) must include minimum tests verifying the module's API works for the happy path. Check test code into GitHub alongside the implementation.
+> **Note:** Every backend service/module issue (#4–#19) must include minimum tests verifying the module's API works for the happy path. Check test code into GitHub alongside the implementation.
 
 ### 🏗️ FOUNDATION — Week 1 (March 2–6)
 
@@ -34,7 +34,20 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Assignee: acabrera04
 - Due: March 3
 
-**2. Database Schema & Prisma Migrations**
+**2. P4 Deliverables — Dev Spec Update & Architecture Document**
+- Update dev-spec-channel-visibility-toggle.md and dev-spec-guest-public-channel-view.md to reflect unified backend
+- Create unified backend architecture document with text description + Mermaid diagram
+- Justify design choices (PostgreSQL, Redis, tRPC+REST split, etc.) for a senior architect audience
+- Per-module specification (P4 items 1–8): features, internal architecture + Mermaid, data abstraction, stable storage + schemas, API definition, class/method/field list with visibility, class hierarchy Mermaid diagram
+- Include rendered Mermaid diagram screenshots in repo
+- This is the blueprint all devs code against — must be done before service implementation begins
+- *(P4 Deliverables #1 + #2: Update Dev Specs + Specify the Backend)*
+- Labels: backend, documentation, prerequisite, week-1
+- Assignee: acabrera04
+- Due: March 4
+- Depends on: #1
+
+**3. Database Schema & Prisma Migrations**
 - Define Prisma schema: users, servers, channels, messages, attachments, visibility_audit_log
 - Create visibility_enum (PUBLIC_INDEXABLE, PUBLIC_NO_INDEX, PRIVATE)
 - All indexes from dev specs (partial indexes, composite indexes)
@@ -42,9 +55,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, setup, prerequisite, week-1
 - Assignee: declanblanc
 - Due: March 4
-- Depends on: #1
+- Depends on: #1, #2
 
-**3. Authentication System — JWT Register/Login/Logout**
+**4. Authentication System — JWT Register/Login/Logout**
 - POST /api/auth/register, POST /api/auth/login, POST /api/auth/logout
 - JWT token generation + refresh tokens
 - bcrypt password hashing
@@ -53,18 +66,18 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, prerequisite, week-1
 - Assignee: Aiden-Barrera
 - Due: March 5
-- Depends on: #1, #2
+- Depends on: #1, #2, #3
 
-**4. User Service & API**
+**5. User Service & API**
 - User CRUD via tRPC: getUser, updateUser, getCurrentUser
 - Public profile flag (public_profile boolean)
 - User status management (online/idle/dnd/offline)
 - Labels: backend, feature, week-1
 - Assignee: FardeenI
 - Due: March 5
-- Depends on: #2
+- Depends on: #2, #3
 
-**5. Server Service & API**
+**6. Server Service & API**
 - Server CRUD via tRPC: getServers, getServer(slug), createServer, updateServer, deleteServer
 - Auto-slug generation from name
 - Member count tracking
@@ -73,9 +86,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-1
 - Assignee: AvanishKulkarni
 - Due: March 5
-- Depends on: #2
+- Depends on: #2, #3
 
-**6. Channel Service & API**
+**7. Channel Service & API**
 - Channel CRUD via tRPC: getChannels(serverId), getChannel(slug), createChannel, updateChannel, deleteChannel
 - Visibility enum (PUBLIC_INDEXABLE, PUBLIC_NO_INDEX, PRIVATE)
 - Position ordering, slug uniqueness per server
@@ -83,9 +96,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-1
 - Assignee: declanblanc
 - Due: March 6
-- Depends on: #2, #5
+- Depends on: #2, #3, #6
 
-**7. Message Service & API**
+**8. Message Service & API**
 - Message CRUD via tRPC: getMessages(channelId, pagination), sendMessage, editMessage, deleteMessage (soft delete)
 - Cursor-based pagination (20 per page default, configurable)
 - Author snapshot embedding
@@ -93,9 +106,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-1
 - Assignee: FardeenI
 - Due: March 6
-- Depends on: #2, #6
+- Depends on: #2, #3, #7
 
-**8. Role-Based Permission & Authorization System**
+**9. Role-Based Permission & Authorization System**
 - Permission service: checkPermission(userId, serverId, action)
 - Roles: owner, admin, moderator, member, guest
 - Permission matrix (who can CRUD servers, channels, messages, settings)
@@ -103,9 +116,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, prerequisite, week-1
 - Assignee: Aiden-Barrera
 - Due: March 6
-- Depends on: #3, #4
+- Depends on: #4, #5
 
-**9. Server Membership Service**
+**10. Server Membership Service**
 - Join/leave server, member listing
 - Role assignment per server (owner, admin, moderator, member)
 - Member count sync
@@ -113,22 +126,22 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-1
 - Assignee: AvanishKulkarni
 - Due: March 6
-- Depends on: #4, #5
+- Depends on: #5, #6
 
-**10. Database Seed Data**
+**11. Database Seed Data**
 - Port existing mock data (users, servers, channels, messages) to Prisma seed script
 - Match existing frontend mock IDs/slugs for backward compatibility
 - Include test users with different roles
 - Labels: backend, setup, week-1
 - Assignee: acabrera04
 - Due: March 6
-- Depends on: #2
+- Depends on: #3
 
 ---
 
 ### 🔐 FEATURE: Channel Visibility Toggle — Week 2 (March 9–11)
 
-**11. Channel Visibility Toggle Service**
+**12. Channel Visibility Toggle Service**
 - ChannelVisibilityService: updateVisibility(channelId, newVisibility)
 - State machine validation (all transitions valid per spec)
 - Permission check: only server owner/admin can toggle
@@ -138,9 +151,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: declanblanc
 - Due: March 10
-- Depends on: #6, #8
+- Depends on: #7, #9
 
-**12. Visibility Audit Log Service**
+**13. Visibility Audit Log Service**
 - AuditLogService: logVisibilityChange(channelId, actorId, oldValue, newValue, ipAddress)
 - AuditLogRepository with pagination
 - getVisibilityAuditLog(channelId, { limit, offset, startDate })
@@ -149,9 +162,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: Aiden-Barrera
 - Due: March 10
-- Depends on: #11
+- Depends on: #12
 
-**13. Sitemap & SEO Data Endpoints**
+**14. Sitemap & SEO Data Endpoints**
 - GET /sitemap/{serverSlug}.xml — dynamic sitemap of PUBLIC_INDEXABLE channels
 - GET /robots.txt — allow crawling of /c/ routes
 - IndexingService: addToSitemap, removeFromSitemap
@@ -159,13 +172,13 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: AvanishKulkarni
 - Due: March 11
-- Depends on: #11
+- Depends on: #12
 
 ---
 
 ### 👁️ FEATURE: Guest Public Channel View — Week 2 (March 9–11)
 
-**14. Public REST API — Channel & Server Endpoints**
+**15. Public REST API — Channel & Server Endpoints**
 - GET /api/public/servers/{serverSlug} → PublicServerDTO
 - GET /api/public/servers/{serverSlug}/channels → PublicChannelDTO[]
 - GET /api/public/channels/{channelId}/messages → paginated PublicMessageDTO[]
@@ -174,9 +187,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: FardeenI
 - Due: March 10
-- Depends on: #5, #6, #7
+- Depends on: #6, #7, #8
 
-**15. Redis Caching Layer**
+**16. Redis Caching Layer**
 - Cache middleware for public API responses
 - Key patterns from spec: channel:{id}:visibility (3600s), channel:msgs:{id}:page:{page} (60s), server:{id}:info (300s)
 - Cache invalidation on mutations (write-through)
@@ -186,7 +199,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Due: March 11
 - Depends on: #1
 
-**16. Rate Limiting Middleware**
+**17. Rate Limiting Middleware**
 - Token bucket rate limiting
 - Human users: 100 req/min per IP
 - Verified bots (Googlebot, Bingbot): 1000 req/min
@@ -197,7 +210,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Due: March 11
 - Depends on: #1
 
-**17. Event Bus — Redis Pub/Sub for Cross-Service Events**
+**18. Event Bus — Redis Pub/Sub for Cross-Service Events**
 - VISIBILITY_CHANGED event publishing and subscribing
 - MESSAGE_CREATED / MESSAGE_EDITED / MESSAGE_DELETED events
 - Cache invalidation triggered by events
@@ -205,9 +218,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: acabrera04
 - Due: March 11
-- Depends on: #15
+- Depends on: #16
 
-**18. Attachment Service & File Storage**
+**19. Attachment Service & File Storage**
 - Attachment metadata CRUD (create, list by message)
 - File upload endpoint with local filesystem storage for dev
 - Content-type and size validation
@@ -216,13 +229,13 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: FardeenI
 - Due: March 11
-- Depends on: #7
+- Depends on: #8
 
 ---
 
 ### 🔌 FRONTEND-BACKEND INTEGRATION — Week 2 (March 10–13)
 
-**19. Frontend Integration — Authentication**
+**20. Frontend Integration — Authentication**
 - Replace mock authService with real API calls
 - JWT token storage (httpOnly cookies)
 - Auto-refresh token logic
@@ -232,9 +245,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, integration, week-2
 - Assignee: Aiden-Barrera
 - Due: March 12
-- Depends on: #3
+- Depends on: #4
 
-**20. Frontend Integration — Servers & Channels**
+**21. Frontend Integration — Servers & Channels**
 - Replace mock serverService + channelService with real tRPC/API calls
 - Update ALL server actions: createServerAction, saveServerSettings, deleteServerAction, saveChannelSettings, createChannelAction
 - Wire server member list display
@@ -242,9 +255,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, integration, week-2
 - Assignee: declanblanc
 - Due: March 12
-- Depends on: #5, #6
+- Depends on: #6, #7
 
-**21. Frontend Integration — Messages**
+**22. Frontend Integration — Messages**
 - Replace mock messageService with real tRPC/API calls
 - Wire cursor-based pagination to real API
 - Wire sendMessage + deleteMessage
@@ -252,9 +265,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, integration, week-2
 - Assignee: FardeenI
 - Due: March 12
-- Depends on: #7
+- Depends on: #8
 
-**22. Frontend Integration — Guest Public Channel View**
+**23. Frontend Integration — Guest Public Channel View**
 - Wire /c/{serverSlug}/{channelSlug} route to public REST API
 - Wire isChannelGuestAccessible() for post-logout redirect logic
 - Proper error handling: 403 (private) → login prompt, 404 → not found
@@ -263,9 +276,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, integration, week-2
 - Assignee: acabrera04
 - Due: March 13
-- Depends on: #14
+- Depends on: #15
 
-**23. Frontend Integration — Channel Visibility Toggle**
+**24. Frontend Integration — Channel Visibility Toggle**
 - Wire ChannelSettingsPage visibility section to real tRPC API
 - Implement confirmation dialog for visibility changes
 - Display audit log from real backend
@@ -273,13 +286,13 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, integration, week-2
 - Assignee: AvanishKulkarni
 - Due: March 13
-- Depends on: #11, #12, #20
+- Depends on: #12, #13, #21
 
 ---
 
 ### 🧹 QUALITY & POLISH — Week 2 (March 12–13)
 
-**24. API Input Validation & Error Handling**
+**25. API Input Validation & Error Handling**
 - Zod schemas for all tRPC + REST inputs
 - Consistent error response format (code, message, details)
 - 400/401/403/404/429/500 error handling
@@ -287,9 +300,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: acabrera04
 - Due: March 12
-- Depends on: #3, #14
+- Depends on: #4, #15
 
-**25. Next.js Auth Middleware — Server-Side Route Protection**
+**26. Next.js Auth Middleware — Server-Side Route Protection**
 - Add Next.js middleware to protect /settings/* and /channels/* routes server-side
 - Verify JWT from httpOnly cookie before rendering protected pages
 - Redirect unauthenticated users to /auth/login immediately (no client-side spinner)
@@ -298,23 +311,11 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, feature, week-2
 - Assignee: declanblanc
 - Due: March 13
-- Depends on: #3, #19
+- Depends on: #4, #20
 
 ---
 
-### 📄 P4 DELIVERABLES — Documentation (March 9–13)
-
-**26. P4 Deliverables — Dev Spec Update & Architecture Document**
-- Update dev-spec-channel-visibility-toggle.md and dev-spec-guest-public-channel-view.md to reflect unified backend
-- Create unified backend architecture document with text description + Mermaid diagram
-- Justify design choices (PostgreSQL, Redis, tRPC+REST split, etc.) for a senior architect audience
-- Per-module specification (P4 items 1–8): features, internal architecture + Mermaid, data abstraction, stable storage + schemas, API definition, class/method/field list with visibility, class hierarchy Mermaid diagram
-- Include rendered Mermaid diagram screenshots in repo
-- *(P4 Deliverables #1 + #2: Update Dev Specs + Specify the Backend)*
-- Labels: backend, documentation, week-2
-- Assignee: acabrera04
-- Due: March 11
-- Depends on: #1
+### 📄 P4 DELIVERABLES — Documentation (March 13)
 
 **27. Backend README — Setup & Operations Guide**
 - Create README.md in backend directory targeting SRE audience
@@ -327,7 +328,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Labels: backend, documentation, week-2
 - Assignee: AvanishKulkarni
 - Due: March 13
-- Depends on: #1, #2, #3, #6, #7
+- Depends on: #1, #3, #4, #7, #8
 
 ---
 
@@ -335,27 +336,29 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 
 | Developer | Issues | Focus Area |
 |-----------|--------|------------|
-| acabrera04 | #1, #10, #17, #22, #24, #26 | Scaffold, seeds, event bus, guest FE, validation, P4 docs |
-| Aiden-Barrera | #3, #8, #12, #16, #19 | Auth, permissions, audit log, rate limiting, auth FE integration |
-| AvanishKulkarni | #5, #9, #13, #15, #23, #27 | Servers, membership, SEO/sitemap, caching, visibility FE, README |
-| declanblanc | #2, #6, #11, #20, #25 | DB schema, channels, visibility, server/channel FE, auth middleware |
-| FardeenI | #4, #7, #14, #18, #21 | Users, messages, public API, attachments, message FE integration |
+| acabrera04 | #1, #2, #11, #18, #23, #25 | Scaffold, dev specs/arch doc, seeds, event bus, guest FE, validation |
+| Aiden-Barrera | #4, #9, #13, #17, #20 | Auth, permissions, audit log, rate limiting, auth FE integration |
+| AvanishKulkarni | #6, #10, #14, #16, #24, #27 | Servers, membership, SEO/sitemap, caching, visibility FE, README |
+| declanblanc | #3, #7, #12, #21, #26 | DB schema, channels, visibility service, server/channel FE, auth middleware |
+| FardeenI | #5, #8, #15, #19, #22 | Users, messages, public API, attachments, message FE integration |
 
 ## Dependency Graph (simplified)
 ```
-#1 Scaffold ─┬─► #2 DB Schema ─┬─► #4 Users ──► #8 Permissions ──► #11 Visibility Toggle ──► #12 Audit Log
-             │                  ├─► #5 Servers ──► #6 Channels ──► #7 Messages              ──► #13 SEO
-             │                  ├─► #9 Membership                                             ──► #14 Public API
-             │                  └─► #10 Seeds                                                 ──► #18 Attachments
-             ├─► #15 Redis Cache ──► #17 Event Bus
-             ├─► #16 Rate Limiting
-             ├─► #26 P4 Docs (Dev Specs + Architecture)
-             └─► #3 Auth ──► #19 FE Auth Integration
-                            ──► #20 FE Server/Channel Integration
-                            ──► #21 FE Message Integration
-                            ──► #22 FE Guest View Integration
-                            ──► #23 FE Visibility Integration
-                            ──► #24 Validation
-                            ──► #25 Auth Middleware
-                            ──► #27 Backend README (after #1,#2,#3,#6,#7)
+#1 Scaffold ─► #2 Dev Specs & Architecture ─┬─► #3 DB Schema ─┬─► #5 Users ──► #9 Permissions ──► #12 Visibility ──► #13 Audit Log
+                                             │                 ├─► #6 Servers ──► #7 Channels ──► #8 Messages     ──► #14 SEO
+                                             │                 ├─► #10 Membership                                  ──► #15 Public API
+                                             │                 └─► #11 Seeds                                       ──► #19 Attachments
+                                             │
+                                             └─► #4 Auth ──► #9 Permissions
+                                                          ──► #20 FE Auth ──► #26 Auth Middleware
+                                                          ──► #25 Validation
+
+#1 Scaffold ──► #16 Redis Cache ──► #18 Event Bus
+            ──► #17 Rate Limiting
+
+#6,#7 ──► #21 FE Servers/Channels
+#8 ──► #22 FE Messages
+#15 ──► #23 FE Guest View
+#12,#13,#21 ──► #24 FE Visibility
+#1,#3,#4,#7,#8 ──► #27 Backend README
 ```
