@@ -17,7 +17,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 
 ---
 
-## Issues (27 total)
+## Issues (29 total)
 
 > **Note:** Every backend service/module issue (#4–#19) must include minimum tests verifying the module's API works for the happy path. Check test code into GitHub alongside the implementation.
 
@@ -92,7 +92,9 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 
 **7. Channel Service & API**
 - Channel CRUD via tRPC: getChannels(serverId), getChannel(slug), createChannel, updateChannel, deleteChannel
+- ChannelType enum support (TEXT, VOICE, ANNOUNCEMENT) — filter and group by type
 - Visibility enum (PUBLIC_INDEXABLE, PUBLIC_NO_INDEX, PRIVATE)
+- Enforce VOICE channels cannot be PUBLIC_INDEXABLE (must be PUBLIC_NO_INDEX or PRIVATE)
 - Position ordering, slug uniqueness per server
 - Default channel creation on server create
 - Labels: backend, feature, week-1
@@ -105,6 +107,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - Cursor-based pagination (20 per page default, configurable)
 - Author snapshot embedding
 - Attachment metadata support
+- Message pinning: pinMessage, unpinMessage, getPinnedMessages(channelId) — add `pinned` boolean + `pinnedAt` timestamp to message schema
 - Labels: backend, feature, week-1
 - Assignee: FardeenI
 - Due: March 6
@@ -208,7 +211,7 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 - 429 Too Many Requests with Retry-After header
 - Bot detection via User-Agent
 - Labels: backend, feature, week-2
-- Assignee: Aiden-Barrera
+- Assignee: declanblanc
 - Due: March 11
 - Depends on: #1
 
@@ -317,6 +320,35 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 
 ---
 
+### 🎙️ FEATURE: Voice Channels — Week 2 (March 10–13)
+
+**28. Twilio Voice Service — Real-Time Audio for Voice Channels**
+- Integrate Twilio Programmable Video SDK (group rooms = voice channels)
+- POST /voice/token — generate Twilio access token for authenticated user + specific room
+- Room lifecycle: auto-create Twilio room when first user joins a voice channel, destroy when empty
+- Voice state tracking in Redis: who's in which room, muted/deafened status
+- Publish events via Event Bus (#18): `user-joined-voice`, `user-left-voice`, `voice-state-changed`
+- GET /voice/participants/:channelId — list users currently in a voice channel
+- Mock Twilio service for local dev/testing (no real Twilio API calls needed locally)
+- Labels: backend, feature, week-2
+- Assignee: Aiden-Barrera
+- Due: March 12
+- Depends on: #4, #7, #18
+
+**29. Frontend Integration — Voice Channels (Stretch Goal)**
+- Wire Twilio Client JS SDK into voice channel click handler (join room on click)
+- Connect existing mute/deafen toggles in UserStatusBar to real Twilio track enable/disable
+- Show connected users list under each voice channel in ChannelSidebar
+- Speaking indicator using Twilio `dominantSpeaker` event
+- Active voice state in UserStatusBar (show "Connected to #channel-name", disconnect button)
+- Leave voice channel on disconnect or channel switch
+- Labels: backend, integration, week-2
+- Assignee: Aiden-Barrera
+- Due: March 13
+- Depends on: #28
+
+---
+
 ### 📄 P4 DELIVERABLES — Documentation (March 13)
 
 **27. Backend README — Setup & Operations Guide**
@@ -339,25 +371,26 @@ Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend
 | Developer | Issues | Focus Area |
 |-----------|--------|------------|
 | acabrera04 | #1, #2, #11, #18, #23, #25 | Scaffold, dev specs/arch doc, seeds, event bus, guest FE, validation |
-| Aiden-Barrera | #4, #9, #13, #17, #20 | Auth, permissions, audit log, rate limiting, auth FE integration |
+| Aiden-Barrera | #4, #9, #13, #20, #28, #29 | Auth, permissions, audit log, auth FE, Twilio voice |
 | AvanishKulkarni | #6, #10, #14, #16, #24, #27 | Servers, membership, SEO/sitemap, caching, visibility FE, README |
-| declanblanc | #3, #7, #12, #21, #26 | DB schema, channels, visibility service, server/channel FE, auth middleware |
-| FardeenI | #5, #8, #15, #19, #22 | Users, messages, public API, attachments, message FE integration |
+| declanblanc | #3, #7, #12, #17, #21, #26 | DB schema, channels (+ voice type), visibility service, rate limiting, server/channel FE, auth middleware |
+| FardeenI | #5, #8, #15, #19, #22 | Users, messages (+ pinning), public API, attachments, message FE integration |
 
 ## Dependency Graph (simplified)
 ```
 #1 Scaffold ─► #2 Dev Specs & Architecture ─┬─► #3 DB Schema ─┬─► #5 Users ──► #9 Permissions ──► #12 Visibility ──► #13 Audit Log
                                              │                 ├─► #6 Servers                                       ──► #14 SEO
                                              │                 ├─► #7 Channels                                      ──► #15 Public API
-                                             │                 ├─► #8 Messages                                      ──► #19 Attachments
+                                             │                 ├─► #8 Messages (+ pinning)                          ──► #19 Attachments
                                              │                 ├─► #10 Membership
                                              │                 └─► #11 Seeds
                                              │
                                              └─► #4 Auth ──► #9 Permissions
                                                           ──► #20 FE Auth ──► #26 Auth Middleware
                                                           ──► #25 Validation
+                                                          ──► #28 Twilio Voice ──► #29 FE Voice (stretch)
 
-#1 Scaffold ──► #16 Redis Cache ──► #18 Event Bus
+#1 Scaffold ──► #16 Redis Cache ──► #18 Event Bus ──► #28 Twilio Voice
             ──► #17 Rate Limiting
 
 #6,#7 ──► #21 FE Servers/Channels

@@ -2,8 +2,8 @@
 
 > **Session ID:** `40a9935e-1efa-4ec1-8c0e-b30ffdf8c276`
 > **Started:** 3/2/2026, 11:38:53 AM
-> **Duration:** 2875m 25s
-> **Exported:** 3/4/2026, 11:34:19 AM
+> **Duration:** 2915m 53s
+> **Exported:** 3/4/2026, 12:14:47 PM
 
 <sub>⏱️ 6s</sub>
 
@@ -6593,14 +6593,6 @@ Everything else is already compatible — Express/tRPC works fine behind Lambda,
 
 ---
 
-<sub>⏱️ 1928m 11s</sub>
-
-### ℹ️ Info
-
-Environment loaded: 1 custom instruction, 1 agent, 1 plugin, 6 skills
-
----
-
 <sub>⏱️ 2873m 45s</sub>
 
 ### 👤 User
@@ -6609,15 +6601,7 @@ Why are some of the services dependendt on one another? Can't they be developed 
 
 ---
 
-<sub>⏱️ 2873m 45s</sub>
-
-### ℹ️ Info
-
-Compacting conversation history...
-
----
-
-<sub>⏱️ 2873m 49s</sub>
+<sub>⏱️ 2873m 55s</sub>
 
 ### 💬 Copilot
 
@@ -6647,7 +6631,7 @@ Yes
 
 ### ✅ `view`
 
-**view the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
 
 /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md (lines 91-116)
 
@@ -6692,7 +6676,7 @@ Yes
 
 ### ✅ `edit`
 
-**edit the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
 
 /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
 
@@ -6703,7 +6687,7 @@ File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
 
 ---
 
-<sub>⏱️ 2874m 18s</sub>
+<sub>⏱️ 2874m 28s</sub>
 
 ### 💬 Copilot
 
@@ -6715,7 +6699,7 @@ Now update the dependency graph at the bottom:
 
 ### ✅ `edit`
 
-**edit the file at /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md.**
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
 
 /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
 
@@ -6726,7 +6710,7 @@ File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
 
 ---
 
-<sub>⏱️ 2874m 32s</sub>
+<sub>⏱️ 2874m 33s</sub>
 
 ### 💬 Copilot
 
@@ -6775,7 +6759,7 @@ $ cp /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md /Users/allen/.copilot/
 
 ---
 
-<sub>⏱️ 2874m 41s</sub>
+<sub>⏱️ 2874m 42s</sub>
 
 ### 💬 Copilot
 
@@ -6786,6 +6770,3991 @@ Done. Issues #5, #6, #7, #8 now all depend only on #2 (arch doc) and #3 (DB sche
 <sub>⏱️ 2875m 3s</sub>
 
 ### ◌ Conversation Compacted
+
+---
+
+<sub>⏱️ 2905m 6s</sub>
+
+### 👤 User
+
+The frontend had UI components for voice channels and pinning messages. How could that be implemented for this sprint?
+
+---
+
+<sub>⏱️ 2905m 13s</sub>
+
+### 📦 task (Completed)
+
+### ✅ `glob`
+
+**/Users/allen/repos/Harmony/**/*.{ts,tsx,js,jsx}**
+
+"/Users/allen/repos/Harmony/**/*.{ts,tsx,js,jsx}"
+
+```
+No files matched the pattern.
+```
+
+
+### 💬 Copilot
+
+Let me check the directory structure first:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony**
+
+/Users/allen/repos/Harmony
+
+<details>
+<summary>19 lines</summary>
+
+```
+.DS_Store
+.claude
+.git
+.github
+.gitignore
+.playwright
+.playwright-cli
+AGENTS.md
+P4: Backend Development | CS 485 AI-Assisted Software Engineering (Sp26).pdf
+README.md
+WORKFLOW.md
+dev-spec-guidelines.pdf
+docs
+dogfood-output
+harmony-frontend
+llm-logs
+mockups
+planning
+tasks
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me search the harmony-frontend directory:
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend**
+
+"voice|audio|call" (/Users/allen/repos/Harmony/harmony-frontend)
+
+```
+Output too large to read at once (28.3 KB). Saved to: /var/folders/sh/95ndjlg10lq4xqkr_07l0z840000gn/T/copilot-tool-output-1772643855038-wxtcl3.txt
+Consider using tools like grep (for searching), head/tail (for viewing start/end), view with view_range (for specific sections), or jq (for JSON) to examine portions of the output.
+
+Preview (first 500 chars):
+/Users/allen/repos/Harmony/harmony-frontend/src/context/AuthContext.tsx:  // callback never reads `u
+```
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend**
+
+"pin|pinned" (/Users/allen/repos/Harmony/harmony-frontend)
+
+<details>
+<summary>52 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "@babel/core": ["@babel/core@7.29.0", "", { "dependencies": { "@babel/code-frame": "^7.29.0", "@babel/generator": "^7.29.0", "@babel/helper-compilation-targets": "^7.28.6", "@babel/helper-module-transforms": "^7.28.6", "@babel/helpers": "^7.28.6", "@babel/parser": "^7.29.0", "@babel/template": "^7.28.6", "@babel/traverse": "^7.29.0", "@babel/types": "^7.29.0", "@jridgewell/remapping": "^2.3.5", "convert-source-map": "^2.0.0", "debug": "^4.1.0", "gensync": "^1.0.0-beta.2", "json5": "^2.2.3", "semver": "^6.3.1" } }, "sha512-CGOfOJqWjg2qW/Mb6zNsDm+u5vFQ8DxXfbM09z69p5Z6+mE1ikP2jUXw+j42Pf1XTYED2Rni5f95npYeuwMDQA=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "@babel/generator": ["@babel/generator@7.29.1", "", { "dependencies": { "@babel/parser": "^7.29.0", "@babel/types": "^7.29.0", "@jridgewell/gen-mapping": "^0.3.12", "@jridgewell/trace-mapping": "^0.3.28", "jsesc": "^3.0.2" } }, "sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "@jridgewell/remapping": ["@jridgewell/remapping@2.3.5", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "@tailwindcss/node": ["@tailwindcss/node@4.1.18", "", { "dependencies": { "@jridgewell/remapping": "^2.3.4", "enhanced-resolve": "^5.18.3", "jiti": "^2.6.1", "lightningcss": "1.30.2", "magic-string": "^0.30.21", "source-map-js": "^1.2.1", "tailwindcss": "4.1.18" } }, "sha512-DoR7U1P7iYhw16qJ49fgXUlry1t4CpXeErJHnQ44JgTSKMaZUdf17cfn5mHchfJ4KRBZRFA/Coo+MUF5+gOaCQ=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "baseline-browser-mapping": ["baseline-browser-mapping@2.9.19", "", { "bin": "dist/cli.js" }, "sha512-ipDqC8FrAl/76p2SSWKSI+H9tFwm7vYqXQrItCuiVPt26Km0jS+NzSsBWAaBusvSbQcfJG+JitdMm+wZAgTYqg=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "browserslist": ["browserslist@4.28.1", "", { "dependencies": { "baseline-browser-mapping": "^2.9.0", "caniuse-lite": "^1.0.30001759", "electron-to-chromium": "^1.5.263", "node-releases": "^2.0.27", "update-browserslist-db": "^1.2.0" }, "bin": "cli.js" }, "sha512-ZC5Bd0LgJXgwGqUknZY/vkUQ04r8NXnJZ3yYi4vDmSiZmC/pdSN0NbNRPxZpbtO4uAfDUAFffO8IZoM3Gj8IkA=="],
+/Users/allen/repos/Harmony/harmony-frontend/bun.lock:    "next": ["next@16.1.6", "", { "dependencies": { "@next/env": "16.1.6", "@swc/helpers": "0.5.15", "baseline-browser-mapping": "^2.8.3", "caniuse-lite": "^1.0.30001579", "postcss": "8.4.31", "styled-jsx": "5.1.6" }, "optionalDependencies": { "@next/swc-darwin-arm64": "16.1.6", "@next/swc-darwin-x64": "16.1.6", "@next/swc-linux-arm64-gnu": "16.1.6", "@next/swc-linux-arm64-musl": "16.1.6", "@next/swc-linux-x64-gnu": "16.1.6", "@next/swc-linux-x64-musl": "16.1.6", "@next/swc-win32-arm64-msvc": "16.1.6", "@next/swc-win32-x64-msvc": "16.1.6", "sharp": "^0.34.4" }, "peerDependencies": { "@opentelemetry/api": "^1.1.0", "@playwright/test": "^1.51.1", "babel-plugin-react-compiler": "*", "react": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react-dom": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "sass": "^1.3.0" }, "optionalPeers": ["@opentelemetry/api", "@playwright/test", "babel-plugin-react-compiler", "sass"], "bin": "dist/bin/next" }, "sha512-hkyRkcu5x/41KoqnROkfTm2pZVbKxvbZRuNvKXLRXxs3VfyO0WhY50TQS40EuKO9SW3rBj/sF3WbVwDACeMZyw=="],
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/remapping": "^2.3.5",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/gen-mapping": "^0.3.12",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/trace-mapping": "^0.3.28",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:    "node_modules/@jridgewell/gen-mapping": {
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:      "resolved": "https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/trace-mapping": "^0.3.24"
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:    "node_modules/@jridgewell/remapping": {
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:      "resolved": "https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/gen-mapping": "^0.3.5",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/trace-mapping": "^0.3.24"
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:    "node_modules/@jridgewell/trace-mapping": {
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:      "resolved": "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "@jridgewell/remapping": "^2.3.4",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:    "node_modules/baseline-browser-mapping": {
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:      "resolved": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.9.19.tgz",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "baseline-browser-mapping": "dist/cli.js"
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "baseline-browser-mapping": "^2.9.0",
+/Users/allen/repos/Harmony/harmony-frontend/package-lock.json:        "baseline-browser-mapping": "^2.8.3",
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/VisibilityGuard.tsx:          className='h-8 w-8 animate-spin'
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageInput.tsx:  // textarea so the user can start typing without clicking the input first
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/UserSettingsPage.tsx:        <div className='h-8 w-8 animate-spin rounded-full border-2 border-[#5865f2] border-t-transparent' />
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:function SpinnerIcon() {
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:    <svg className='h-4 w-4 animate-spin shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' focusable='false'>
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:              {isLoading && <SpinnerIcon />}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/VisibilityToggle.tsx:              className='h-4 w-4 animate-spin'
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Dropping a quick note: I updated the ESLint config to enforce the import alias rules. No more relative imports!',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      "Hello! I'm Grace, the PM keeping us all on track. 😄 I'll be managing the project board and making sure we hit our milestones.",
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Updated the mockups with status indicator dots and the member sidebar role groupings. Much cleaner now.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Reminder: add your projects to the pinned list at the top of this channel so newcomers can find them easily!',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:    content: "Sure, I'll ping Frank to help since it's his project.",
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:    content: 'Just saw the ping — happy to set up CODEOWNERS for docker-compose-dev.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:    content: 'Bumping the affected package now. PR up in 5 mins.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'The role grouping headers are clear. One question: should offline users be hidden or just dimmed?',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      "Arc's command palette is stunning. The instant filtering and result grouping is what we should aim for.",
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Exporting SVG icons for the TopBar: hash, search, pin, members, gear, hamburger. All 24x24 viewBox, stroke-based.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      '**Finding #1:** Users expect the members sidebar to be open by default (like Discord). Currently it defaults open — keeping it.',
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx: * Scrollable, chronological message feed with author grouping, date separators,
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx: * #c31: guards against NaN timestamps so grouping never silently breaks.
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx:  /** Callback fired when the pinned messages icon is clicked */
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ServerSettingsPage.tsx:// ─── Loading spinner ──────────────────────────────────────────────────────────
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ServerSettingsPage.tsx:      <div className='h-8 w-8 animate-spin rounded-full border-4 border-[#5865f2] border-t-transparent' />
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ChannelSettingsPage.tsx:// ─── Loading spinner ──────────────────────────────────────────────────────────
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ChannelSettingsPage.tsx:      <div className='h-8 w-8 animate-spin rounded-full border-4 border-[#5865f2] border-t-transparent' />
+```
+
+</details>
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend**
+
+/Users/allen/repos/Harmony/harmony-frontend
+
+<details>
+<summary>19 lines</summary>
+
+```
+.env.example
+.gitignore
+.next
+.prettierignore
+.prettierrc.cjs
+README.md
+bun.lock
+eslint.config.mjs
+next-env.d.ts
+next.config.ts
+node_modules
+package-lock.json
+package.json
+postcss.config.mjs
+public
+src
+tailwind.config.ts
+tsconfig.json
+tsconfig.tsbuildinfo
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Good! Now let me search more specifically in the src directory for these features:
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+"(?i)voice|audio|call" (/Users/allen/repos/Harmony/harmony-frontend/src)
+
+<details>
+<summary>27 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/services/channelService.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/hooks/useToast.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/GuestPromoBanner.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MembersSidebar.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/AuthRedirect.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/context/ToastContext.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/error.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/not-found.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/actions/createChannel.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ChannelSettingsPage.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/Toast.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/server-rail/CreateServerModal.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/VisibilityToggle.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/settings/[serverSlug]/actions.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/settings/[serverSlug]/[channelSlug]/updateVisibility.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/app/settings/[serverSlug]/[channelSlug]/actions.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/context/AuthContext.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/types/channel.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageInput.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/SearchModal.tsx
+```
+
+</details>
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+"pin" (/Users/allen/repos/Harmony/harmony-frontend/src)
+
+<details>
+<summary>10 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/VisibilityGuard.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageInput.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/VisibilityToggle.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/UserSettingsPage.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ChannelSettingsPage.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/settings/ServerSettingsPage.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx
+```
+
+</details>
+
+
+### ✅ `glob`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/**/*.{ts,tsx}**
+
+"/Users/allen/repos/Harmony/harmony-frontend/src/**/*.{ts,tsx}"
+
+```
+No files matched the pattern.
+```
+
+
+### 💬 Copilot
+
+Let me check file extensions:
+
+### ✅ `glob`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/**/***
+
+"/Users/allen/repos/Harmony/harmony-frontend/src/**/*"
+
+```
+No files matched the pattern.
+```
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+/Users/allen/repos/Harmony/harmony-frontend/src
+
+<details>
+<summary>10 lines</summary>
+
+```
+app
+assets
+components
+context
+hooks
+layouts
+lib
+mocks
+services
+types
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me examine the key files that were found in the grep results:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx
+
+<details>
+<summary>246 lines</summary>
+
+```
+1. /**
+2.  * Channel Component: TopBar
+3.  * Full-width navigation bar displayed above the message area.
+4.  * Shows channel name/topic on the left and action icons on the right.
+5.  * Ref: dev-spec-channel-visibility-toggle.md — C1.3 TopBar
+6.  */
+7. 
+8. 'use client';
+9. 
+10. import Link from 'next/link';
+11. import { cn } from '@/lib/utils';
+12. import { truncate } from '@/lib/utils';
+13. import type { Channel } from '@/types';
+14. import type { UserRole } from '@/types';
+15. 
+16. // ─── Icons (inline SVG to avoid extra dependencies) ──────────────────────────
+17. 
+18. function HashIcon({ className }: { className?: string }) {
+19.   return (
+20.     <svg
+21.       className={cn('h-5 w-5', className)}
+22.       viewBox='0 0 24 24'
+23.       fill='none'
+24.       stroke='currentColor'
+25.       strokeWidth={2}
+26.     >
+27.       <line x1='4' y1='9' x2='20' y2='9' />
+28.       <line x1='4' y1='15' x2='20' y2='15' />
+29.       <line x1='10' y1='3' x2='8' y2='21' />
+30.       <line x1='16' y1='3' x2='14' y2='21' />
+31.     </svg>
+32.   );
+33. }
+34. 
+35. function SearchIcon({ className }: { className?: string }) {
+36.   return (
+37.     <svg
+38.       className={cn('h-5 w-5', className)}
+39.       viewBox='0 0 24 24'
+40.       fill='none'
+41.       stroke='currentColor'
+42.       strokeWidth={2}
+43.     >
+44.       <circle cx='11' cy='11' r='8' />
+45.       <path d='m21 21-4.35-4.35' />
+46.     </svg>
+47.   );
+48. }
+49. 
+50. function PinIcon({ className }: { className?: string }) {
+51.   return (
+52.     <svg
+53.       className={cn('h-5 w-5', className)}
+54.       viewBox='0 0 24 24'
+55.       fill='none'
+56.       stroke='currentColor'
+57.       strokeWidth={2}
+58.     >
+59.       <path d='M12 17v5' />
+60.       <path d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z' />
+61.     </svg>
+62.   );
+63. }
+64. 
+65. function MembersIcon({ className }: { className?: string }) {
+66.   return (
+67.     <svg
+68.       className={cn('h-5 w-5', className)}
+69.       viewBox='0 0 24 24'
+70.       fill='none'
+71.       stroke='currentColor'
+72.       strokeWidth={2}
+73.     >
+74.       <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
+75.       <circle cx='9' cy='7' r='4' />
+76.       <path d='M22 21v-2a4 4 0 0 0-3-3.87' />
+77.       <path d='M16 3.13a4 4 0 0 1 0 7.75' />
+78.     </svg>
+79.   );
+80. }
+81. 
+82. function GearIcon({ className }: { className?: string }) {
+83.   return (
+84.     <svg
+85.       className={cn('h-5 w-5', className)}
+86.       viewBox='0 0 24 24'
+87.       fill='none'
+88.       stroke='currentColor'
+89.       strokeWidth={2}
+90.     >
+91.       <path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' />
+92.       <circle cx='12' cy='12' r='3' />
+93.     </svg>
+94.   );
+95. }
+96. 
+97. function MenuIcon({ className }: { className?: string }) {
+98.   return (
+99.     <svg
+100.       className={cn('h-5 w-5', className)}
+101.       viewBox='0 0 24 24'
+102.       fill='none'
+103.       stroke='currentColor'
+104.       strokeWidth={2}
+105.     >
+106.       <line x1='4' y1='6' x2='20' y2='6' />
+107.       <line x1='4' y1='12' x2='20' y2='12' />
+108.       <line x1='4' y1='18' x2='20' y2='18' />
+109.     </svg>
+110.   );
+111. }
+112. 
+113. // ─── Icon button helper ───────────────────────────────────────────────────────
+114. 
+115. function IconButton({
+116.   onClick,
+117.   title,
+118.   active,
+119.   ariaPressed,
+120.   children,
+121. }: {
+122.   onClick?: () => void;
+123.   title: string;
+124.   active?: boolean;
+125.   /** Set for toggle buttons so screen readers announce pressed state */
+126.   ariaPressed?: boolean;
+127.   children: React.ReactNode;
+128. }) {
+129.   return (
+130.     <button
+131.       onClick={onClick}
+132.       title={title}
+133.       aria-label={title}
+134.       aria-pressed={ariaPressed}
+135.       className={cn(
+136.         'rounded p-1.5 transition-colors',
+137.         active ? 'text-white bg-white/10' : 'text-gray-400 hover:bg-white/10 hover:text-gray-200',
+138.       )}
+139.     >
+140.       {children}
+141.     </button>
+142.   );
+143. }
+144. 
+145. // ─── Component ────────────────────────────────────────────────────────────────
+146. 
+147. export interface TopBarProps {
+148.   /** The channel currently being viewed */
+149.   channel: Pick<Channel, 'name' | 'topic' | 'slug'>;
+150.   /** The server slug, used to build the settings link */
+151.   serverSlug: string;
+152.   /** Role of the current user — determines if the settings gear is shown */
+153.   userRole?: UserRole;
+154.   /** Whether the members sidebar is currently open */
+155.   isMembersOpen?: boolean;
+156.   /** Callback to toggle the members sidebar */
+157.   onMembersToggle?: () => void;
+158.   /** Whether the channel sidebar drawer is currently open (mobile) */
+159.   isMenuOpen?: boolean;
+160.   /** Callback to toggle the channel sidebar drawer (mobile) */
+161.   onMenuToggle?: () => void;
+162.   /** Callback fired when the search icon is clicked */
+163.   onSearchOpen?: () => void;
+164.   /** Callback fired when the pinned messages icon is clicked */
+165.   onPinsOpen?: () => void;
+166. }
+167. 
+168. export function TopBar({
+169.   channel,
+170.   serverSlug,
+171.   userRole,
+172.   isMembersOpen,
+173.   onMembersToggle,
+174.   isMenuOpen,
+175.   onMenuToggle,
+176.   onSearchOpen,
+177.   onPinsOpen,
+178. }: TopBarProps) {
+179.   const isAdmin = userRole === 'owner' || userRole === 'admin';
+180.   const settingsHref = `/settings/${serverSlug}/${channel.slug}`;
+181. 
+182.   return (
+183.     <header className='flex h-12 items-center gap-2 border-b border-black/20 bg-[#36393f] px-4 shadow-sm'>
+184.       {/* ── Hamburger (mobile only) ── */}
+185.       <button
+186.         onClick={onMenuToggle}
+187.         aria-label='Open channel list'
+188.         aria-expanded={isMenuOpen ?? false}
+189.         className='rounded p-1.5 text-gray-400 hover:bg-white/10 hover:text-gray-200 sm:hidden'
+190.       >
+191.         <MenuIcon />
+192.       </button>
+193. 
+194.       {/* ── Left: channel identity ── */}
+195.       <div className='flex min-w-0 flex-1 items-center gap-2'>
+196.         <HashIcon className='flex-shrink-0 text-gray-400' />
+197.         <span className='truncate font-semibold text-white'>{channel.name}</span>
+198. 
+199.         {channel.topic && (
+200.           <>
+201.             <span className='hidden select-none text-gray-600 sm:inline'>|</span>
+202.             <span className='hidden min-w-0 truncate text-sm text-gray-400 sm:block'>
+203.               {truncate(channel.topic, 80)}
+204.             </span>
+205.           </>
+206.         )}
+207.       </div>
+208. 
+209.       {/* ── Right: action icons ── */}
+210.       <div className='flex flex-shrink-0 items-center gap-0.5'>
+211.         {/* Search */}
+212.         <IconButton onClick={onSearchOpen} title='Search'>
+213.           <SearchIcon />
+214.         </IconButton>
+215. 
+216.         {/* Pinned messages */}
+217.         <IconButton onClick={onPinsOpen} title='Pinned messages'>
+218.           <PinIcon />
+219.         </IconButton>
+220. 
+221.         {/* Members sidebar toggle */}
+222.         <IconButton
+223.           onClick={onMembersToggle}
+224.           title='Show member list'
+225.           active={isMembersOpen}
+226.           ariaPressed={isMembersOpen}
+227.         >
+228.           <MembersIcon />
+229.         </IconButton>
+230. 
+231.         {/* Settings gear — admin/owner only */}
+232.         {isAdmin && (
+233.           <Link
+234.             href={settingsHref}
+235.             title='Channel settings'
+236.             aria-label='Channel settings'
+237.             className='rounded p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
+238.           >
+239.             <GearIcon />
+240.           </Link>
+241.         )}
+242.       </div>
+243.     </header>
+244.   );
+245. }
+246.
+```
+
+</details>
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts
+
+```
+File too large to read at once (176.8 KB). Consider using tools like grep (for searching), head/tail (for viewing start/end), view with view_range (for specific sections), or jq (for JSON) to examine portions of the file.
+```
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/types/channel.ts**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/types/channel.ts
+
+<details>
+<summary>41 lines</summary>
+
+```
+1. /**
+2.  * Type Definitions: Channel
+3.  * Based on dev spec data schemas
+4.  */
+5. 
+6. export enum ChannelType {
+7.   TEXT = 'TEXT',
+8.   VOICE = 'VOICE',
+9.   ANNOUNCEMENT = 'ANNOUNCEMENT',
+10. }
+11. 
+12. export interface Channel {
+13.   id: string;
+14.   serverId: string;
+15.   name: string;
+16.   slug: string;
+17.   type: ChannelType;
+18.   visibility: ChannelVisibility;
+19.   topic?: string;
+20.   position: number;
+21.   description?: string;
+22.   createdAt: Date | string;
+23.   updatedAt?: Date | string;
+24. }
+25. 
+26. export enum ChannelVisibility {
+27.   PUBLIC_INDEXABLE = 'PUBLIC_INDEXABLE',
+28.   PUBLIC_NO_INDEX = 'PUBLIC_NO_INDEX',
+29.   PRIVATE = 'PRIVATE',
+30. }
+31. 
+32. export interface ChannelDTO {
+33.   id: string;
+34.   serverId: string;
+35.   name: string;
+36.   slug: string;
+37.   description?: string;
+38.   visibility: ChannelVisibility;
+39.   memberCount?: number;
+40. }
+41.
+```
+
+</details>
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts
+
+<details>
+<summary>303 lines</summary>
+
+```
+1. /**
+2.  * Mock Data: Channels
+3.  * 8+ channels per server with mixed types and all 3 visibility states
+4.  */
+5. 
+6. import { ChannelType, ChannelVisibility, type Channel } from '@/types';
+7. 
+8. // ─── Harmony HQ (server-001) ─────────────────────────────────────────────────
+9. 
+10. const harmonyHqChannels: Channel[] = [
+11.   {
+12.     id: 'channel-001',
+13.     serverId: 'server-001',
+14.     name: 'general',
+15.     slug: 'general',
+16.     type: ChannelType.TEXT,
+17.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+18.     topic: 'General discussion — indexed by search engines',
+19.     position: 0,
+20.     createdAt: '2024-01-15T10:05:00.000Z',
+21.   },
+22.   {
+23.     id: 'channel-002',
+24.     serverId: 'server-001',
+25.     name: 'announcements',
+26.     slug: 'announcements',
+27.     type: ChannelType.ANNOUNCEMENT,
+28.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+29.     topic: 'Official announcements from the team',
+30.     position: 1,
+31.     createdAt: '2024-01-15T10:06:00.000Z',
+32.   },
+33.   {
+34.     id: 'channel-003',
+35.     serverId: 'server-001',
+36.     name: 'introductions',
+37.     slug: 'introductions',
+38.     type: ChannelType.TEXT,
+39.     visibility: ChannelVisibility.PUBLIC_NO_INDEX,
+40.     topic: 'Introduce yourself to the community',
+41.     position: 2,
+42.     createdAt: '2024-01-15T10:07:00.000Z',
+43.   },
+44.   {
+45.     id: 'channel-004',
+46.     serverId: 'server-001',
+47.     name: 'dev-updates',
+48.     slug: 'dev-updates',
+49.     type: ChannelType.ANNOUNCEMENT,
+50.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+51.     topic: 'Development updates and release notes',
+52.     position: 3,
+53.     createdAt: '2024-01-15T10:08:00.000Z',
+54.   },
+55.   {
+56.     id: 'channel-005',
+57.     serverId: 'server-001',
+58.     name: 'staff-only',
+59.     slug: 'staff-only',
+60.     type: ChannelType.TEXT,
+61.     visibility: ChannelVisibility.PRIVATE,
+62.     topic: 'Private channel for staff members',
+63.     position: 4,
+64.     createdAt: '2024-01-15T10:09:00.000Z',
+65.   },
+66.   {
+67.     id: 'channel-006',
+68.     serverId: 'server-001',
+69.     name: 'voice-general',
+70.     slug: 'voice-general',
+71.     type: ChannelType.VOICE,
+72.     visibility: ChannelVisibility.PUBLIC_NO_INDEX,
+73.     topic: 'General voice chat',
+74.     position: 5,
+75.     createdAt: '2024-01-15T10:10:00.000Z',
+76.   },
+77.   {
+78.     id: 'channel-007',
+79.     serverId: 'server-001',
+80.     name: 'feedback',
+81.     slug: 'feedback',
+82.     type: ChannelType.TEXT,
+83.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+84.     topic: 'Share your feedback and suggestions',
+85.     position: 6,
+86.     createdAt: '2024-01-15T10:11:00.000Z',
+87.   },
+88.   {
+89.     id: 'channel-008',
+90.     serverId: 'server-001',
+91.     name: 'moderation-log',
+92.     slug: 'moderation-log',
+93.     type: ChannelType.TEXT,
+94.     visibility: ChannelVisibility.PRIVATE,
+95.     topic: 'Private moderation audit log',
+96.     position: 7,
+97.     createdAt: '2024-01-15T10:12:00.000Z',
+98.   },
+99.   {
+100.     id: 'channel-009',
+101.     serverId: 'server-001',
+102.     name: 'showcase',
+103.     slug: 'showcase',
+104.     type: ChannelType.TEXT,
+105.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+106.     topic: 'Show off your work to the world',
+107.     position: 8,
+108.     createdAt: '2024-01-15T10:13:00.000Z',
+109.   },
+110. ];
+111. 
+112. // ─── Open Source Hub (server-002) ────────────────────────────────────────────
+113. 
+114. const openSourceHubChannels: Channel[] = [
+115.   {
+116.     id: 'channel-101',
+117.     serverId: 'server-002',
+118.     name: 'welcome',
+119.     slug: 'welcome',
+120.     type: ChannelType.TEXT,
+121.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+122.     topic: 'Welcome to Open Source Hub!',
+123.     position: 0,
+124.     createdAt: '2024-02-01T09:05:00.000Z',
+125.   },
+126.   {
+127.     id: 'channel-102',
+128.     serverId: 'server-002',
+129.     name: 'projects',
+130.     slug: 'projects',
+131.     type: ChannelType.TEXT,
+132.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+133.     topic: 'Share and discuss open source projects',
+134.     position: 1,
+135.     createdAt: '2024-02-01T09:06:00.000Z',
+136.   },
+137.   {
+138.     id: 'channel-103',
+139.     serverId: 'server-002',
+140.     name: 'help-wanted',
+141.     slug: 'help-wanted',
+142.     type: ChannelType.TEXT,
+143.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+144.     topic: 'Find contributors or ask for help',
+145.     position: 2,
+146.     createdAt: '2024-02-01T09:07:00.000Z',
+147.   },
+148.   {
+149.     id: 'channel-104',
+150.     serverId: 'server-002',
+151.     name: 'contributors-lounge',
+152.     slug: 'contributors-lounge',
+153.     type: ChannelType.TEXT,
+154.     visibility: ChannelVisibility.PUBLIC_NO_INDEX,
+155.     topic: 'Casual chat for contributors',
+156.     position: 3,
+157.     createdAt: '2024-02-01T09:08:00.000Z',
+158.   },
+159.   {
+160.     id: 'channel-105',
+161.     serverId: 'server-002',
+162.     name: 'maintainers',
+163.     slug: 'maintainers',
+164.     type: ChannelType.TEXT,
+165.     visibility: ChannelVisibility.PRIVATE,
+166.     topic: 'Private channel for project maintainers',
+167.     position: 4,
+168.     createdAt: '2024-02-01T09:09:00.000Z',
+169.   },
+170.   {
+171.     id: 'channel-106',
+172.     serverId: 'server-002',
+173.     name: 'voice-standup',
+174.     slug: 'voice-standup',
+175.     type: ChannelType.VOICE,
+176.     visibility: ChannelVisibility.PUBLIC_NO_INDEX,
+177.     topic: 'Daily standup voice channel',
+178.     position: 5,
+179.     createdAt: '2024-02-01T09:10:00.000Z',
+180.   },
+181.   {
+182.     id: 'channel-107',
+183.     serverId: 'server-002',
+184.     name: 'release-notes',
+185.     slug: 'release-notes',
+186.     type: ChannelType.ANNOUNCEMENT,
+187.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+188.     topic: 'Release notes and changelogs',
+189.     position: 6,
+190.     createdAt: '2024-02-01T09:11:00.000Z',
+191.   },
+192.   {
+193.     id: 'channel-108',
+194.     serverId: 'server-002',
+195.     name: 'ci-logs',
+196.     slug: 'ci-logs',
+197.     type: ChannelType.TEXT,
+198.     visibility: ChannelVisibility.PRIVATE,
+199.     topic: 'Automated CI/CD logs',
+200.     position: 7,
+201.     createdAt: '2024-02-01T09:12:00.000Z',
+202.   },
+203. ];
+204. 
+205. // ─── Design Lab (server-003) ─────────────────────────────────────────────────
+206. 
+207. const designLabChannels: Channel[] = [
+208.   {
+209.     id: 'channel-201',
+210.     serverId: 'server-003',
+211.     name: 'design-general',
+212.     slug: 'design-general',
+213.     type: ChannelType.TEXT,
+214.     visibility: ChannelVisibility.PRIVATE,
+215.     topic: 'General design discussion',
+216.     position: 0,
+217.     createdAt: '2024-02-20T11:05:00.000Z',
+218.   },
+219.   {
+220.     id: 'channel-202',
+221.     serverId: 'server-003',
+222.     name: 'wireframes',
+223.     slug: 'wireframes',
+224.     type: ChannelType.TEXT,
+225.     visibility: ChannelVisibility.PRIVATE,
+226.     topic: 'Wireframe reviews and feedback',
+227.     position: 1,
+228.     createdAt: '2024-02-20T11:06:00.000Z',
+229.   },
+230.   {
+231.     id: 'channel-203',
+232.     serverId: 'server-003',
+233.     name: 'inspiration',
+234.     slug: 'inspiration',
+235.     type: ChannelType.TEXT,
+236.     visibility: ChannelVisibility.PUBLIC_NO_INDEX,
+237.     topic: 'Design inspiration and references',
+238.     position: 2,
+239.     createdAt: '2024-02-20T11:07:00.000Z',
+240.   },
+241.   {
+242.     id: 'channel-204',
+243.     serverId: 'server-003',
+244.     name: 'announcements',
+245.     slug: 'announcements',
+246.     type: ChannelType.ANNOUNCEMENT,
+247.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+248.     topic: 'Design team announcements',
+249.     position: 3,
+250.     createdAt: '2024-02-20T11:08:00.000Z',
+251.   },
+252.   {
+253.     id: 'channel-205',
+254.     serverId: 'server-003',
+255.     name: 'assets',
+256.     slug: 'assets',
+257.     type: ChannelType.TEXT,
+258.     visibility: ChannelVisibility.PRIVATE,
+259.     topic: 'Shared design assets and files',
+260.     position: 4,
+261.     createdAt: '2024-02-20T11:09:00.000Z',
+262.   },
+263.   {
+264.     id: 'channel-206',
+265.     serverId: 'server-003',
+266.     name: 'voice-critique',
+267.     slug: 'voice-critique',
+268.     type: ChannelType.VOICE,
+269.     visibility: ChannelVisibility.PRIVATE,
+270.     topic: 'Voice channel for design critiques',
+271.     position: 5,
+272.     createdAt: '2024-02-20T11:10:00.000Z',
+273.   },
+274.   {
+275.     id: 'channel-207',
+276.     serverId: 'server-003',
+277.     name: 'portfolio',
+278.     slug: 'portfolio',
+279.     type: ChannelType.TEXT,
+280.     visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+281.     topic: 'Portfolio work and case studies',
+282.     position: 6,
+283.     createdAt: '2024-02-20T11:11:00.000Z',
+284.   },
+285.   {
+286.     id: 'channel-208',
+287.     serverId: 'server-003',
+288.     name: 'ux-research',
+289.     slug: 'ux-research',
+290.     type: ChannelType.TEXT,
+291.     visibility: ChannelVisibility.PRIVATE,
+292.     topic: 'UX research findings and reports',
+293.     position: 7,
+294.     createdAt: '2024-02-20T11:12:00.000Z',
+295.   },
+296. ];
+297. 
+298. export const mockChannels: Channel[] = [
+299.   ...harmonyHqChannels,
+300.   ...openSourceHubChannels,
+301.   ...designLabChannels,
+302. ];
+303.
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me check the MessageList and MessageInput for pin-related functionality:
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx**
+
+"pin" (/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx)
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx: * Scrollable, chronological message feed with author grouping, date separators,
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageList.tsx: * #c31: guards against NaN timestamps so grouping never silently breaks.
+```
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageInput.tsx**
+
+"pin" (/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageInput.tsx)
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageInput.tsx:  // textarea so the user can start typing without clicking the input first
+```
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts**
+
+"pin" (/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts)
+
+<details>
+<summary>11 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Dropping a quick note: I updated the ESLint config to enforce the import alias rules. No more relative imports!',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      "Hello! I'm Grace, the PM keeping us all on track. 😄 I'll be managing the project board and making sure we hit our milestones.",
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Updated the mockups with status indicator dots and the member sidebar role groupings. Much cleaner now.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Reminder: add your projects to the pinned list at the top of this channel so newcomers can find them easily!',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:    content: "Sure, I'll ping Frank to help since it's his project.",
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:    content: 'Just saw the ping — happy to set up CODEOWNERS for docker-compose-dev.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:    content: 'Bumping the affected package now. PR up in 5 mins.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'The role grouping headers are clear. One question: should offline users be hidden or just dimmed?',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      "Arc's command palette is stunning. The instant filtering and result grouping is what we should aim for.",
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      'Exporting SVG icons for the TopBar: hash, search, pin, members, gear, hamburger. All 24x24 viewBox, stroke-based.',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      '**Finding #1:** Users expect the members sidebar to be open by default (like Discord). Currently it defaults open — keeping it.',
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me check for more voice-related code and see if there are any components or services:
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/services/channelService.ts**
+
+"(?i)voice|audio|call" (/Users/allen/repos/Harmony/harmony-frontend/src/services/channelService.ts)
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/services/channelService.ts:  // We set it here on every mutation so callers always get a fresh timestamp.
+```
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel
+
+<details>
+<summary>15 lines</summary>
+
+```
+AuthRedirect.tsx
+ChannelPageContent.tsx
+ChannelSidebar.tsx
+CreateChannelModal.tsx
+GuestChannelView.tsx
+GuestPromoBanner.tsx
+MembersSidebar.tsx
+MessageCard.tsx
+MessageInput.tsx
+MessageList.tsx
+SearchModal.tsx
+TopBar.tsx
+UserStatusBar.tsx
+VisibilityGuard.tsx
+VisibilityToggle.tsx
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Let me check for types related to messages (which might have pinning):
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/types**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/types
+
+```
+channel.ts
+index.ts
+message.ts
+server.ts
+user.ts
+```
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/types/message.ts**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/types/message.ts
+
+<details>
+<summary>55 lines</summary>
+
+```
+1. /**
+2.  * Type Definitions: Message
+3.  * Based on dev spec data schemas
+4.  */
+5. 
+6. export interface Reaction {
+7.   emoji: string;
+8.   count: number;
+9.   userIds: string[];
+10. }
+11. 
+12. export interface Message {
+13.   id: string;
+14.   channelId: string;
+15.   authorId: string;
+16.   author: Author;
+17.   content: string;
+18.   timestamp: Date | string;
+19.   attachments?: Attachment[];
+20.   editedAt?: Date | string;
+21.   reactions?: Reaction[];
+22. }
+23. 
+24. /**
+25.  * Author is the message-embedded snapshot of a user.
+26.  * Uses `avatarUrl` (full URL string) to match API response shape,
+27.  * while the User entity uses `avatar` for the same field.
+28.  * messageService maps User.avatar → Author.avatarUrl when constructing messages.
+29.  */
+30. export interface Author {
+31.   id: string;
+32.   username: string;
+33.   displayName?: string;
+34.   avatarUrl?: string;
+35. }
+36. 
+37. export interface Attachment {
+38.   id: string;
+39.   messageId: string;
+40.   url: string;
+41.   filename: string;
+42.   type: string;
+43.   size: number;
+44. }
+45. 
+46. export interface MessageDTO {
+47.   id: string;
+48.   channelId: string;
+49.   author: Author;
+50.   content: string;
+51.   timestamp: string;
+52.   attachments?: Attachment[];
+53.   editedAt?: string;
+54. }
+55.
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Let me check the MessageCard component since that's likely where message actions like pinning would be:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageCard.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/MessageCard.tsx
+
+<details>
+<summary>73 lines</summary>
+
+```
+1. /**
+2.  * Channel Component: MessageCard
+3.  * Displays individual message with author info and timestamp
+4.  * Based on dev spec C1.5 MessageCard
+5.  */
+6. 
+7. import Image from 'next/image';
+8. import { formatRelativeTime } from '@/lib/utils';
+9. import { Card, CardContent } from '@/components/ui/Card';
+10. 
+11. interface MessageCardProps {
+12.   author: {
+13.     id: string;
+14.     username: string;
+15.     avatarUrl?: string;
+16.   };
+17.   content: string;
+18.   timestamp: Date | string;
+19.   attachments?: Array<{
+20.     id: string;
+21.     url: string;
+22.     type: string;
+23.   }>;
+24. }
+25. 
+26. export function MessageCard({ author, content, timestamp, attachments = [] }: MessageCardProps) {
+27.   return (
+28.     <Card className='mb-4'>
+29.       <CardContent className='p-4'>
+30.         <div className='flex items-start gap-3'>
+31.           {/* Avatar */}
+32.           <div className='flex-shrink-0'>
+33.             {author.avatarUrl ? (
+34.               <Image
+35.                 src={author.avatarUrl}
+36.                 alt={author.username}
+37.                 width={40}
+38.                 height={40}
+39.                 unoptimized
+40.                 className='h-10 w-10 rounded-full'
+41.               />
+42.             ) : (
+43.               <div className='flex h-10 w-10 items-center justify-center rounded-full bg-gray-300'>
+44.                 {author.username.charAt(0).toUpperCase()}
+45.               </div>
+46.             )}
+47.           </div>
+48. 
+49.           {/* Message content */}
+50.           <div className='flex-1'>
+51.             <div className='flex items-baseline gap-2'>
+52.               <span className='font-semibold text-gray-900'>{author.username}</span>
+53.               <span className='text-xs text-gray-500'>{formatRelativeTime(timestamp)}</span>
+54.             </div>
+55.             <p className='mt-1 text-gray-700'>{content}</p>
+56. 
+57.             {/* Attachments */}
+58.             {attachments.length > 0 && (
+59.               <div className='mt-2 space-y-2'>
+60.                 {attachments.map(attachment => (
+61.                   <div key={attachment.id} className='text-sm text-blue-600'>
+62.                     📎 {attachment.url}
+63.                   </div>
+64.                 ))}
+65.               </div>
+66.             )}
+67.           </div>
+68.         </div>
+69.       </CardContent>
+70.     </Card>
+71.   );
+72. }
+73.
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Perfect! Let me check the CreateChannelModal to see how voice channels are handled during creation:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx (lines 1-150)
+
+<details>
+<summary>150 lines</summary>
+
+```
+1. /**
+2.  * Channel Component: CreateChannelModal (Issue #44)
+3.  * Modal form for creating a new channel within a server.
+4.  * Triggered by the "+" icon next to category headers in ChannelSidebar (admins only).
+5.  */
+6. 
+7. 'use client';
+8. 
+9. import { useState, useRef, useEffect, useId } from 'react';
+10. import { cn } from '@/lib/utils';
+11. import { useToast } from '@/hooks/useToast';
+12. import { ChannelType, ChannelVisibility, type Channel } from '@/types';
+13. import { createChannelAction } from '@/app/actions/createChannel';
+14. 
+15. // ─── Name normalisation ───────────────────────────────────────────────────────
+16. 
+17. /** Converts user-typed text into a valid channel slug. */
+18. function toSlug(raw: string): string {
+19.   return raw
+20.     .toLowerCase()
+21.     .replace(/\s+/g, '-')        // spaces → hyphens
+22.     .replace(/[^a-z0-9-]/g, '')  // strip non-slug chars
+23.     .replace(/^-+|-+$/g, '')     // strip leading/trailing hyphens
+24.     .slice(0, 80);
+25. }
+26. 
+27. function validateSlug(slug: string, existingSlugs: string[]): string | null {
+28.   if (!slug) return 'Channel name is required.';
+29.   if (existingSlugs.includes(slug)) return 'A channel with this name already exists.';
+30.   return null;
+31. }
+32. 
+33. // ─── Inline icons ─────────────────────────────────────────────────────────────
+34. 
+35. function HashIcon() {
+36.   return (
+37.     <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' focusable='false'>
+38.       <path d='M5.88657 21C5.57547 21 5.3399 20.7189 5.39427 20.4126L6.00001 17H2.59511C2.28449 17 2.04905 16.7198 2.10259 16.4138L2.27759 15.4138C2.31946 15.1746 2.52722 15 2.77011 15H6.35001L7.41001 9H4.00511C3.69449 9 3.45905 8.71977 3.51259 8.41381L3.68759 7.41381C3.72946 7.17456 3.93722 7 4.18011 7H7.76001L8.39677 3.41262C8.43914 3.17391 8.64664 3 8.88907 3H9.87344C10.1845 3 10.4201 3.28107 10.3657 3.58738L9.76001 7H15.76L16.3968 3.41262C16.4391 3.17391 16.6466 3 16.8891 3H17.8734C18.1845 3 18.4201 3.28107 18.3657 3.58738L17.76 7H21.1649C21.4755 7 21.711 7.28023 21.6574 7.58619L21.4824 8.58619C21.4406 8.82544 21.2328 9 20.9899 9H17.41L16.35 15H19.7549C20.0655 15 20.301 15.2802 20.2474 15.5862L20.0724 16.5862C20.0306 16.8254 19.8228 17 19.5799 17H16L15.3632 20.5874C15.3209 20.8261 15.1134 21 14.871 21H13.8866C13.5755 21 13.3399 20.7189 13.3943 20.4126L14 17H8.00001L7.36325 20.5874C7.32088 20.8261 7.11337 21 6.87094 21H5.88657ZM9.41001 9L8.35001 15H14.35L15.41 9H9.41001Z' />
+39.     </svg>
+40.   );
+41. }
+42. 
+43. function SpeakerIcon() {
+44.   return (
+45.     <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' focusable='false'>
+46.       <path d='M11.383 3.07904C11.009 2.92504 10.579 3.01004 10.293 3.29904L6 8.00204H3C2.45 8.00204 2 8.45204 2 9.00204V15.002C2 15.552 2.45 16.002 3 16.002H6L10.293 20.707C10.579 20.996 11.009 21.082 11.383 20.927C11.757 20.772 12 20.407 12 20.002V4.00204C12 3.59704 11.757 3.23204 11.383 3.07904ZM14 5.00004V7.00004C16.757 7.00004 19 9.24304 19 12C19 14.757 16.757 17 14 17V19C17.86 19 21 15.86 21 12C21 8.14004 17.86 5.00004 14 5.00004ZM14 9.00004V11C14.552 11 15 11.45 15 12C15 12.55 14.552 13 14 13V15C15.654 15 17 13.654 17 12C17 10.346 15.654 9.00004 14 9.00004Z' />
+47.     </svg>
+48.   );
+49. }
+50. 
+51. function GlobeIcon() {
+52.   return (
+53.     <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round' aria-hidden='true' focusable='false'>
+54.       <circle cx='12' cy='12' r='10' />
+55.       <path d='M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' />
+56.     </svg>
+57.   );
+58. }
+59. 
+60. function EyeIcon() {
+61.   return (
+62.     <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round' aria-hidden='true' focusable='false'>
+63.       <path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z' />
+64.       <circle cx='12' cy='12' r='3' />
+65.     </svg>
+66.   );
+67. }
+68. 
+69. function LockIcon() {
+70.   return (
+71.     <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round' aria-hidden='true' focusable='false'>
+72.       <rect x='3' y='11' width='18' height='11' rx='2' ry='2' />
+73.       <path d='M7 11V7a5 5 0 0 1 10 0v4' />
+74.     </svg>
+75.   );
+76. }
+77. 
+78. function CheckIcon() {
+79.   return (
+80.     <svg className='h-4 w-4 shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} strokeLinecap='round' strokeLinejoin='round' aria-hidden='true' focusable='false'>
+81.       <path d='M20 6 9 17l-5-5' />
+82.     </svg>
+83.   );
+84. }
+85. 
+86. function SpinnerIcon() {
+87.   return (
+88.     <svg className='h-4 w-4 animate-spin shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true' focusable='false'>
+89.       <path d='M21 12a9 9 0 1 1-6.219-8.56' />
+90.     </svg>
+91.   );
+92. }
+93. 
+94. // ─── Visibility options (mirrors VisibilityToggle.tsx) ────────────────────────
+95. 
+96. const VISIBILITY_OPTIONS = [
+97.   {
+98.     value: ChannelVisibility.PRIVATE,
+99.     label: 'Private',
+100.     description: 'Only server members can access this channel.',
+101.     icon: <LockIcon />,
+102.   },
+103.   {
+104.     value: ChannelVisibility.PUBLIC_NO_INDEX,
+105.     label: 'Public (Not Indexed)',
+106.     description: 'Anyone with the link can view; not indexed by search engines.',
+107.     icon: <EyeIcon />,
+108.   },
+109.   {
+110.     value: ChannelVisibility.PUBLIC_INDEXABLE,
+111.     label: 'Public (Search Indexed)',
+112.     description: 'Visible to search engines and anyone with the link.',
+113.     icon: <GlobeIcon />,
+114.   },
+115. ] as const;
+116. 
+117. // ─── Channel type options ─────────────────────────────────────────────────────
+118. 
+119. const TYPE_OPTIONS = [
+120.   { value: ChannelType.TEXT, label: 'Text', icon: <HashIcon /> },
+121.   { value: ChannelType.VOICE, label: 'Voice', icon: <SpeakerIcon /> },
+122. ] as const;
+123. 
+124. // ─── Props ────────────────────────────────────────────────────────────────────
+125. 
+126. export interface CreateChannelModalProps {
+127.   serverId: string;
+128.   /** Channels already in this server — used for duplicate-slug detection. */
+129.   existingChannels: Channel[];
+130.   /** Pre-select a channel type when opening from a specific category header. */
+131.   defaultType?: ChannelType;
+132.   onCreated: (channel: Channel) => void;
+133.   onClose: () => void;
+134. }
+135. 
+136. // ─── Component ────────────────────────────────────────────────────────────────
+137. 
+138. export function CreateChannelModal({
+139.   serverId,
+140.   existingChannels,
+141.   defaultType = ChannelType.TEXT,
+142.   onCreated,
+143.   onClose,
+144. }: CreateChannelModalProps) {
+145.   const titleId = useId();
+146.   const containerRef = useRef<HTMLDivElement>(null);
+147.   const nameInputRef = useRef<HTMLInputElement>(null);
+148. 
+149.   const [rawName, setRawName] = useState('');
+150.   const [type, setType] = useState<ChannelType>(defaultType);
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me check the rest of the CreateChannelModal and see how voice channels are listed in the sidebar:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx (lines 150-350)
+
+<details>
+<summary>201 lines</summary>
+
+```
+150.   const [type, setType] = useState<ChannelType>(defaultType);
+151.   const [visibility, setVisibility] = useState<ChannelVisibility>(ChannelVisibility.PRIVATE);
+152.   const [topic, setTopic] = useState('');
+153.   const [isLoading, setIsLoading] = useState(false);
+154.   const [error, setError] = useState<string | null>(null);
+155. 
+156.   const { showToast } = useToast();
+157. 
+158.   const slug = toSlug(rawName);
+159.   const existingSlugs = existingChannels
+160.     .filter(c => c.serverId === serverId)
+161.     .map(c => c.slug);
+162. 
+163.   // Auto-focus name input on open.
+164.   useEffect(() => {
+165.     nameInputRef.current?.focus();
+166.   }, []);
+167. 
+168.   // Focus trap + Escape-to-close.
+169.   useEffect(() => {
+170.     function handleKeyDown(e: KeyboardEvent) {
+171.       if (e.key === 'Escape') {
+172.         onClose();
+173.         return;
+174.       }
+175.       if (e.key !== 'Tab') return;
+176.       const container = containerRef.current;
+177.       if (!container) return;
+178.       const focusable = Array.from(
+179.         container.querySelectorAll<HTMLElement>(
+180.           'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+181.         ),
+182.       );
+183.       if (focusable.length === 0) return;
+184.       const first = focusable[0];
+185.       const last = focusable[focusable.length - 1];
+186.       // Guard: if focus has left the browser window and returned (e.g. Alt+Tab),
+187.       // activeElement may be document.body — force focus back into the modal first.
+188.       if (!container.contains(document.activeElement)) {
+189.         e.preventDefault();
+190.         first.focus();
+191.         return;
+192.       }
+193.       if (e.shiftKey) {
+194.         if (document.activeElement === first) {
+195.           e.preventDefault();
+196.           last.focus();
+197.         }
+198.       } else {
+199.         if (document.activeElement === last) {
+200.           e.preventDefault();
+201.           first.focus();
+202.         }
+203.       }
+204.     }
+205.     document.addEventListener('keydown', handleKeyDown);
+206.     return () => document.removeEventListener('keydown', handleKeyDown);
+207.   }, [onClose]);
+208. 
+209.   async function handleSubmit(e: React.FormEvent) {
+210.     e.preventDefault();
+211.     const validationError = validateSlug(slug, existingSlugs);
+212.     if (validationError) {
+213.       setError(validationError);
+214.       return;
+215.     }
+216.     setError(null);
+217.     setIsLoading(true);
+218.     try {
+219.       const newChannel = await createChannelAction({
+220.         serverId,
+221.         slug,
+222.         type,
+223.         visibility,
+224.         topic: topic.trim() || undefined,
+225.       });
+226.       showToast({ message: `#${slug} created successfully.`, type: 'success' });
+227.       onCreated(newChannel);
+228.       onClose();
+229.     } catch (err) {
+230.       setError(err instanceof Error ? err.message : 'Failed to create channel.');
+231.     } finally {
+232.       setIsLoading(false);
+233.     }
+234.   }
+235. 
+236.   return (
+237.     <div
+238.       className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4'
+239.       onClick={e => {
+240.         if (e.target === e.currentTarget) onClose();
+241.       }}
+242.     >
+243.       <div
+244.         ref={containerRef}
+245.         role='dialog'
+246.         aria-modal='true'
+247.         aria-labelledby={titleId}
+248.         className='w-full max-w-md rounded-lg bg-[#36393f] shadow-xl'
+249.       >
+250.         {/* Header */}
+251.         <div className='flex items-center justify-between border-b border-black/20 px-6 py-4'>
+252.           <div>
+253.             <h2 id={titleId} className='text-lg font-semibold text-white'>
+254.               Create Channel
+255.             </h2>
+256.             <p className='mt-0.5 text-xs text-gray-400'>in this server</p>
+257.           </div>
+258.           <button
+259.             type='button'
+260.             onClick={onClose}
+261.             aria-label='Close dialog'
+262.             className='rounded p-1.5 text-gray-400 transition-colors hover:bg-[#40444b] hover:text-gray-200'
+263.           >
+264.             <svg className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round'>
+265.               <path d='M18 6 6 18M6 6l12 12' />
+266.             </svg>
+267.           </button>
+268.         </div>
+269. 
+270.         {/* Form */}
+271.         <form onSubmit={handleSubmit} className='space-y-5 p-6'>
+272. 
+273.           {/* Channel type */}
+274.           <div>
+275.             <p className='mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
+276.               Channel Type
+277.             </p>
+278.             <div className='flex gap-2' role='group' aria-label='Channel type'>
+279.               {TYPE_OPTIONS.map(opt => (
+280.                 <button
+281.                   key={opt.value}
+282.                   type='button'
+283.                   aria-pressed={type === opt.value}
+284.                   onClick={() => {
+285.                     setType(opt.value);
+286.                     // PUBLIC_INDEXABLE is unavailable for voice — reset to the nearest valid option.
+287.                     if (opt.value === ChannelType.VOICE && visibility === ChannelVisibility.PUBLIC_INDEXABLE) {
+288.                       setVisibility(ChannelVisibility.PUBLIC_NO_INDEX);
+289.                     }
+290.                   }}
+291.                   disabled={isLoading}
+292.                   className={cn(
+293.                     'flex flex-1 items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]',
+294.                     type === opt.value
+295.                       ? 'border-[#5865f2] bg-[#5865f2]/20 text-white'
+296.                       : 'border-[#40444b] bg-[#2f3136] text-gray-400 hover:border-[#5865f2]/50 hover:text-gray-200',
+297.                     isLoading && 'cursor-not-allowed opacity-50',
+298.                   )}
+299.                 >
+300.                   {opt.icon}
+301.                   {opt.label}
+302.                 </button>
+303.               ))}
+304.             </div>
+305.           </div>
+306. 
+307.           {/* Channel name */}
+308.           <div>
+309.             <label
+310.               htmlFor='ccm-name'
+311.               className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400'
+312.             >
+313.               Channel Name
+314.             </label>
+315.             {/* Prefix "#" is decorative — the real label is above */}
+316.             <div
+317.               className={cn(
+318.                 'flex items-center rounded-md bg-[#202225] px-3 py-2 ring-1 transition-all',
+319.                 error ? 'ring-red-500' : 'ring-[#40444b] focus-within:ring-[#5865f2]',
+320.               )}
+321.             >
+322.               <span className='mr-1.5 text-gray-400 select-none' aria-hidden='true'>#</span>
+323.               <input
+324.                 ref={nameInputRef}
+325.                 id='ccm-name'
+326.                 type='text'
+327.                 value={rawName}
+328.                 onChange={e => {
+329.                   setRawName(e.target.value);
+330.                   setError(null);
+331.                 }}
+332.                 placeholder='new-channel'
+333.                 maxLength={80}
+334.                 disabled={isLoading}
+335.                 autoComplete='off'
+336.                 className='flex-1 bg-transparent text-sm text-white placeholder-gray-500 focus:outline-none disabled:opacity-50'
+337.               />
+338.             </div>
+339. 
+340.             {/* Live slug preview */}
+341.             {slug && (
+342.               <p className='mt-1.5 text-xs text-gray-500'>
+343.                 Slug: <span className='text-gray-300'>#{slug}</span>
+344.               </p>
+345.             )}
+346. 
+347.             {/* Validation error */}
+348.             {error && (
+349.               <p role='alert' className='mt-1.5 text-xs text-red-400'>
+350.                 {error}
+```
+
+</details>
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx**
+
+"(?i)voice|VOICE" (/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx)
+
+<details>
+<summary>13 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx: * grouped into collapsible Text/Voice categories, with a user info bar at the bottom.
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:  if (type === ChannelType.VOICE) {
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:  const [voiceCollapsed, setVoiceCollapsed] = useState(false);
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:  const voiceChannels = channels.filter(
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:    c => c.type === ChannelType.VOICE && (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:          {voiceChannels.length > 0 && (
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                label='Voice Channels'
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                isCollapsed={voiceCollapsed}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                onToggle={() => setVoiceCollapsed(v => !v)}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                addLabel='Add voice channel'
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:              {!voiceCollapsed && (
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                  {voiceChannels.map(channel => (
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Excellent! Now let me check the ChannelSidebar more thoroughly to see the full voice channel implementation:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx (lines 1-100)
+
+<details>
+<summary>100 lines</summary>
+
+```
+1. /**
+2.  * Channel Component: ChannelSidebar
+3.  * Second column in the 3-column layout — lists channels for the selected server,
+4.  * grouped into collapsible Text/Voice categories, with a user info bar at the bottom.
+5.  * Ref: dev-spec-channel-visibility-toggle.md — M2, CL-C2
+6.  */
+7. 
+8. 'use client';
+9. 
+10. import { useState } from 'react';
+11. import Link from 'next/link';
+12. import { cn } from '@/lib/utils';
+13. import { UserStatusBar } from '@/components/channel/UserStatusBar';
+14. import { ChannelVisibility, ChannelType } from '@/types';
+15. import type { Server, Channel, User } from '@/types';
+16. 
+17. // ─── Colour tokens (Discord palette) ─────────────────────────────────────────
+18. 
+19. const BG_SIDEBAR = 'bg-[#2f3136]';
+20. const BG_ACTIVE = 'bg-[#3d4148]';
+21. 
+22. // ─── Gear icon ────────────────────────────────────────────────────────────────
+23. 
+24. function GearIcon({ className }: { className?: string }) {
+25.   return (
+26.     <svg
+27.       className={cn('h-4 w-4', className)}
+28.       viewBox='0 0 24 24'
+29.       fill='none'
+30.       stroke='currentColor'
+31.       strokeWidth={2}
+32.       aria-hidden='true'
+33.       focusable='false'
+34.     >
+35.       <path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' />
+36.       <circle cx='12' cy='12' r='3' />
+37.     </svg>
+38.   );
+39. }
+40. 
+41. // ─── Channel type icons ───────────────────────────────────────────────────────
+42. 
+43. function ChannelIcon({ type }: { type: ChannelType }) {
+44.   if (type === ChannelType.VOICE) {
+45.     return (
+46.       <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='currentColor'>
+47.         <path d='M11.383 3.07904C11.009 2.92504 10.579 3.01004 10.293 3.29904L6 8.00204H3C2.45 8.00204 2 8.45204 2 9.00204V15.002C2 15.552 2.45 16.002 3 16.002H6L10.293 20.707C10.579 20.996 11.009 21.082 11.383 20.927C11.757 20.772 12 20.407 12 20.002V4.00204C12 3.59704 11.757 3.23204 11.383 3.07904ZM14 5.00004V7.00004C16.757 7.00004 19 9.24304 19 12C19 14.757 16.757 17 14 17V19C17.86 19 21 15.86 21 12C21 8.14004 17.86 5.00004 14 5.00004ZM14 9.00004V11C14.552 11 15 11.45 15 12C15 12.55 14.552 13 14 13V15C15.654 15 17 13.654 17 12C17 10.346 15.654 9.00004 14 9.00004Z' />
+48.       </svg>
+49.     );
+50.   }
+51.   if (type === ChannelType.ANNOUNCEMENT) {
+52.     return (
+53.       <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='currentColor'>
+54.         <path d='M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z' />
+55.         <path d='M7 9H17V11H7V9ZM7 12H14V14H7V12ZM7 6H17V8H7V6Z' />
+56.       </svg>
+57.     );
+58.   }
+59.   // Default: text channel hash icon
+60.   return (
+61.     <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='currentColor'>
+62.       <path d='M5.88657 21C5.57547 21 5.3399 20.7189 5.39427 20.4126L6.00001 17H2.59511C2.28449 17 2.04905 16.7198 2.10259 16.4138L2.27759 15.4138C2.31946 15.1746 2.52722 15 2.77011 15H6.35001L7.41001 9H4.00511C3.69449 9 3.45905 8.71977 3.51259 8.41381L3.68759 7.41381C3.72946 7.17456 3.93722 7 4.18011 7H7.76001L8.39677 3.41262C8.43914 3.17391 8.64664 3 8.88907 3H9.87344C10.1845 3 10.4201 3.28107 10.3657 3.58738L9.76001 7H15.76L16.3968 3.41262C16.4391 3.17391 16.6466 3 16.8891 3H17.8734C18.1845 3 18.4201 3.28107 18.3657 3.58738L17.76 7H21.1649C21.4755 7 21.711 7.28023 21.6574 7.58619L21.4824 8.58619C21.4406 8.82544 21.2328 9 20.9899 9H17.41L16.35 15H19.7549C20.0655 15 20.301 15.2802 20.2474 15.5862L20.0724 16.5862C20.0306 16.8254 19.8228 17 19.5799 17H16L15.3632 20.5874C15.3209 20.8261 15.1134 21 14.871 21H13.8866C13.5755 21 13.3399 20.7189 13.3943 20.4126L14 17H8.00001L7.36325 20.5874C7.32088 20.8261 7.11337 21 6.87094 21H5.88657ZM9.41001 9L8.35001 15H14.35L15.41 9H9.41001Z' />
+63.     </svg>
+64.   );
+65. }
+66. 
+67. // ─── Visibility badge ─────────────────────────────────────────────────────────
+68. 
+69. const VISIBILITY_BADGE: Record<ChannelVisibility, string | null> = {
+70.   [ChannelVisibility.PRIVATE]: '🔒',
+71.   [ChannelVisibility.PUBLIC_NO_INDEX]: '👁',
+72.   [ChannelVisibility.PUBLIC_INDEXABLE]: null,
+73. };
+74. 
+75. const VISIBILITY_LABEL: Record<ChannelVisibility, string> = {
+76.   [ChannelVisibility.PRIVATE]: 'Private channel',
+77.   [ChannelVisibility.PUBLIC_NO_INDEX]: 'Public channel, not indexed',
+78.   [ChannelVisibility.PUBLIC_INDEXABLE]: '',
+79. };
+80. 
+81. // ─── Collapsible category header ─────────────────────────────────────────────
+82. 
+83. function CategoryHeader({
+84.   label,
+85.   isCollapsed,
+86.   onToggle,
+87.   onAdd,
+88.   addLabel,
+89. }: {
+90.   label: string;
+91.   isCollapsed: boolean;
+92.   onToggle: () => void;
+93.   /** When provided, renders a "+" button visible on hover (admins only). */
+94.   onAdd?: () => void;
+95.   addLabel?: string;
+96. }) {
+97.   return (
+98.     <div className='group/cat mb-1 flex items-center'>
+99.       <button
+100.         onClick={onToggle}
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Perfect! Now let me create a comprehensive summary. Let me get more context on how pins are handled by checking if there are any pin-related features:
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelPageContent.tsx**
+
+"pin|onPin" (/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelPageContent.tsx)
+
+```
+No matches found.
+```
+
+
+### 💬 Copilot
+
+Let me check the main channel page structure:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelPageContent.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelPageContent.tsx (lines 1-80)
+
+<details>
+<summary>59 lines</summary>
+
+```
+1. import { notFound } from 'next/navigation';
+2. import { getServers, getServerMembers } from '@/services/serverService';
+3. import { getChannels } from '@/services/channelService';
+4. import { getMessages } from '@/services/messageService';
+5. import { HarmonyShell } from '@/components/layout/HarmonyShell';
+6. import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
+7. 
+8. interface ChannelPageContentProps {
+9.   serverSlug: string;
+10.   channelSlug: string;
+11.   /** When true, uses the /c basePath so sidebar links stay on the guest route. */
+12.   isGuestView?: boolean;
+13. }
+14. 
+15. export async function ChannelPageContent({
+16.   serverSlug,
+17.   channelSlug,
+18.   isGuestView = false,
+19. }: ChannelPageContentProps) {
+20.   const servers = await getServers();
+21.   const server = servers.find(s => s.slug === serverSlug);
+22.   if (!server) notFound();
+23. 
+24.   const serverChannels = await getChannels(server.id);
+25.   const channel = serverChannels.find(c => c.slug === channelSlug);
+26.   if (!channel) notFound();
+27. 
+28.   // Gather all channels across servers for cross-server navigation
+29.   const allChannels = (
+30.     await Promise.all(
+31.       servers.map(s => (s.id === server.id ? Promise.resolve(serverChannels) : getChannels(s.id))),
+32.     )
+33.   ).flat();
+34. 
+35.   // Service returns newest-first; reverse for chronological display
+36.   const { messages } = await getMessages(channel.id);
+37.   const sortedMessages = [...messages].reverse();
+38. 
+39.   const members = await getServerMembers(server.id);
+40. 
+41.   const shell = (
+42.     <HarmonyShell
+43.       servers={servers}
+44.       currentServer={server}
+45.       channels={serverChannels}
+46.       allChannels={allChannels}
+47.       currentChannel={channel}
+48.       messages={sortedMessages}
+49.       members={members}
+50.       basePath={isGuestView ? '/c' : '/channels'}
+51.     />
+52.   );
+53. 
+54.   return (
+55.     <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+56.       {shell}
+57.     </VisibilityGuard>
+58.   );
+59. }
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me compile the findings. Let me do one final check on the types to see if there's a pinned message structure:
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/types**
+
+"pin" (/Users/allen/repos/Harmony/harmony-frontend/src/types)
+
+```
+No matches found.
+```
+
+
+### 💬 Copilot
+
+Perfect! Now I have all the information needed. Let me compile the comprehensive summary:
+
+## Summary: Voice Channels & Message Pinning in Harmony Frontend
+
+### **1. VOICE CHANNELS** ✅
+
+#### **Type Definition**
+- **File:** `/Users/allen/repos/Harmony/harmony-frontend/src/types/channel.ts`
+- **Lines:** 6-10
+```typescript
+export enum ChannelType {
+  TEXT = 'TEXT',
+  VOICE = 'VOICE',
+  ANNOUNCEMENT = 'ANNOUNCEMENT',
+}
+```
+
+#### **Mock Data Examples**
+- **File:** `/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts`
+- 3 voice channels across servers:
+  - `voice-general` (channel-006) - Harmony HQ - PUBLIC_NO_INDEX
+  - `voice-standup` (channel-106) - Open Source Hub - PUBLIC_NO_INDEX
+  - `voice-critique` (channel-206) - Design Lab - PRIVATE
+
+#### **UI Components**
+
+1. **TopBar Pin Icon Button** - `/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx` (lines 50-63)
+   - Pin SVG icon for "Pinned messages" action
+   - Callback: `onPinsOpen` (line 165)
+
+2. **ChannelSidebar Voice Section** - `/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx`
+   - Voice channel filtering & grouping (lines 44-50)
+   - Collapsible "Voice Channels" category header
+   - Voice channel icon with speaker symbol (lines 43-49)
+   - Admin "Add voice channel" button support
+   - Voice channels **cannot** have `PUBLIC_INDEXABLE` visibility
+
+3. **CreateChannelModal** - `/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx`
+   - Channel type selector with Voice option (lines 119-122)
+   - SpeakerIcon component (lines 43-49)
+   - Validation: automatically resets PUBLIC_INDEXABLE to PUBLIC_NO_INDEX when creating VOICE channels (lines 286-289)
+
+#### **Visibility Restrictions**
+Voice channels support:
+- ✅ PRIVATE
+- ✅ PUBLIC_NO_INDEX
+- ❌ PUBLIC_INDEXABLE (blocked in CreateChannelModal)
+
+---
+
+### **2. MESSAGE PINNING** 🔍
+
+#### **UI Element Exists**
+- **PinIcon Component** - `/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx` (lines 50-63)
+  ```tsx
+  function PinIcon({ className }: { className?: string }) {
+    return (
+      \<svg className={cn('h-5 w-5', className)} viewBox='0 0 24 24' ...\>
+        \<path d='M12 17v5' /\>
+        \<path d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24...' /\>
+      \</svg\>
+    );
+  }
+  ```
+
+#### **Callback Handler**
+- **TopBar Props** - Line 164-165:
+  ```typescript
+  /** Callback fired when the pinned messages icon is clicked */
+  onPinsOpen?: () =\> void;
+  ```
+
+#### **Current Status**
+- ⚠️ **No Data Type/Implementation Yet**
+  - `Message` type (`/Users/allen/repos/Harmony/harmony-frontend/src/types/message.ts`) has NO `pinned` or `isPinned` field
+  - No `PinnedMessages` modal component found
+  - No pin action in `MessageCard` component
+  - Mock data mentions pinning concept but no actual implementation
+
+#### **Mock Data Reference**
+- **File:** `/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts`
+- Contextual mention only:
+  \> "Reminder: add your projects to the pinned list at the top of this channel so newcomers can find them easily!"
+- Also mentions pin icon export: "Exporting SVG icons for the TopBar: hash, search, **pin**, members, gear, hamburger"
+
+---
+
+### **Quick Comparison Table**
+
+| Feature | Status | Files |
+|---------|--------|-------|
+| **Voice Channels - Type** | ✅ Implemented | `types/channel.ts` |
+| **Voice Channels - UI** | ✅ Implemented | `ChannelSidebar.tsx`, `CreateChannelModal.tsx` |
+| **Voice Channels - Mock Data** | ✅ Implemented | `mocks/channels.ts` |
+| **Pin Icon** | ✅ Implemented | `TopBar.tsx` |
+| **Pin Callback Handler** | ✅ Implemented | `TopBar.tsx` |
+| **Pinned Messages Data Type** | ❌ Missing | - |
+| **Pinned Messages UI/Modal** | ❌ Missing | - |
+| **Message Pin/Unpin Actions** | ❌ Missing | - |
+
+
+---
+
+<sub>⏱️ 2906m 28s</sub>
+
+### 💬 Copilot
+
+Here's what exists:
+
+**Voice Channels** — Fully represented in the UI. `ChannelType.VOICE` enum, sidebar grouping with speaker icon, create modal with voice option, visibility restriction (VOICE can't be `PUBLIC_INDEXABLE`). But there's no actual audio/WebRTC — it's just a channel category.
+
+**Message Pinning** — Minimal. Just a pin icon in TopBar with an `onPinsOpen` callback. No `pinned` field on the Message type, no pin modal, no pin/unpin actions.
+
+**My recommendation — fold them into existing issues rather than creating new ones:**
+
+1. **Voice channels → already covered by #7 (Channel Service)** — the backend just needs to store the `ChannelType` enum (TEXT/VOICE/ANNOUNCEMENT) and enforce the visibility restriction (VOICE can't be PUBLIC_INDEXABLE). No real-time audio needed this sprint — that's a future feature.
+
+2. **Message pinning → add to #8 (Message Service)** — add a `pinned` boolean to the Message schema, plus `pinMessage`/`unpinMessage` tRPC endpoints and a `getPinnedMessages(channelId)` query. This is a small addition.
+
+Want me to update #7 and #8 descriptions in the plan to explicitly call out voice channel support and message pinning?
+
+---
+
+<sub>⏱️ 2909m 7s</sub>
+
+### 👤 User
+
+How would the sprint plan update to also include real time audio (perhaps using twilio as we have experience in an app using it before)
+
+---
+
+<sub>⏱️ 2909m 28s</sub>
+
+### 📦 task (Completed)
+
+### ✅ `glob`
+
+****/*ChannelSidebar***
+
+"**/*ChannelSidebar*"
+
+```
+./harmony-frontend/src/components/channel/ChannelSidebar.tsx
+```
+
+
+### ✅ `glob`
+
+****/*TopBar***
+
+"**/*TopBar*"
+
+```
+./harmony-frontend/src/components/channel/TopBar.tsx
+```
+
+
+### ✅ `glob`
+
+****/*Voice***
+
+"**/*Voice*"
+
+```
+No files matched the pattern.
+```
+
+
+### ✅ `glob`
+
+****/*voice***
+
+"**/*voice*"
+
+```
+No files matched the pattern.
+```
+
+
+### ❌ `grep`
+
+**voice.*channel|voiceChannel**
+
+"voice.*channel|voiceChannel" in tsx files
+
+```
+rg: unrecognized file type: tsx
+```
+
+
+### 💬 Copilot
+
+Now let me read those key files and search for voice-related code:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx
+
+<details>
+<summary>320 lines</summary>
+
+```
+1. /**
+2.  * Channel Component: ChannelSidebar
+3.  * Second column in the 3-column layout — lists channels for the selected server,
+4.  * grouped into collapsible Text/Voice categories, with a user info bar at the bottom.
+5.  * Ref: dev-spec-channel-visibility-toggle.md — M2, CL-C2
+6.  */
+7. 
+8. 'use client';
+9. 
+10. import { useState } from 'react';
+11. import Link from 'next/link';
+12. import { cn } from '@/lib/utils';
+13. import { UserStatusBar } from '@/components/channel/UserStatusBar';
+14. import { ChannelVisibility, ChannelType } from '@/types';
+15. import type { Server, Channel, User } from '@/types';
+16. 
+17. // ─── Colour tokens (Discord palette) ─────────────────────────────────────────
+18. 
+19. const BG_SIDEBAR = 'bg-[#2f3136]';
+20. const BG_ACTIVE = 'bg-[#3d4148]';
+21. 
+22. // ─── Gear icon ────────────────────────────────────────────────────────────────
+23. 
+24. function GearIcon({ className }: { className?: string }) {
+25.   return (
+26.     <svg
+27.       className={cn('h-4 w-4', className)}
+28.       viewBox='0 0 24 24'
+29.       fill='none'
+30.       stroke='currentColor'
+31.       strokeWidth={2}
+32.       aria-hidden='true'
+33.       focusable='false'
+34.     >
+35.       <path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' />
+36.       <circle cx='12' cy='12' r='3' />
+37.     </svg>
+38.   );
+39. }
+40. 
+41. // ─── Channel type icons ───────────────────────────────────────────────────────
+42. 
+43. function ChannelIcon({ type }: { type: ChannelType }) {
+44.   if (type === ChannelType.VOICE) {
+45.     return (
+46.       <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='currentColor'>
+47.         <path d='M11.383 3.07904C11.009 2.92504 10.579 3.01004 10.293 3.29904L6 8.00204H3C2.45 8.00204 2 8.45204 2 9.00204V15.002C2 15.552 2.45 16.002 3 16.002H6L10.293 20.707C10.579 20.996 11.009 21.082 11.383 20.927C11.757 20.772 12 20.407 12 20.002V4.00204C12 3.59704 11.757 3.23204 11.383 3.07904ZM14 5.00004V7.00004C16.757 7.00004 19 9.24304 19 12C19 14.757 16.757 17 14 17V19C17.86 19 21 15.86 21 12C21 8.14004 17.86 5.00004 14 5.00004ZM14 9.00004V11C14.552 11 15 11.45 15 12C15 12.55 14.552 13 14 13V15C15.654 15 17 13.654 17 12C17 10.346 15.654 9.00004 14 9.00004Z' />
+48.       </svg>
+49.     );
+50.   }
+51.   if (type === ChannelType.ANNOUNCEMENT) {
+52.     return (
+53.       <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='currentColor'>
+54.         <path d='M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z' />
+55.         <path d='M7 9H17V11H7V9ZM7 12H14V14H7V12ZM7 6H17V8H7V6Z' />
+56.       </svg>
+57.     );
+58.   }
+59.   // Default: text channel hash icon
+60.   return (
+61.     <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='currentColor'>
+62.       <path d='M5.88657 21C5.57547 21 5.3399 20.7189 5.39427 20.4126L6.00001 17H2.59511C2.28449 17 2.04905 16.7198 2.10259 16.4138L2.27759 15.4138C2.31946 15.1746 2.52722 15 2.77011 15H6.35001L7.41001 9H4.00511C3.69449 9 3.45905 8.71977 3.51259 8.41381L3.68759 7.41381C3.72946 7.17456 3.93722 7 4.18011 7H7.76001L8.39677 3.41262C8.43914 3.17391 8.64664 3 8.88907 3H9.87344C10.1845 3 10.4201 3.28107 10.3657 3.58738L9.76001 7H15.76L16.3968 3.41262C16.4391 3.17391 16.6466 3 16.8891 3H17.8734C18.1845 3 18.4201 3.28107 18.3657 3.58738L17.76 7H21.1649C21.4755 7 21.711 7.28023 21.6574 7.58619L21.4824 8.58619C21.4406 8.82544 21.2328 9 20.9899 9H17.41L16.35 15H19.7549C20.0655 15 20.301 15.2802 20.2474 15.5862L20.0724 16.5862C20.0306 16.8254 19.8228 17 19.5799 17H16L15.3632 20.5874C15.3209 20.8261 15.1134 21 14.871 21H13.8866C13.5755 21 13.3399 20.7189 13.3943 20.4126L14 17H8.00001L7.36325 20.5874C7.32088 20.8261 7.11337 21 6.87094 21H5.88657ZM9.41001 9L8.35001 15H14.35L15.41 9H9.41001Z' />
+63.     </svg>
+64.   );
+65. }
+66. 
+67. // ─── Visibility badge ─────────────────────────────────────────────────────────
+68. 
+69. const VISIBILITY_BADGE: Record<ChannelVisibility, string | null> = {
+70.   [ChannelVisibility.PRIVATE]: '🔒',
+71.   [ChannelVisibility.PUBLIC_NO_INDEX]: '👁',
+72.   [ChannelVisibility.PUBLIC_INDEXABLE]: null,
+73. };
+74. 
+75. const VISIBILITY_LABEL: Record<ChannelVisibility, string> = {
+76.   [ChannelVisibility.PRIVATE]: 'Private channel',
+77.   [ChannelVisibility.PUBLIC_NO_INDEX]: 'Public channel, not indexed',
+78.   [ChannelVisibility.PUBLIC_INDEXABLE]: '',
+79. };
+80. 
+81. // ─── Collapsible category header ─────────────────────────────────────────────
+82. 
+83. function CategoryHeader({
+84.   label,
+85.   isCollapsed,
+86.   onToggle,
+87.   onAdd,
+88.   addLabel,
+89. }: {
+90.   label: string;
+91.   isCollapsed: boolean;
+92.   onToggle: () => void;
+93.   /** When provided, renders a "+" button visible on hover (admins only). */
+94.   onAdd?: () => void;
+95.   addLabel?: string;
+96. }) {
+97.   return (
+98.     <div className='group/cat mb-1 flex items-center'>
+99.       <button
+100.         onClick={onToggle}
+101.         aria-expanded={!isCollapsed}
+102.         className='flex flex-1 items-center gap-0.5 rounded px-1 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400 hover:text-gray-200'
+103.       >
+104.         {/* Caret: points down when expanded, right when collapsed */}
+105.         <svg
+106.           className={cn(
+107.             'h-3 w-3 flex-shrink-0 transition-transform duration-150',
+108.             isCollapsed && '-rotate-90',
+109.           )}
+110.           viewBox='0 0 24 24'
+111.           fill='none'
+112.         >
+113.           <path
+114.             d='m6 9 6 6 6-6'
+115.             stroke='currentColor'
+116.             strokeWidth={2}
+117.             strokeLinecap='round'
+118.             strokeLinejoin='round'
+119.             fill='none'
+120.           />
+121.         </svg>
+122.         <span className='ml-0.5'>{label}</span>
+123.       </button>
+124. 
+125.       {/* Add channel "+" — only rendered for admins, visible on category hover */}
+126.       {onAdd && (
+127.         <button
+128.           type='button'
+129.           onClick={onAdd}
+130.           aria-label={addLabel ?? `Add channel`}
+131.           className='ml-auto rounded p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-gray-200 group-hover/cat:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865f2]'
+132.         >
+133.           <svg className='h-3.5 w-3.5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2.5} strokeLinecap='round' strokeLinejoin='round' aria-hidden='true' focusable='false'>
+134.             <path d='M12 5v14M5 12h14' />
+135.           </svg>
+136.         </button>
+137.       )}
+138.     </div>
+139.   );
+140. }
+141. 
+142. // ─── Component ────────────────────────────────────────────────────────────────
+143. 
+144. export interface ChannelSidebarProps {
+145.   server: Server;
+146.   channels: Channel[];
+147.   currentChannelId: string;
+148.   currentUser: User;
+149.   /** Controls mobile drawer visibility — desktop is always visible */
+150.   isOpen: boolean;
+151.   onClose: () => void;
+152.   isAuthenticated: boolean;
+153.   /** URL base path for channel links — defaults to "/c" */
+154.   basePath?: string;
+155.   /**
+156.    * Called when an admin clicks the "+" button next to a category header.
+157.    * Receives the default ChannelType for that category.
+158.    * Only shown when the current user is owner/admin.
+159.    */
+160.   onCreateChannel?: (defaultType: ChannelType) => void;
+161. }
+162. 
+163. export function ChannelSidebar({
+164.   server,
+165.   channels,
+166.   currentChannelId,
+167.   currentUser,
+168.   isOpen,
+169.   onClose,
+170.   isAuthenticated,
+171.   basePath = '/c',
+172.   onCreateChannel,
+173. }: ChannelSidebarProps) {
+174.   const [textCollapsed, setTextCollapsed] = useState(false);
+175.   const [voiceCollapsed, setVoiceCollapsed] = useState(false);
+176. 
+177.   const isAdmin =
+178.     isAuthenticated &&
+179.     (currentUser.role === 'owner' || currentUser.role === 'admin');
+180. 
+181.   const textChannels = channels.filter(
+182.     c =>
+183.       (c.type === ChannelType.TEXT || c.type === ChannelType.ANNOUNCEMENT) &&
+184.       (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
+185.   );
+186.   const voiceChannels = channels.filter(
+187.     c => c.type === ChannelType.VOICE && (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
+188.   );
+189. 
+190.   return (
+191.     <>
+192.       {/* Mobile backdrop */}
+193.       {isOpen && (
+194.         <div
+195.           className='fixed inset-0 z-20 bg-black/40 sm:hidden'
+196.           onClick={onClose}
+197.           aria-hidden='true'
+198.         />
+199.       )}
+200. 
+201.       <nav
+202.         aria-label='Channels'
+203.         className={cn(
+204.           'flex w-60 flex-shrink-0 flex-col overflow-hidden',
+205.           BG_SIDEBAR,
+206.           // Desktop: always visible in layout flow
+207.           // Mobile: hidden by default, fixed overlay from left when open
+208.           'hidden sm:flex',
+209.           isOpen && 'fixed inset-y-0 left-[72px] z-30 flex sm:static sm:z-auto',
+210.         )}
+211.       >
+212.         {/* Server name header */}
+213.         <div className='flex h-12 flex-shrink-0 items-center border-b border-black/20 px-4 font-semibold text-white shadow-sm'>
+214.           <span className='truncate'>{server.name}</span>
+215.           {currentUser.role === 'owner' || currentUser.role === 'admin' ? (
+216.             <Link
+217.               href={`/settings/${server.slug}`}
+218.               title='Server settings'
+219.               aria-label='Server settings'
+220.               className='ml-auto flex-shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
+221.             >
+222.               <GearIcon />
+223.             </Link>
+224.           ) : (
+225.             <svg
+226.               className='ml-auto h-4 w-4 flex-shrink-0 text-gray-400'
+227.               viewBox='0 0 24 24'
+228.               fill='none'
+229.               stroke='currentColor'
+230.               strokeWidth={2}
+231.               aria-hidden='true'
+232.               focusable='false'
+233.             >
+234.               <path d='m6 9 6 6 6-6' />
+235.             </svg>
+236.           )}
+237.         </div>
+238. 
+239.         {/* Channel list */}
+240.         <div className='flex-1 overflow-y-auto px-2 py-2'>
+241.           {textChannels.length > 0 && (
+242.             <div className='mb-2'>
+243.               <CategoryHeader
+244.                 label='Text Channels'
+245.                 isCollapsed={textCollapsed}
+246.                 onToggle={() => setTextCollapsed(v => !v)}
+247.                 onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.TEXT) : undefined}
+248.                 addLabel='Add text channel'
+249.               />
+250.               {!textCollapsed && (
+251.                 <ul className='list-none'>
+252.                   {textChannels.map(channel => {
+253.                     const isActive = channel.id === currentChannelId;
+254.                     const badge = VISIBILITY_BADGE[channel.visibility];
+255.                     return (
+256.                       <li key={channel.id}>
+257.                         <Link
+258.                           href={`${basePath}/${server.slug}/${channel.slug}`}
+259.                           aria-current={isActive ? 'page' : undefined}
+260.                           className={cn(
+261.                             'group flex items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors',
+262.                             isActive
+263.                               ? cn(BG_ACTIVE, 'text-white')
+264.                               : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
+265.                           )}
+266.                         >
+267.                           <ChannelIcon type={channel.type} />
+268.                           <span className='flex-1 truncate'>{channel.name}</span>
+269.                           {badge && (
+270.                             <span
+271.                               className='text-xs opacity-60'
+272.                               role='img'
+273.                               aria-label={VISIBILITY_LABEL[channel.visibility]}
+274.                             >
+275.                               {badge}
+276.                             </span>
+277.                           )}
+278.                         </Link>
+279.                       </li>
+280.                     );
+281.                   })}
+282.                 </ul>
+283.               )}
+284.             </div>
+285.           )}
+286. 
+287.           {voiceChannels.length > 0 && (
+288.             <div className='mb-2'>
+289.               <CategoryHeader
+290.                 label='Voice Channels'
+291.                 isCollapsed={voiceCollapsed}
+292.                 onToggle={() => setVoiceCollapsed(v => !v)}
+293.                 onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined}
+294.                 addLabel='Add voice channel'
+295.               />
+296.               {!voiceCollapsed && (
+297.                 <ul className='list-none'>
+298.                   {voiceChannels.map(channel => (
+299.                     <li key={channel.id}>
+300.                       <div
+301.                         className='flex cursor-default items-center gap-1.5 rounded px-2 py-1 text-sm text-gray-400 opacity-60'
+302.                       >
+303.                         <ChannelIcon type={channel.type} />
+304.                         <span className='truncate'>{channel.name}</span>
+305.                       </div>
+306.                     </li>
+307.                   ))}
+308.                 </ul>
+309.               )}
+310.             </div>
+311.           )}
+312.         </div>
+313. 
+314.         {/* User status bar */}
+315.         <UserStatusBar currentUser={currentUser} isAuthenticated={isAuthenticated} />
+316.       </nav>
+317.     </>
+318.   );
+319. }
+320.
+```
+
+</details>
+
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/TopBar.tsx
+
+<details>
+<summary>246 lines</summary>
+
+```
+1. /**
+2.  * Channel Component: TopBar
+3.  * Full-width navigation bar displayed above the message area.
+4.  * Shows channel name/topic on the left and action icons on the right.
+5.  * Ref: dev-spec-channel-visibility-toggle.md — C1.3 TopBar
+6.  */
+7. 
+8. 'use client';
+9. 
+10. import Link from 'next/link';
+11. import { cn } from '@/lib/utils';
+12. import { truncate } from '@/lib/utils';
+13. import type { Channel } from '@/types';
+14. import type { UserRole } from '@/types';
+15. 
+16. // ─── Icons (inline SVG to avoid extra dependencies) ──────────────────────────
+17. 
+18. function HashIcon({ className }: { className?: string }) {
+19.   return (
+20.     <svg
+21.       className={cn('h-5 w-5', className)}
+22.       viewBox='0 0 24 24'
+23.       fill='none'
+24.       stroke='currentColor'
+25.       strokeWidth={2}
+26.     >
+27.       <line x1='4' y1='9' x2='20' y2='9' />
+28.       <line x1='4' y1='15' x2='20' y2='15' />
+29.       <line x1='10' y1='3' x2='8' y2='21' />
+30.       <line x1='16' y1='3' x2='14' y2='21' />
+31.     </svg>
+32.   );
+33. }
+34. 
+35. function SearchIcon({ className }: { className?: string }) {
+36.   return (
+37.     <svg
+38.       className={cn('h-5 w-5', className)}
+39.       viewBox='0 0 24 24'
+40.       fill='none'
+41.       stroke='currentColor'
+42.       strokeWidth={2}
+43.     >
+44.       <circle cx='11' cy='11' r='8' />
+45.       <path d='m21 21-4.35-4.35' />
+46.     </svg>
+47.   );
+48. }
+49. 
+50. function PinIcon({ className }: { className?: string }) {
+51.   return (
+52.     <svg
+53.       className={cn('h-5 w-5', className)}
+54.       viewBox='0 0 24 24'
+55.       fill='none'
+56.       stroke='currentColor'
+57.       strokeWidth={2}
+58.     >
+59.       <path d='M12 17v5' />
+60.       <path d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z' />
+61.     </svg>
+62.   );
+63. }
+64. 
+65. function MembersIcon({ className }: { className?: string }) {
+66.   return (
+67.     <svg
+68.       className={cn('h-5 w-5', className)}
+69.       viewBox='0 0 24 24'
+70.       fill='none'
+71.       stroke='currentColor'
+72.       strokeWidth={2}
+73.     >
+74.       <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
+75.       <circle cx='9' cy='7' r='4' />
+76.       <path d='M22 21v-2a4 4 0 0 0-3-3.87' />
+77.       <path d='M16 3.13a4 4 0 0 1 0 7.75' />
+78.     </svg>
+79.   );
+80. }
+81. 
+82. function GearIcon({ className }: { className?: string }) {
+83.   return (
+84.     <svg
+85.       className={cn('h-5 w-5', className)}
+86.       viewBox='0 0 24 24'
+87.       fill='none'
+88.       stroke='currentColor'
+89.       strokeWidth={2}
+90.     >
+91.       <path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' />
+92.       <circle cx='12' cy='12' r='3' />
+93.     </svg>
+94.   );
+95. }
+96. 
+97. function MenuIcon({ className }: { className?: string }) {
+98.   return (
+99.     <svg
+100.       className={cn('h-5 w-5', className)}
+101.       viewBox='0 0 24 24'
+102.       fill='none'
+103.       stroke='currentColor'
+104.       strokeWidth={2}
+105.     >
+106.       <line x1='4' y1='6' x2='20' y2='6' />
+107.       <line x1='4' y1='12' x2='20' y2='12' />
+108.       <line x1='4' y1='18' x2='20' y2='18' />
+109.     </svg>
+110.   );
+111. }
+112. 
+113. // ─── Icon button helper ───────────────────────────────────────────────────────
+114. 
+115. function IconButton({
+116.   onClick,
+117.   title,
+118.   active,
+119.   ariaPressed,
+120.   children,
+121. }: {
+122.   onClick?: () => void;
+123.   title: string;
+124.   active?: boolean;
+125.   /** Set for toggle buttons so screen readers announce pressed state */
+126.   ariaPressed?: boolean;
+127.   children: React.ReactNode;
+128. }) {
+129.   return (
+130.     <button
+131.       onClick={onClick}
+132.       title={title}
+133.       aria-label={title}
+134.       aria-pressed={ariaPressed}
+135.       className={cn(
+136.         'rounded p-1.5 transition-colors',
+137.         active ? 'text-white bg-white/10' : 'text-gray-400 hover:bg-white/10 hover:text-gray-200',
+138.       )}
+139.     >
+140.       {children}
+141.     </button>
+142.   );
+143. }
+144. 
+145. // ─── Component ────────────────────────────────────────────────────────────────
+146. 
+147. export interface TopBarProps {
+148.   /** The channel currently being viewed */
+149.   channel: Pick<Channel, 'name' | 'topic' | 'slug'>;
+150.   /** The server slug, used to build the settings link */
+151.   serverSlug: string;
+152.   /** Role of the current user — determines if the settings gear is shown */
+153.   userRole?: UserRole;
+154.   /** Whether the members sidebar is currently open */
+155.   isMembersOpen?: boolean;
+156.   /** Callback to toggle the members sidebar */
+157.   onMembersToggle?: () => void;
+158.   /** Whether the channel sidebar drawer is currently open (mobile) */
+159.   isMenuOpen?: boolean;
+160.   /** Callback to toggle the channel sidebar drawer (mobile) */
+161.   onMenuToggle?: () => void;
+162.   /** Callback fired when the search icon is clicked */
+163.   onSearchOpen?: () => void;
+164.   /** Callback fired when the pinned messages icon is clicked */
+165.   onPinsOpen?: () => void;
+166. }
+167. 
+168. export function TopBar({
+169.   channel,
+170.   serverSlug,
+171.   userRole,
+172.   isMembersOpen,
+173.   onMembersToggle,
+174.   isMenuOpen,
+175.   onMenuToggle,
+176.   onSearchOpen,
+177.   onPinsOpen,
+178. }: TopBarProps) {
+179.   const isAdmin = userRole === 'owner' || userRole === 'admin';
+180.   const settingsHref = `/settings/${serverSlug}/${channel.slug}`;
+181. 
+182.   return (
+183.     <header className='flex h-12 items-center gap-2 border-b border-black/20 bg-[#36393f] px-4 shadow-sm'>
+184.       {/* ── Hamburger (mobile only) ── */}
+185.       <button
+186.         onClick={onMenuToggle}
+187.         aria-label='Open channel list'
+188.         aria-expanded={isMenuOpen ?? false}
+189.         className='rounded p-1.5 text-gray-400 hover:bg-white/10 hover:text-gray-200 sm:hidden'
+190.       >
+191.         <MenuIcon />
+192.       </button>
+193. 
+194.       {/* ── Left: channel identity ── */}
+195.       <div className='flex min-w-0 flex-1 items-center gap-2'>
+196.         <HashIcon className='flex-shrink-0 text-gray-400' />
+197.         <span className='truncate font-semibold text-white'>{channel.name}</span>
+198. 
+199.         {channel.topic && (
+200.           <>
+201.             <span className='hidden select-none text-gray-600 sm:inline'>|</span>
+202.             <span className='hidden min-w-0 truncate text-sm text-gray-400 sm:block'>
+203.               {truncate(channel.topic, 80)}
+204.             </span>
+205.           </>
+206.         )}
+207.       </div>
+208. 
+209.       {/* ── Right: action icons ── */}
+210.       <div className='flex flex-shrink-0 items-center gap-0.5'>
+211.         {/* Search */}
+212.         <IconButton onClick={onSearchOpen} title='Search'>
+213.           <SearchIcon />
+214.         </IconButton>
+215. 
+216.         {/* Pinned messages */}
+217.         <IconButton onClick={onPinsOpen} title='Pinned messages'>
+218.           <PinIcon />
+219.         </IconButton>
+220. 
+221.         {/* Members sidebar toggle */}
+222.         <IconButton
+223.           onClick={onMembersToggle}
+224.           title='Show member list'
+225.           active={isMembersOpen}
+226.           ariaPressed={isMembersOpen}
+227.         >
+228.           <MembersIcon />
+229.         </IconButton>
+230. 
+231.         {/* Settings gear — admin/owner only */}
+232.         {isAdmin && (
+233.           <Link
+234.             href={settingsHref}
+235.             title='Channel settings'
+236.             aria-label='Channel settings'
+237.             className='rounded p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
+238.           >
+239.             <GearIcon />
+240.           </Link>
+241.         )}
+242.       </div>
+243.     </header>
+244.   );
+245. }
+246.
+```
+
+</details>
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+"voice|Voice|mute|deafen|speaking" (/Users/allen/repos/Harmony/harmony-frontend/src)
+
+<details>
+<summary>11 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/error.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/app/not-found.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Now let me look at the voice-related components more closely:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx
+
+<details>
+<summary>180 lines</summary>
+
+```
+1. /**
+2.  * Component: UserStatusBar
+3.  * Discord-style user info bar shown at the bottom of the ChannelSidebar.
+4.  * Displays avatar, username, discriminator tag, status indicator,
+5.  * mic/headphone toggles (visual-only), and a settings gear icon.
+6.  *
+7.  * Pulls current user from the parent via props (sourced from mock auth service).
+8.  * Ref: Issue #28
+9.  */
+10. 
+11. 'use client';
+12. 
+13. import { useState } from 'react';
+14. import { usePathname } from 'next/navigation';
+15. import Link from 'next/link';
+16. import Image from 'next/image';
+17. import type { User, UserStatus } from '@/types';
+18. import { cn } from '@/lib/utils';
+19. 
+20. // ─── Status colour map ────────────────────────────────────────────────────────
+21. 
+22. const STATUS_COLOR: Record<UserStatus, string> = {
+23.   online: 'bg-green-500',
+24.   idle: 'bg-yellow-400',
+25.   dnd: 'bg-red-500',
+26.   offline: 'bg-gray-400',
+27. };
+28. 
+29. const STATUS_LABEL: Record<UserStatus, string> = {
+30.   online: 'Online',
+31.   idle: 'Idle',
+32.   dnd: 'Do Not Disturb',
+33.   offline: 'Offline',
+34. };
+35. 
+36. // ─── Component ────────────────────────────────────────────────────────────────
+37. 
+38. export interface UserStatusBarProps {
+39.   currentUser: User;
+40.   isAuthenticated: boolean;
+41. }
+42. 
+43. export function UserStatusBar({ currentUser, isAuthenticated }: UserStatusBarProps) {
+44.   const [isMuted, setIsMuted] = useState(false);
+45.   const [isDeafened, setIsDeafened] = useState(false);
+46.   const pathname = usePathname();
+47. 
+48.   const userInitial = currentUser.username?.[0]?.toUpperCase() ?? '?';
+49.   const settingsHref = `/settings?returnTo=${encodeURIComponent(pathname)}`;
+50. 
+51.   return (
+52.     <div className='flex h-[52px] flex-shrink-0 items-center gap-2 bg-[#292b2f] px-2'>
+53.       {/* Avatar + status indicator */}
+54.       <div className='relative flex-shrink-0'>
+55.         {currentUser.avatar ? (
+56.           <Image
+57.             src={currentUser.avatar}
+58.             alt={currentUser.username}
+59.             width={32}
+60.             height={32}
+61.             className='h-8 w-8 rounded-full'
+62.             unoptimized
+63.           />
+64.         ) : (
+65.           <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-bold text-white'>
+66.             {userInitial}
+67.           </div>
+68.         )}
+69.         <span
+70.           className={cn(
+71.             'absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-[#292b2f]',
+72.             STATUS_COLOR[currentUser.status],
+73.           )}
+74.           title={STATUS_LABEL[currentUser.status]}
+75.         />
+76.       </div>
+77. 
+78.       {/* Username + discriminator */}
+79.       <div className='min-w-0 flex-1'>
+80.         <p className='truncate text-sm font-medium leading-tight text-white'>
+81.           {currentUser.displayName ?? currentUser.username}
+82.         </p>
+83.         <p className='truncate text-[11px] leading-tight text-gray-400'>#{currentUser.username}</p>
+84.       </div>
+85. 
+86.       {/* Action icons */}
+87.       <div className='flex flex-shrink-0 items-center'>
+88.         {/* Mic toggle */}
+89.         <button
+90.           onClick={() => setIsMuted(v => !v)}
+91.           title={isMuted ? 'Unmute' : 'Mute'}
+92.           aria-label={isMuted ? 'Unmute' : 'Mute'}
+93.           className='rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white'
+94.         >
+95.           {isMuted ? (
+96.             <svg
+97.               className='h-4 w-4'
+98.               viewBox='0 0 24 24'
+99.               fill='currentColor'
+100.               aria-hidden='true'
+101.               focusable='false'
+102.             >
+103.               <path d='M6.7 11H5c0 1.19.37 2.3 1 3.22L3.28 16.9l1.41 1.41 15.89-15.89-1.41-1.41L13 7.18V6c0-1.66-1.34-3-3-3S7 4.34 7 6v5h-.3zM9 6c0-.55.45-1 1-1s1 .45 1 1v1.18L9 9.18V6zm3.89 6.11L9 16.01V16c0 1.66 1.34 3 3 3 1.3 0 2.41-.84 2.83-2H12v-1h3c.28 0 .55-.04.81-.09l-2.92-2.92zM19 11h-1.7c0 .58-.1 1.13-.27 1.64l1.27 1.27c.44-.88.7-1.87.7-2.91zM14.98 19.54l-1.42 1.42C14.32 21.62 15.13 22 16 22h0c1.1 0 2-.9 2-2v0-1h-2v1c0 .14-.03.27-.08.39-.18.44-.6.73-1.08.73-.36 0-.68-.15-.91-.39z' />
+104.             </svg>
+105.           ) : (
+106.             <svg
+107.               className='h-4 w-4'
+108.               viewBox='0 0 24 24'
+109.               fill='currentColor'
+110.               aria-hidden='true'
+111.               focusable='false'
+112.             >
+113.               <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z' />
+114.               <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
+115.             </svg>
+116.           )}
+117.         </button>
+118. 
+119.         {/* Headphone toggle */}
+120.         <button
+121.           onClick={() => setIsDeafened(v => !v)}
+122.           title={isDeafened ? 'Undeafen' : 'Deafen'}
+123.           aria-label={isDeafened ? 'Undeafen' : 'Deafen'}
+124.           className='rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white'
+125.         >
+126.           {isDeafened ? (
+127.             <svg
+128.               className='h-4 w-4'
+129.               viewBox='0 0 24 24'
+130.               fill='currentColor'
+131.               aria-hidden='true'
+132.               focusable='false'
+133.             >
+134.               <path d='M3.63 3.63a.996.996 0 000 1.41L7.29 8.7 7 9H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1h3l3.29 3.29c.63.63 1.71.18 1.71-.71v-4.17l4.18 4.18c-.49.37-1.02.68-1.6.91-.36.15-.58.53-.58.92 0 .72.73 1.18 1.39.91.8-.33 1.55-.77 2.22-1.31l1.34 1.34a.996.996 0 101.41-1.41L5.05 3.63c-.39-.39-1.02-.39-1.42 0zM19 12c0 .82-.15 1.61-.41 2.34l1.53 1.53c.56-1.17.88-2.48.88-3.87 0-3.83-2.4-7.11-5.78-8.4-.59-.23-1.22.23-1.22.86v.19c0 .38.25.71.61.85C17.18 6.54 19 9.06 19 12zm-8.71-6.29l-.17.17L12 7.76V6.41c0-.89-1.08-1.33-1.71-.7zM16.5 12A4.5 4.5 0 0014 7.97v1.79l2.48 2.48c.01-.08.02-.16.02-.24z' />
+135.             </svg>
+136.           ) : (
+137.             <svg
+138.               className='h-4 w-4'
+139.               viewBox='0 0 24 24'
+140.               fill='currentColor'
+141.               aria-hidden='true'
+142.               focusable='false'
+143.             >
+144.               <path d='M12 3C7.03 3 3 7.03 3 12v7c0 1.1.9 2 2 2h3v-6H5v-3c0-3.87 3.13-7 7-7s7 3.13 7 7v3h-3v6h3c1.1 0 2-.9 2-2v-7c0-4.97-4.03-9-9-9z' />
+145.             </svg>
+146.           )}
+147.         </button>
+148. 
+149.         {/* Settings gear */}
+150.         {isAuthenticated ? (
+151.           <Link
+152.             href={settingsHref}
+153.             title='User Settings'
+154.             aria-label='User Settings'
+155.             className='rounded p-1 text-gray-400 hover:bg-[#3a3c41] hover:text-white'
+156.           >
+157.             <svg
+158.               className='h-4 w-4'
+159.               viewBox='0 0 24 24'
+160.               fill='currentColor'
+161.               aria-hidden='true'
+162.               focusable='false'
+163.             >
+164.               <path d='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z' />
+165.             </svg>
+166.           </Link>
+167.         ) : (
+168.           <Link
+169.             href='/auth/login'
+170.             title='Log In'
+171.             className='rounded bg-[#5865f2] px-2 py-1 text-xs font-medium text-white hover:bg-[#4752c4]'
+172.           >
+173.             Log In
+174.           </Link>
+175.         )}
+176.       </div>
+177.     </div>
+178.   );
+179. }
+180.
+```
+
+</details>
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx**
+
+"voice|Voice" (/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx)
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx:              // Insert before voice channels so text/announcement channels stay grouped correctly.
+```
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+"speaking|mute|deafen" (/Users/allen/repos/Harmony/harmony-frontend/src)
+
+<details>
+<summary>27 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx:          title={isMuted ? 'Unmute' : 'Mute'}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx:          aria-label={isMuted ? 'Unmute' : 'Mute'}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx:          title={isDeafened ? 'Undeafen' : 'Deafen'}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/UserStatusBar.tsx:          aria-label={isDeafened ? 'Undeafen' : 'Deafen'}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx:        <p className='px-2 py-1 text-xs font-semibold uppercase tracking-wide text-discord-text-muted'>
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx:            className='flex items-center gap-1.5 px-2 py-1 rounded text-discord-text-muted hover:bg-discord-bg-primary hover:text-discord-text transition-colors text-sm text-left'
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx:          <span className='text-discord-text-muted'>#</span>
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx:          <p className='text-xs uppercase tracking-wide text-discord-text-muted mb-1'>
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx:                <span className='text-discord-text-muted text-xs'>{label}</span>
+/Users/allen/repos/Harmony/harmony-frontend/src/components/ui/TailwindTest.tsx:            <p className='text-discord-text-muted text-xs mt-1'>
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx:        <p className='mb-6 text-center text-sm text-discord-text-muted'>
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx:              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx:              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx:              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx:              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/login/page.tsx:          <p className='text-sm text-discord-text-muted'>
+/Users/allen/repos/Harmony/harmony-frontend/src/app/error.tsx:      <p className='mt-2 max-w-sm text-sm text-discord-text-muted'>
+/Users/allen/repos/Harmony/harmony-frontend/src/app/error.tsx:          className='text-sm font-medium text-discord-text-muted underline-offset-4 hover:text-white hover:underline transition-colors'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/not-found.tsx:      <p className='mt-2 max-w-sm text-sm text-discord-text-muted'>
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:              className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:              className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
+/Users/allen/repos/Harmony/harmony-frontend/src/app/auth/signup/page.tsx:          <p className='text-sm text-discord-text-muted'>
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/messages.ts:      '📢 **Accessibility audit complete.** All contrast ratios meet WCAG 2.1 AA. Primary text 7.3:1, muted text 4.6:1. Full report in #ux-research.',
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Perfect! Now let me check for any voice connection/state components:
+
+### ✅ `glob`
+
+****/*[Cc]onnect* **/*[Jj]oin* **/*[Cc]all***
+
+"**/*[Cc]onnect* **/*[Jj]oin* **/*[Cc]all*"
+
+```
+No files matched the pattern.
+```
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+"onClick.*voice|voice.*join|voice.*leave|voiceState|connectedUsers" (/Users/allen/repos/Harmony/harmony-frontend/src)
+
+```
+No matches found.
+```
+
+
+### 💬 Copilot
+
+Let me check the HarmonyShell to see how voice channels are being handled:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx (lines 1-100)
+
+<details>
+<summary>100 lines</summary>
+
+```
+1. /**
+2.  * Layout: HarmonyShell
+3.  * Full Discord-like 3-column layout shell.
+4.  * Wires together ServerRail, ChannelSidebar, TopBar, MessageList, MembersSidebar, SearchModal.
+5.  */
+6. 
+7. 'use client';
+8. 
+9. import { useState, useEffect, useCallback } from 'react';
+10. import { cn } from '@/lib/utils';
+11. import { TopBar } from '@/components/channel/TopBar';
+12. import { MembersSidebar } from '@/components/channel/MembersSidebar';
+13. import { SearchModal } from '@/components/channel/SearchModal';
+14. import { ChannelSidebar } from '@/components/channel/ChannelSidebar';
+15. import { MessageInput } from '@/components/channel/MessageInput';
+16. import { MessageList } from '@/components/channel/MessageList';
+17. import { ServerRail } from '@/components/server-rail/ServerRail';
+18. import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
+19. import { CreateChannelModal } from '@/components/channel/CreateChannelModal';
+20. import { useAuth } from '@/hooks/useAuth';
+21. import { ChannelType } from '@/types';
+22. import { useRouter } from 'next/navigation';
+23. import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
+24. import type { Server, Channel, Message, User } from '@/types';
+25. 
+26. // ─── Discord colour tokens ────────────────────────────────────────────────────
+27. 
+28. const BG = {
+29.   tertiary: 'bg-[#202225]',
+30.   primary: 'bg-[#36393f]',
+31. };
+32. 
+33. // ─── Main Shell ───────────────────────────────────────────────────────────────
+34. 
+35. export interface HarmonyShellProps {
+36.   servers: Server[];
+37.   currentServer: Server;
+38.   /** Channels belonging to the current server — used by ChannelSidebar */
+39.   channels: Channel[];
+40.   /**
+41.    * All channels across every server — used by ServerRail to derive the
+42.    * correct default channel slug when navigating to another server.
+43.    * #c32: passing only serverChannels here caused other server icons to link
+44.    * to a non-existent route because their channels weren't in the list.
+45.    */
+46.   allChannels: Channel[];
+47.   currentChannel: Channel;
+48.   messages: Message[];
+49.   members: User[];
+50.   /** Base path for navigation links. Use "/c" for public guest routes, "/channels" for authenticated routes. */
+51.   basePath?: string;
+52. }
+53. 
+54. export function HarmonyShell({
+55.   servers,
+56.   currentServer,
+57.   channels,
+58.   allChannels,
+59.   currentChannel,
+60.   messages,
+61.   members,
+62.   basePath = '/c',
+63. }: HarmonyShellProps) {
+64.   const [isMembersOpen, setIsMembersOpen] = useState(() =>
+65.     typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
+66.   );
+67.   const [isSearchOpen, setIsSearchOpen] = useState(false);
+68.   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
+69.   const [isMenuOpen, setIsMenuOpen] = useState(false);
+70.   // Local message state so sent messages appear immediately without a page reload
+71.   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
+72.   // Track previous channel so we can reset localMessages synchronously on channel
+73.   // switch — avoids a one-render flash where old messages show under the new channel header.
+74.   const [prevChannelId, setPrevChannelId] = useState(currentChannel.id);
+75.   if (prevChannelId !== currentChannel.id) {
+76.     setPrevChannelId(currentChannel.id);
+77.     setLocalMessages(messages);
+78.     setIsMenuOpen(false);
+79.     // Only auto-close the members sidebar on mobile so desktop keeps it open by default.
+80.     if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 640px)').matches) {
+81.       setIsMembersOpen(false);
+82.     }
+83.   }
+84.   // Local channels state so newly created channels appear immediately in the sidebar.
+85.   const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
+86.   // Track the channels prop reference so localChannels resets whenever the server
+87.   // passes a fresh array (server navigation or revalidatePath refresh) — same
+88.   // render-time derivation pattern used above for localMessages/prevChannelId.
+89.   const [prevChannelsProp, setPrevChannelsProp] = useState(channels);
+90.   if (prevChannelsProp !== channels) {
+91.     setPrevChannelsProp(channels);
+92.     setLocalChannels(channels);
+93.   }
+94.   // Channel creation modal state.
+95.   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+96.   const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(ChannelType.TEXT);
+97. 
+98.   const { user: authUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+99. 
+100.   // Fallback for guest/unauthenticated view
+```
+
+</details>
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx**
+
+"voice" (/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx)
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx:              // Insert before voice channels so text/announcement channels stay grouped correctly.
+```
+
+
+### 💬 Copilot
+
+Now let me see if there are any specific voice-related UI elements or handlers being called when a voice channel is clicked:
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx**
+
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx (lines 286-320)
+
+<details>
+<summary>34 lines</summary>
+
+```
+286. 
+287.           {voiceChannels.length > 0 && (
+288.             <div className='mb-2'>
+289.               <CategoryHeader
+290.                 label='Voice Channels'
+291.                 isCollapsed={voiceCollapsed}
+292.                 onToggle={() => setVoiceCollapsed(v => !v)}
+293.                 onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined}
+294.                 addLabel='Add voice channel'
+295.               />
+296.               {!voiceCollapsed && (
+297.                 <ul className='list-none'>
+298.                   {voiceChannels.map(channel => (
+299.                     <li key={channel.id}>
+300.                       <div
+301.                         className='flex cursor-default items-center gap-1.5 rounded px-2 py-1 text-sm text-gray-400 opacity-60'
+302.                       >
+303.                         <ChannelIcon type={channel.type} />
+304.                         <span className='truncate'>{channel.name}</span>
+305.                       </div>
+306.                     </li>
+307.                   ))}
+308.                 </ul>
+309.               )}
+310.             </div>
+311.           )}
+312.         </div>
+313. 
+314.         {/* User status bar */}
+315.         <UserStatusBar currentUser={currentUser} isAuthenticated={isAuthenticated} />
+316.       </nav>
+317.     </>
+318.   );
+319. }
+```
+
+</details>
+
+
+### ✅ `grep`
+
+**/Users/allen/repos/Harmony/harmony-frontend/src**
+
+"href.*voice|voice.*channel|VOICE" (/Users/allen/repos/Harmony/harmony-frontend/src)
+
+<details>
+<summary>18 matches</summary>
+
+```
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:  if (type === ChannelType.VOICE) {
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:  const voiceChannels = channels.filter(
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:    c => c.type === ChannelType.VOICE && (isAuthenticated || c.visibility !== ChannelVisibility.PRIVATE),
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                onAdd={isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined}
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                addLabel='Add voice channel'
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/ChannelSidebar.tsx:                  {voiceChannels.map(channel => (
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:  { value: ChannelType.VOICE, label: 'Voice', icon: <SpeakerIcon /> },
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:                    if (opt.value === ChannelType.VOICE && visibility === ChannelVisibility.PUBLIC_INDEXABLE) {
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:                type !== ChannelType.VOICE || opt.value !== ChannelVisibility.PUBLIC_INDEXABLE,
+/Users/allen/repos/Harmony/harmony-frontend/src/components/channel/CreateChannelModal.tsx:            {type === ChannelType.VOICE && (
+/Users/allen/repos/Harmony/harmony-frontend/src/types/channel.ts:  VOICE = 'VOICE',
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx:              // Insert before voice channels so text/announcement channels stay grouped correctly.
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx:              const insertIdx = newChannel.type === ChannelType.VOICE
+/Users/allen/repos/Harmony/harmony-frontend/src/components/layout/HarmonyShell.tsx:                : prev.findIndex(c => c.type === ChannelType.VOICE);
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts:    type: ChannelType.VOICE,
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts:    type: ChannelType.VOICE,
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts:    topic: 'Daily standup voice channel',
+/Users/allen/repos/Harmony/harmony-frontend/src/mocks/channels.ts:    type: ChannelType.VOICE,
+```
+
+</details>
+
+
+### 💬 Copilot
+
+Perfect! Now I have a clear picture. Let me compile the findings:
+
+## Current Voice Channel UI Affordances in Harmony Frontend
+
+### **ChannelSidebar.tsx** (Voice Channel Listing)
+- **Voice channels displayed as a collapsible category** below text channels (lines 287-310)
+- **Static, non-interactive display** — voice channels use a plain `\<div\>` with:
+  - `cursor-default` (not clickable)
+  - `opacity-60` (faded, disabled appearance)
+  - Speaker icon + channel name
+- **Admin-only "+" button** to create new voice channels (line 293)
+- **No join/leave functionality** — voice channels are not clickable
+
+### **UserStatusBar.tsx** (Voice State Controls)
+Located at the **bottom of ChannelSidebar** — this is the ONLY place voice state UI exists:
+- **Mute button** (lines 89-117)
+  - Toggles between speaker icon (unmuted) and muted icon
+  - Visual-only with local state (`setIsMuted`)
+  - No actual audio capture/transmission
+  
+- **Deafen button** (lines 120-147)
+  - Toggles between headphone icon (hearing) and crossed-out headphone (deafened)
+  - Visual-only with local state (`setIsDeafened`)
+  - No actual audio connection
+  
+- **Settings gear icon** for user preferences
+
+### **TopBar.tsx** (Channel Header)
+- Shows channel name and topic
+- Search, pinned messages, members list, and settings icons
+- **No voice-specific controls** for the current channel
+
+### **Summary: Current State**
+✅ **What EXISTS:**
+- Voice channel listing with speaker icon
+- User mute/deafen toggles (visual-only, local state)
+- Admin creation UI
+
+❌ **What's MISSING:**
+- Click handlers to join/leave voice channels
+- No connected users display
+- No speaking indicators
+- No voice connection state
+- No active voice indicator on channels
+- No WebRTC/audio integration
+- Voice channels are **disabled/inert UI** with no functionality
+
+The UI is a **visual placeholder** — voice channels render but clicking them does nothing. Join/leave/mute are mock buttons with no backend connection.
+
+
+---
+
+<sub>⏱️ 2910m 13s</sub>
+
+### 💬 Copilot
+
+Good — the frontend voice UI is just a visual shell (sidebar listing + mute/deafen toggles with local state only). Here's how the plan would change:
+
+### Two new issues needed:
+
+**#28. Twilio Voice Service (Backend)**
+- Twilio Programmable Video SDK integration (group rooms = voice channels)
+- `POST /voice/token` — generate Twilio access token for authenticated user + room
+- Room lifecycle: auto-create room when first user joins a voice channel, destroy when empty
+- Voice state tracking: who's in which room, muted/deafened status (stored in Redis)
+- WebSocket events via Event Bus (#18): `user-joined-voice`, `user-left-voice`, `voice-state-changed`
+- Mock Twilio service for local dev/testing (no real Twilio calls)
+- Depends on: #1, #4 (auth), #7 (channels), #18 (event bus)
+- ~2-3 days work
+
+**#29. Voice Channel Frontend Integration**
+- Wire Twilio Client JS SDK into voice channel click handler
+- Join/leave voice channel (click to join, click again or disconnect to leave)
+- Connect mute/deafen toggles to real Twilio track enable/disable
+- Show connected users list under each voice channel in sidebar
+- Speaking indicator (Twilio `dominantSpeaker` event)
+- Active voice state in UserStatusBar (show "Connected to #voice-general", disconnect button)
+- Depends on: #28
+- ~2 days work
+
+### Impact on the existing plan:
+
+| Concern | Assessment |
+|---------|-----------|
+| **Issue count** | 27 → 29 (or 28 if we absorb #29 into an existing FE integration issue) |
+| **Developer load** | Adds ~4 days of work across 2 people. Sprint already has 27 issues / 5 devs — this is tight. |
+| **Dependencies** | #28 depends on Event Bus (#18) for real-time state broadcast — this creates a longer dependency chain |
+| **Risk** | Twilio integration is the highest-risk item — API keys, SDK quirks, audio permissions in browsers |
+| **AWS compatibility** | Twilio token generation works fine on Lambda. Twilio handles the actual media servers. |
+
+### My honest take:
+
+This is **doable but tight** for a 2-week sprint that already has 27 issues. The safest approach:
+
+1. **Add #28 (Twilio backend service)** to the plan — assign to someone with Twilio experience
+2. **Fold #29 (FE integration) into a stretch goal** — wire it up if time allows, otherwise the existing visual shell still works
+3. Voice channel CRUD (create/list/filter by type) is already covered by #7 — that works regardless
+
+Want me to add these to the plan, or keep voice as a stretch goal?
+
+---
+
+<sub>⏱️ 2910m 58s</sub>
+
+### 👤 User
+
+Yes, add to the plan, also update the issues you previously said about message pinning and voice channels
+
+---
+
+<sub>⏱️ 2911m 3s</sub>
+
+### ✅ `view`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+<details>
+<summary>369 lines</summary>
+
+````
+1. # Backend Development Sprint Plan — March 2–13, 2026
+2. 
+3. ## Context
+4. Harmony is a search-engine-indexable chat app (Discord-like clone). The frontend exists with mock in-memory services. This sprint wires up a real backend with PostgreSQL, Redis, Prisma, and tRPC/REST APIs, then integrates the frontend. Two dev specs must have full backend support: **Guest Public Channel View** and **Channel Visibility Toggle**.
+5. 
+6. ## Team
+7. 5 developers: acabrera04, Aiden-Barrera, AvanishKulkarni, declanblanc, FardeenI
+8. 
+9. ## Tech Stack (from dev specs)
+10. - Node.js 20 LTS + TypeScript 5.3+
+11. - PostgreSQL 16+ with Prisma 5.8+
+12. - Redis 7.2+ for caching
+13. - tRPC 10.45+ (authenticated internal APIs)
+14. - REST (public unauthenticated APIs)
+15. - Zod 3.22+ for validation
+16. - JWT for auth, bcrypt for passwords
+17. 
+18. ---
+19. 
+20. ## Issues (27 total)
+21. 
+22. > **Note:** Every backend service/module issue (#4–#19) must include minimum tests verifying the module's API works for the happy path. Check test code into GitHub alongside the implementation.
+23. 
+24. ### 🏗️ FOUNDATION — Week 1 (March 2–6)
+25. 
+26. **1. Backend Project Scaffold & Dev Environment**
+27. - Set up Node.js backend (Express + tRPC), TypeScript config, project structure
+28. - Docker Compose for PostgreSQL + Redis local dev
+29. - Structure Express app to be wrappable with `serverless-http` for future AWS Lambda deployment (P6)
+30. - Configure CORS middleware for cross-origin frontend requests
+31. - Shared types package or import from frontend types
+32. - Dev server with hot reload (ts-node-dev or tsx)
+33. - Set up Jest testing framework with TypeScript support (ts-jest)
+34. - Update CI workflow (.github/workflows/ci.yml) — add backend job: install, lint, build, test (parallel with existing frontend job)
+35. - Labels: backend, setup, prerequisite, week-1
+36. - Assignee: acabrera04
+37. - Due: March 3
+38. 
+39. **2. P4 Deliverables — Dev Spec Update & Architecture Document**
+40. - Update dev-spec-channel-visibility-toggle.md and dev-spec-guest-public-channel-view.md to reflect unified backend
+41. - Create unified backend architecture document with text description + Mermaid diagram
+42. - Justify design choices (PostgreSQL, Redis, tRPC+REST split, etc.) for a senior architect audience
+43. - Per-module specification (P4 items 1–8): features, internal architecture + Mermaid, data abstraction, stable storage + schemas, API definition, class/method/field list with visibility, class hierarchy Mermaid diagram
+44. - Include rendered Mermaid diagram screenshots in repo
+45. - This is the blueprint all devs code against — must be done before service implementation begins
+46. - *(P4 Deliverables #1 + #2: Update Dev Specs + Specify the Backend)*
+47. - Labels: backend, documentation, prerequisite, week-1
+48. - Assignee: acabrera04
+49. - Due: March 4
+50. - Depends on: #1
+51. 
+52. **3. Database Schema & Prisma Migrations**
+53. - Define Prisma schema: users, servers, channels, messages, attachments, visibility_audit_log
+54. - Create visibility_enum (PUBLIC_INDEXABLE, PUBLIC_NO_INDEX, PRIVATE)
+55. - All indexes from dev specs (partial indexes, composite indexes)
+56. - Initial migration
+57. - Labels: backend, setup, prerequisite, week-1
+58. - Assignee: declanblanc
+59. - Due: March 4
+60. - Depends on: #1, #2
+61. 
+62. **4. Authentication System — JWT Register/Login/Logout**
+63. - POST /api/auth/register, POST /api/auth/login, POST /api/auth/logout
+64. - JWT token generation + refresh tokens
+65. - bcrypt password hashing
+66. - Auth middleware for protected routes
+67. - Zod input validation
+68. - Labels: backend, feature, prerequisite, week-1
+69. - Assignee: Aiden-Barrera
+70. - Due: March 5
+71. - Depends on: #1, #2, #3
+72. 
+73. **5. User Service & API**
+74. - User CRUD via tRPC: getUser, updateUser, getCurrentUser
+75. - Public profile flag (public_profile boolean)
+76. - User status management (online/idle/dnd/offline)
+77. - Labels: backend, feature, week-1
+78. - Assignee: FardeenI
+79. - Due: March 5
+80. - Depends on: #2, #3
+81. 
+82. **6. Server Service & API**
+83. - Server CRUD via tRPC: getServers, getServer(slug), createServer, updateServer, deleteServer
+84. - Auto-slug generation from name
+85. - Member count tracking
+86. - Owner relationship to users
+87. - is_public flag for server-level publicity
+88. - Labels: backend, feature, week-1
+89. - Assignee: AvanishKulkarni
+90. - Due: March 5
+91. - Depends on: #2, #3
+92. 
+93. **7. Channel Service & API**
+94. - Channel CRUD via tRPC: getChannels(serverId), getChannel(slug), createChannel, updateChannel, deleteChannel
+95. - Visibility enum (PUBLIC_INDEXABLE, PUBLIC_NO_INDEX, PRIVATE)
+96. - Position ordering, slug uniqueness per server
+97. - Default channel creation on server create
+98. - Labels: backend, feature, week-1
+99. - Assignee: declanblanc
+100. - Due: March 6
+101. - Depends on: #2, #3
+102. 
+103. **8. Message Service & API**
+104. - Message CRUD via tRPC: getMessages(channelId, pagination), sendMessage, editMessage, deleteMessage (soft delete)
+105. - Cursor-based pagination (20 per page default, configurable)
+106. - Author snapshot embedding
+107. - Attachment metadata support
+108. - Labels: backend, feature, week-1
+109. - Assignee: FardeenI
+110. - Due: March 6
+111. - Depends on: #2, #3
+112. 
+113. **9. Role-Based Permission & Authorization System**
+114. - Permission service: checkPermission(userId, serverId, action)
+115. - Roles: owner, admin, moderator, member, guest
+116. - Permission matrix (who can CRUD servers, channels, messages, settings)
+117. - tRPC middleware for route-level authorization
+118. - Labels: backend, feature, prerequisite, week-1
+119. - Assignee: Aiden-Barrera
+120. - Due: March 6
+121. - Depends on: #4, #5
+122. 
+123. **10. Server Membership Service**
+124. - Join/leave server, member listing
+125. - Role assignment per server (owner, admin, moderator, member)
+126. - Member count sync
+127. - getServerMembers(serverId) with role info
+128. - Labels: backend, feature, week-1
+129. - Assignee: AvanishKulkarni
+130. - Due: March 6
+131. - Depends on: #5, #6
+132. 
+133. **11. Database Seed Data**
+134. - Port existing mock data (users, servers, channels, messages) to Prisma seed script
+135. - Match existing frontend mock IDs/slugs for backward compatibility
+136. - Include test users with different roles
+137. - Labels: backend, setup, week-1
+138. - Assignee: acabrera04
+139. - Due: March 6
+140. - Depends on: #3
+141. 
+142. ---
+143. 
+144. ### 🔐 FEATURE: Channel Visibility Toggle — Week 2 (March 9–11)
+145. 
+146. **12. Channel Visibility Toggle Service**
+147. - ChannelVisibilityService: updateVisibility(channelId, newVisibility)
+148. - State machine validation (all transitions valid per spec)
+149. - Permission check: only server owner/admin can toggle
+150. - Update indexed_at timestamp when toggling to PUBLIC_INDEXABLE
+151. - Clear indexed_at when going PRIVATE
+152. - Emit VISIBILITY_CHANGED event
+153. - Labels: backend, feature, week-2
+154. - Assignee: declanblanc
+155. - Due: March 10
+156. - Depends on: #7, #9
+157. 
+158. **13. Visibility Audit Log Service**
+159. - AuditLogService: logVisibilityChange(channelId, actorId, oldValue, newValue, ipAddress)
+160. - AuditLogRepository with pagination
+161. - getVisibilityAuditLog(channelId, { limit, offset, startDate })
+162. - Store IP address and user agent for compliance
+163. - 7-year retention policy notation in schema
+164. - Labels: backend, feature, week-2
+165. - Assignee: Aiden-Barrera
+166. - Due: March 10
+167. - Depends on: #12
+168. 
+169. **14. Sitemap & SEO Data Endpoints**
+170. - GET /sitemap/{serverSlug}.xml — dynamic sitemap of PUBLIC_INDEXABLE channels
+171. - GET /robots.txt — allow crawling of /c/ routes
+172. - IndexingService: addToSitemap, removeFromSitemap
+173. - Update sitemap on visibility change events
+174. - Labels: backend, feature, week-2
+175. - Assignee: AvanishKulkarni
+176. - Due: March 11
+177. - Depends on: #12
+178. 
+179. ---
+180. 
+181. ### 👁️ FEATURE: Guest Public Channel View — Week 2 (March 9–11)
+182. 
+183. **15. Public REST API — Channel & Server Endpoints**
+184. - GET /api/public/servers/{serverSlug} → PublicServerDTO
+185. - GET /api/public/servers/{serverSlug}/channels → PublicChannelDTO[]
+186. - GET /api/public/channels/{channelId}/messages → paginated PublicMessageDTO[]
+187. - GET /api/public/channels/{channelId}/messages/{messageId} → single PublicMessageDTO
+188. - No auth required, visibility check on every request
+189. - Labels: backend, feature, week-2
+190. - Assignee: FardeenI
+191. - Due: March 10
+192. - Depends on: #6, #7, #8
+193. 
+194. **16. Redis Caching Layer**
+195. - Cache middleware for public API responses
+196. - Key patterns from spec: channel:{id}:visibility (3600s), channel:msgs:{id}:page:{page} (60s), server:{id}:info (300s)
+197. - Cache invalidation on mutations (write-through)
+198. - Stale-while-revalidate pattern
+199. - Labels: backend, feature, week-2
+200. - Assignee: AvanishKulkarni
+201. - Due: March 11
+202. - Depends on: #1
+203. 
+204. **17. Rate Limiting Middleware**
+205. - Token bucket rate limiting
+206. - Human users: 100 req/min per IP
+207. - Verified bots (Googlebot, Bingbot): 1000 req/min
+208. - 429 Too Many Requests with Retry-After header
+209. - Bot detection via User-Agent
+210. - Labels: backend, feature, week-2
+211. - Assignee: Aiden-Barrera
+212. - Due: March 11
+213. - Depends on: #1
+214. 
+215. **18. Event Bus — Redis Pub/Sub for Cross-Service Events**
+216. - VISIBILITY_CHANGED event publishing and subscribing
+217. - MESSAGE_CREATED / MESSAGE_EDITED / MESSAGE_DELETED events
+218. - Cache invalidation triggered by events
+219. - Decouple services via event-driven architecture
+220. - Labels: backend, feature, week-2
+221. - Assignee: acabrera04
+222. - Due: March 11
+223. - Depends on: #16
+224. 
+225. **19. Attachment Service & File Storage**
+226. - Attachment metadata CRUD (create, list by message)
+227. - File upload endpoint using S3-compatible storage interface (use local filesystem or MinIO for dev, swaps to real S3 on AWS)
+228. - Content-type and size validation
+229. - URL generation for serving attachments
+230. - Wire into message service for attachment embedding
+231. - Labels: backend, feature, week-2
+232. - Assignee: FardeenI
+233. - Due: March 11
+234. - Depends on: #8
+235. 
+236. ---
+237. 
+238. ### 🔌 FRONTEND-BACKEND INTEGRATION — Week 2 (March 10–13)
+239. 
+240. **20. Frontend Integration — Authentication**
+241. - Replace mock authService with real API calls
+242. - JWT token storage (httpOnly cookies)
+243. - Auto-refresh token logic
+244. - Update AuthContext to use real endpoints (login, register, logout, getCurrentUser, updateCurrentUser)
+245. - Wire UserSettingsPage profile editing (displayName, status) + logout flow
+246. - Redirect flows on 401
+247. - Labels: backend, integration, week-2
+248. - Assignee: Aiden-Barrera
+249. - Due: March 12
+250. - Depends on: #4
+251. 
+252. **21. Frontend Integration — Servers & Channels**
+253. - Replace mock serverService + channelService with real tRPC/API calls
+254. - Update ALL server actions: createServerAction, saveServerSettings, deleteServerAction, saveChannelSettings, createChannelAction
+255. - Wire server member list display
+256. - Handle loading/error states properly
+257. - Labels: backend, integration, week-2
+258. - Assignee: declanblanc
+259. - Due: March 12
+260. - Depends on: #6, #7
+261. 
+262. **22. Frontend Integration — Messages**
+263. - Replace mock messageService with real tRPC/API calls
+264. - Wire cursor-based pagination to real API
+265. - Wire sendMessage + deleteMessage
+266. - Handle optimistic updates for message send
+267. - Labels: backend, integration, week-2
+268. - Assignee: FardeenI
+269. - Due: March 12
+270. - Depends on: #8
+271. 
+272. **23. Frontend Integration — Guest Public Channel View**
+273. - Wire /c/{serverSlug}/{channelSlug} route to public REST API
+274. - Wire isChannelGuestAccessible() for post-logout redirect logic
+275. - Proper error handling: 403 (private) → login prompt, 404 → not found
+276. - Cache-Control + X-Robots-Tag headers from API responses
+277. - SEO metadata from real backend data
+278. - Labels: backend, integration, week-2
+279. - Assignee: acabrera04
+280. - Due: March 13
+281. - Depends on: #15
+282. 
+283. **24. Frontend Integration — Channel Visibility Toggle**
+284. - Wire ChannelSettingsPage visibility section to real tRPC API
+285. - Implement confirmation dialog for visibility changes
+286. - Display audit log from real backend
+287. - Handle optimistic updates + error rollback
+288. - Labels: backend, integration, week-2
+289. - Assignee: AvanishKulkarni
+290. - Due: March 13
+291. - Depends on: #12, #13, #21
+292. 
+293. ---
+294. 
+295. ### 🧹 QUALITY & POLISH — Week 2 (March 12–13)
+296. 
+297. **25. API Input Validation & Error Handling**
+298. - Zod schemas for all tRPC + REST inputs
+299. - Consistent error response format (code, message, details)
+300. - 400/401/403/404/429/500 error handling
+301. - Input sanitization for all user-provided strings
+302. - Labels: backend, feature, week-2
+303. - Assignee: acabrera04
+304. - Due: March 12
+305. - Depends on: #4, #15
+306. 
+307. **26. Next.js Auth Middleware — Server-Side Route Protection**
+308. - Add Next.js middleware to protect /settings/* and /channels/* routes server-side
+309. - Verify JWT from httpOnly cookie before rendering protected pages
+310. - Redirect unauthenticated users to /auth/login immediately (no client-side spinner)
+311. - Redirect non-admin users away from /settings/* routes
+312. - Fixes GitHub issue #71 (3–4s spinner delay before redirect)
+313. - Labels: backend, feature, week-2
+314. - Assignee: declanblanc
+315. - Due: March 13
+316. - Depends on: #4, #20
+317. 
+318. ---
+319. 
+320. ### 📄 P4 DELIVERABLES — Documentation (March 13)
+321. 
+322. **27. Backend README — Setup & Operations Guide**
+323. - Create README.md in backend directory targeting SRE audience
+324. - List every dependency on external library, framework, technology, or service
+325. - Describe what databases are created, read from, and written to
+326. - Document how to install, startup, stop, and reset the backend services and data storage
+327. - Include Docker Compose usage, environment variables, migration commands, seed commands
+328. - Written after implementation is complete so it reflects what was actually built
+329. - *(P4 Deliverable #2: Wrap-Up item 4)*
+330. - Labels: backend, documentation, week-2
+331. - Assignee: AvanishKulkarni
+332. - Due: March 13
+333. - Depends on: #1, #3, #4, #7, #8
+334. 
+335. ---
+336. 
+337. ## Assignment Summary
+338. 
+339. | Developer | Issues | Focus Area |
+340. |-----------|--------|------------|
+341. | acabrera04 | #1, #2, #11, #18, #23, #25 | Scaffold, dev specs/arch doc, seeds, event bus, guest FE, validation |
+342. | Aiden-Barrera | #4, #9, #13, #17, #20 | Auth, permissions, audit log, rate limiting, auth FE integration |
+343. | AvanishKulkarni | #6, #10, #14, #16, #24, #27 | Servers, membership, SEO/sitemap, caching, visibility FE, README |
+344. | declanblanc | #3, #7, #12, #21, #26 | DB schema, channels, visibility service, server/channel FE, auth middleware |
+345. | FardeenI | #5, #8, #15, #19, #22 | Users, messages, public API, attachments, message FE integration |
+346. 
+347. ## Dependency Graph (simplified)
+348. ```
+349. #1 Scaffold ─► #2 Dev Specs & Architecture ─┬─► #3 DB Schema ─┬─► #5 Users ──► #9 Permissions ──► #12 Visibility ──► #13 Audit Log
+350.                                              │                 ├─► #6 Servers                                       ──► #14 SEO
+351.                                              │                 ├─► #7 Channels                                      ──► #15 Public API
+352.                                              │                 ├─► #8 Messages                                      ──► #19 Attachments
+353.                                              │                 ├─► #10 Membership
+354.                                              │                 └─► #11 Seeds
+355.                                              │
+356.                                              └─► #4 Auth ──► #9 Permissions
+357.                                                           ──► #20 FE Auth ──► #26 Auth Middleware
+358.                                                           ──► #25 Validation
+359. 
+360. #1 Scaffold ──► #16 Redis Cache ──► #18 Event Bus
+361.             ──► #17 Rate Limiting
+362. 
+363. #6,#7 ──► #21 FE Servers/Channels
+364. #8 ──► #22 FE Messages
+365. #15 ──► #23 FE Guest View
+366. #12,#13,#21 ──► #24 FE Visibility
+367. #1,#3,#4,#7,#8 ──► #27 Backend README
+368. ```
+369.
+````
+
+</details>
+
+
+---
+
+<sub>⏱️ 2911m 15s</sub>
+
+### 💬 Copilot
+
+Now I'll make all three updates: (1) add voice channel type support to #7, (2) add message pinning to #8, (3) add two new issues #28 and #29 for Twilio voice and voice FE integration.
+
+---
+
+<sub>⏱️ 2911m 15s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2911m 15s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2911m 29s</sub>
+
+### 💬 Copilot
+
+Now update the issue count header and add the two new Twilio issues before the README:
+
+---
+
+<sub>⏱️ 2911m 29s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2911m 29s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2911m 37s</sub>
+
+### 💬 Copilot
+
+Now update the assignment summary and dependency graph:
+
+---
+
+<sub>⏱️ 2911m 37s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2911m 46s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2911m 56s</sub>
+
+### 💬 Copilot
+
+Sync to session state and update SQL:
+
+---
+
+<sub>⏱️ 2911m 56s</sub>
+
+### ✅ `bash`
+
+**Sync plan to session**
+
+$ cp /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md /Users/allen/.copilot/session-state/40a9935e-1efa-4ec1-8c0e-b30ffdf8c276/plan.md
+
+```
+
+<exited with exit code 0>
+```
+
+
+---
+
+<sub>⏱️ 2911m 56s</sub>
+
+### ✅ `sql`
+
+**Add voice/pin todos**
+
+<details>
+<summary>Arguments</summary>
+
+```json
+{
+  "description": "Add voice/pin todos",
+  "query": "\nINSERT OR REPLACE INTO todos (id, title, description, status) VALUES\n  ('twilio-voice', 'Twilio Voice Service', 'Integrate Twilio Programmable Video SDK for real-time audio in voice channels. Token generation, room lifecycle, voice state in Redis, events via Event Bus.', 'pending'),\n  ('fe-voice', 'FE Integration — Voice Channels (Stretch)', 'Wire Twilio Client JS SDK into voice channel UI. Mute/deafen, connected users, speaking indicator, join/leave.', 'pending');\nINSERT OR IGNORE INTO todo_deps (todo_id, depends_on) VALUES\n  ('twilio-voice', 'auth-system'),\n  ('twilio-voice', 'channel-service'),\n  ('twilio-voice', 'event-bus'),\n  ('fe-voice', 'twilio-voice');\n"
+}
+```
+
+</details>
+
+```
+0 row(s) inserted.
+```
+
+
+---
+
+<sub>⏱️ 2912m 4s</sub>
+
+### 💬 Copilot
+
+Done. Here's what changed:
+
+1. **#7 (Channel Service)** — now explicitly includes `ChannelType` enum support (TEXT/VOICE/ANNOUNCEMENT) and enforces VOICE channels can't be PUBLIC_INDEXABLE
+2. **#8 (Message Service)** — now includes message pinning: `pinMessage`, `unpinMessage`, `getPinnedMessages(channelId)` with `pinned` boolean + `pinnedAt` timestamp
+3. **#28 (Twilio Voice Service)** — new backend issue: Twilio SDK integration, token generation, room lifecycle, voice state in Redis, events via Event Bus. Assigned to Aiden-Barrera, due March 12
+4. **#29 (FE Voice Integration)** — new stretch goal: wire Twilio Client JS into the existing voice UI shell. Assigned to Aiden-Barrera, due March 13
+
+Aiden-Barrera picks up the voice work since they handle auth (#4) which is a prerequisite for voice tokens. Plan is now **29 issues**.
+
+---
+
+<sub>⏱️ 2913m 9s</sub>
+
+### ℹ️ Info
+
+Model changed to: claude-sonnet-4.6 (medium)
+
+---
+
+<sub>⏱️ 2913m 38s</sub>
+
+### ℹ️ Info
+
+Model changed to: claude-opus-4.6 (high)
+
+---
+
+<sub>⏱️ 2914m 55s</sub>
+
+### 👤 User
+
+Can you make sure that the distribution of the assignements are even? Give an assignment from Aiden to someone else
+
+---
+
+<sub>⏱️ 2915m 19s</sub>
+
+### 💬 Copilot
+
+Current distribution:
+- acabrera04: 6 (#1, #2, #11, #18, #23, #25)
+- **Aiden-Barrera: 7** (#4, #9, #13, #17, #20, #28, #29)
+- AvanishKulkarni: 6 (#6, #10, #14, #16, #24, #27)
+- declanblanc: 5 (#3, #7, #12, #21, #26)
+- FardeenI: 5 (#5, #8, #15, #19, #22)
+
+Best candidate to move: **#17 (Rate Limiting)** — it only depends on #1 (scaffold), no coupling to Aiden's other work. Move it to declanblanc → gives him 6, brings Aiden to 6.
+
+Result: **6/6/6/6/5** (FardeenI at 5 but #8 now has pinning scope added).
+
+---
+
+<sub>⏱️ 2915m 19s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2915m 19s</sub>
+
+### ✅ `edit`
+
+**/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md**
+
+/Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md
+
+```
+File /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md updated with changes.
+```
+
+
+---
+
+<sub>⏱️ 2915m 24s</sub>
+
+### ✅ `bash`
+
+**Sync plan**
+
+$ cp /Users/allen/repos/Harmony/planning/SPRINT_2_PLAN.md /Users/allen/.copilot/session-state/40a9935e-1efa-4ec1-8c0e-b30ffdf8c276/plan.md
+
+```
+
+<exited with exit code 0>
+```
+
+
+---
+
+<sub>⏱️ 2915m 28s</sub>
+
+### 💬 Copilot
+
+Done. Moved **#17 (Rate Limiting)** from Aiden-Barrera → declanblanc.
+
+| Developer | Issues | Count |
+|-----------|--------|-------|
+| acabrera04 | #1, #2, #11, #18, #23, #25 | 6 |
+| Aiden-Barrera | #4, #9, #13, #20, #28, #29 | 6 |
+| AvanishKulkarni | #6, #10, #14, #16, #24, #27 | 6 |
+| declanblanc | #3, #7, #12, #17, #21, #26 | 6 |
+| FardeenI | #5, #8, #15, #19, #22 | 5 (+pinning scope) |
+
+---
+
+<sub>⏱️ 2915m 49s</sub>
+
+### ℹ️ Info
+
+🧪 Experimental mode is enabled. These features are not stable, may have bugs, and may be removed in the future.
+
+---
+
+<sub>⏱️ 2915m 50s</sub>
+
+### ℹ️ Info
+
+Environment loaded: 1 custom instruction, 2 MCP servers, 1 plugin, 6 skills, 1 agent, Visual Studio Code connected
 
 ---
 
