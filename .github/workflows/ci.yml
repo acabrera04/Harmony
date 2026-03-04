@@ -36,15 +36,29 @@ jobs:
       # - name: Test
       #   run: npm test
 
-  # When a backend package is added, add a job here. It will run in
-  # parallel with the frontend job — each installs its own dependencies once.
-  #
-  # backend:
-  #   name: Backend
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: backend
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - ...install, lint, build, test
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: harmony-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: harmony-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
