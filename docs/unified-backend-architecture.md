@@ -207,6 +207,7 @@ classDiagram
         +newValue: JSON
         +timestamp: DateTime
         +ipAddress: string
+        +userAgent: string
     }
 
     class GeneratedMetaTags {
@@ -221,6 +222,7 @@ classDiagram
         +twitterCard: string
         +keywords: string[]
         +structuredData: JSON
+        %% keywords is stored as JSON text in PostgreSQL
         +contentHash: string
         +needsRegeneration: boolean
         +generatedAt: DateTime
@@ -311,6 +313,32 @@ classDiagram
         +publicChannelCount: number
     }
 
+    class PublicAttachmentDTO {
+        <<DTO>>
+        +id: string
+        +filename: string
+        +url: string
+        +contentType: string
+        +sizeBytes: number
+    }
+
+    class OpenGraphTags {
+        <<DTO>>
+        +type: string
+        +title: string
+        +description: string
+        +image: string?
+        +url: string
+    }
+
+    class TwitterCardTags {
+        <<DTO>>
+        +card: string
+        +title: string
+        +description: string
+        +image: string?
+    }
+
     class MetaTagSet {
         <<DTO>>
         +title: string
@@ -336,8 +364,82 @@ classDiagram
     }
 
     PublicMessageDTO --> PublicAuthorDTO
+    PublicMessageDTO --> PublicAttachmentDTO
+    MetaTagSet --> OpenGraphTags
+    MetaTagSet --> TwitterCardTags
     VisibilityUpdateResponse --> PublicChannelDTO
 ```
+
+### 3.3b Response & Page Types
+
+```mermaid
+classDiagram
+    class ChannelSettingsResponse {
+        <<DTO>>
+        +channelId: string
+        +visibility: ChannelVisibility
+        +canChangeVisibility: boolean
+        +lastModified: string
+    }
+
+    class AuditLogResponse {
+        <<DTO>>
+        +entries: AuditLogEntry[]
+        +total: number
+        +page: number
+        +hasMore: boolean
+    }
+
+    class PublicChannelPage {
+        <<DTO>>
+        +channel: PublicChannelDTO
+        +server: PublicServerDTO
+        +messages: PublicMessageDTO[]
+        +metaTags: MetaTagSet
+        +pagination: PaginationInfo
+    }
+
+    class PublicMessagesResponse {
+        <<DTO>>
+        +messages: PublicMessageDTO[]
+        +page: number
+        +hasMore: boolean
+        +total: number
+    }
+
+    class ServerLandingPage {
+        <<DTO>>
+        +server: PublicServerDTO
+        +channels: PublicChannelDTO[]
+        +metaTags: MetaTagSet
+    }
+
+    class SitemapXML {
+        <<DTO>>
+        +xml: string
+        +lastModified: DateTime
+    }
+
+    class RobotsTxt {
+        <<DTO>>
+        +content: string
+    }
+```
+
+### 3.3c Internal Result Types
+
+These types are returned by services and repositories. They are not exposed over the API.
+
+| Type | Fields | Returned By |
+|------|--------|-------------|
+| `VisibilityChangeResult` | `success: boolean`, `channelId: UUID`, `oldVisibility: ChannelVisibility`, `newVisibility: ChannelVisibility`, `auditLogId: UUID` | `ChannelVisibilityService.setVisibility()` |
+| `ValidationResult` | `valid: boolean`, `errors: string[]` | `ChannelVisibilityService.validateTransition()`, `IMetaTagGenerator.validate()` |
+| `PermissionSet` | `canManageChannel: boolean`, `canChangeVisibility: boolean`, `isServerAdmin: boolean`, `permissions: string[]` | `PermissionService.getEffectivePermissions()` |
+| `ContentAnalysis` | `keywords: string[]`, `topics: string[]`, `summary: string`, `category: string` | `ContentAnalyzer.analyzeThread()` |
+| `NotificationResult` | `success: boolean`, `provider: string`, `timestamp: DateTime`, `error: string?` | `IndexingService.notifySearchEngines()` |
+| `RobotsDirectives` | `index: boolean`, `follow: boolean`, `robotsTag: string` | `IndexingService.getRobotsDirectives()` |
+| `ChannelMetadata` | `messageCount: number`, `lastActivity: DateTime`, `activeUsers: number` | `ChannelRepository.getMetadata()` |
+| `PaginationInfo` | `page: number`, `limit: number`, `total: number`, `hasMore: boolean` | Used in page response types |
 
 ### 3.4 API Controllers (M-B1)
 
@@ -434,6 +536,14 @@ classDiagram
         +checkLimit(key) boolean
         +incrementCounter(key) void
         +isRateLimited(key) boolean
+    }
+
+    class AnonymousSessionManager {
+        -sessionStore: CacheClient
+        +createSession() string
+        +getSession(sessionId) GuestSession
+        +updatePreferences(sessionId, prefs) void
+        +cleanupExpired() void
     }
 
     IVisibilityToggle <|.. ChannelVisibilityService
@@ -813,6 +923,8 @@ graph LR
 
 All REST endpoints are unauthenticated. Rate limiting applies.
 
+> **Cache TTL column:** values refer to `Cache-Control: public, max-age=N` HTTP response headers sent by the backend, instructing any downstream HTTP cache (browser, proxy) how long to cache the response. Redis caches page data separately with the same TTL; see §4.4.
+
 | Method | Path | Handler | Feature | Cache TTL |
 |--------|------|---------|---------|-----------|
 | GET | `/c/{serverSlug}/{channelSlug}` | `PublicChannelController.getPublicChannelPage` | Guest Public Channel View | 60s |
@@ -962,8 +1074,10 @@ graph TB
     MS -->|reads| MsgRepo["MessageRepository"]
     MS -->|filters| CF["ContentFilter (M-B2)"]
     AS -->|reads| UserRepo["UserRepository"]
-    ATS -->|reads| Storage["Object Storage"]
+    ATS -->|reads| Storage["Object Storage (S3-compatible)"]
 ```
+
+> **StorageClient** is an S3-compatible object storage adapter (e.g. AWS S3, MinIO). It is injected into `AttachmentService` and is not part of the application codebase — configure via `STORAGE_BUCKET`, `STORAGE_ENDPOINT`, and `STORAGE_KEY` environment variables.
 
 **Classes:**
 
