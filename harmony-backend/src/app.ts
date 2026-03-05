@@ -3,6 +3,7 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import helmet from 'helmet';
 import corsMiddleware, { CorsError } from './middleware/cors';
 import { appRouter } from './trpc/router';
+import { createContext } from './trpc/init';
 
 export function createApp() {
   const app = express();
@@ -22,6 +23,7 @@ export function createApp() {
     '/trpc',
     createExpressMiddleware({
       router: appRouter,
+      createContext,
       onError({ error }) {
         console.error('tRPC error:', error);
       },

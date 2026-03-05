@@ -1963,7 +1963,7 @@ This section goes over the risks that this feature may have and goes into detail
 | T8 | natural | 6.0+ | NLP library | Keyword extraction, summarization | https://github.com/NaturalNode/natural |
 | T9 | compromise | 14.0+ | NLP library | Text parsing, sentence extraction | https://compromise.cool/ |
 | T10 | schema-dts | 1.1+ | Structured data types | Type-safe JSON-LD | https://github.com/google/schema-dts |
-| T11 | DOMPurify | 3.0+ | HTML sanitization | Prevent XSS in tags | https://github.com/cure53/DOMPurify |
+| T11 | sanitize-html | 2.12+ | HTML sanitization | Prevent XSS in tags (Node.js-native) | https://github.com/apostrophecms/sanitize-html |
 | T12 | Cloudflare | N/A | CDN | Cache invalidation API | https://www.cloudflare.com/ |
 | T13 | Google Search Console API | v1 | Indexing | URL submission, sitemap ping | https://developers.google.com/webmaster-tools |
 | T14 | Jest | 29+ | Testing | Unit tests for generators | https://jestjs.io/ |

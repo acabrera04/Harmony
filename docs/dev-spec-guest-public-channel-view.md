@@ -4,6 +4,8 @@
 
 **User Story:** As a Guest User (Searcher), I want to view the full contents of a public channel via a direct URL without being prompted to log in, so that I can get the answer to my specific question immediately without the friction of creating an account I might only use once.
 
+> **Unified Backend Reference:** This feature's backend classes are part of the shared Harmony backend defined in [`unified-backend-architecture.md`](./unified-backend-architecture.md). The mapping from this spec's class labels to the unified module labels is in §10 of that document. Key modules contributed by this feature: **M-B2** (Access Control), **M-B4** (Content Delivery), **M-D1** (Data Access, shared).
+
 ---
 
 ## 1. Header
@@ -1416,7 +1418,7 @@ The development risks and failures categories were chosen to represent the prima
 | T14 | Bing Webmaster API | v1 | Microsoft search integration | URL submission; sitemap ping | https://www.bing.com/webmasters |
 | T15 | Jest | 29+ | Unit testing | Component and service tests | https://jestjs.io/ |
 | T16 | Playwright | 1.40+ | E2E testing | SEO verification; crawl simulation | https://playwright.dev/ |
-| T17 | DOMPurify | 3.0+ | HTML sanitization | XSS prevention | https://github.com/cure53/DOMPurify |
+| T17 | sanitize-html | 2.12+ | HTML sanitization | XSS prevention (Node.js-native) | https://github.com/apostrophecms/sanitize-html |
 | T18 | schema-dts | 1.1+ | Structured data types | Type-safe JSON-LD generation | https://github.com/google/schema-dts |
 | T19 | intersection-observer | (polyfill) | Infinite scroll | Cross-browser scroll detection | https://github.com/w3c/IntersectionObserver |
 | T20 | sharp | 0.33+ | Image processing | Thumbnail generation; optimization | https://sharp.pixelplumbing.com/ |
@@ -2468,7 +2470,7 @@ The security and privacy answers obvious concerns for handling messages that are
 |------------|----------------|-------------------|----------------|--------------|-------------|
 | T3: Next.js SSR | Medium | Medium | Medium | Medium | Medium |
 | T11: CloudFlare Edge | Medium | High | Medium | High | Low |
-| T17: DOMPurify | Low | Low | Low | Medium | Low |
+| T17: sanitize-html | Low | Low | Low | Medium | Low |
 | T18: schema-dts | Low | Medium | Low | Medium | Low |
 | T20: sharp | Low | Low | Low | Low | Low |
 | T21: Lighthouse CI | Medium | Low | Medium | N/A | Low |
@@ -2499,7 +2501,7 @@ The security and privacy answers obvious concerns for handling messages that are
 |------------|---------------|--------|---------|------|
 | Next.js | SSR config, caching | Open source | Vercel paid | Free |
 | CloudFlare | Edge rules, workers | SaaS | Paid tiers | $20+/mo |
-| DOMPurify | None needed | Open source | Community | Free |
+| sanitize-html | None needed | Open source | Community | Free |
 | Lighthouse CI | Thresholds | Open source | Community | Free |
 
 ### 13.5 Contingency Plans
