@@ -711,7 +711,7 @@ Minor reprompting was needed to standardize the rate-limiting policy. It did not
 | T14 | Bing Webmaster API | v1 | Microsoft search engine integration | https://www.bing.com/webmasters |
 | T15 | Jest | 29+ | Unit/integration testing | https://jestjs.io/ |
 | T16 | Playwright | 1.40+ | Cross-browser E2E testing | https://playwright.dev/ |
-| T17 | DOMPurify | 3.0+ | XSS prevention / HTML sanitization for public-facing content | https://github.com/cure53/DOMPurify |
+| T17 | sanitize-html | 2.12+ | XSS prevention / HTML sanitization for public-facing content (Node.js-native) | https://github.com/apostrophecms/sanitize-html |
 
 > **Convention:** tRPC is used for authenticated internal APIs between client and server. Public-facing endpoints (sitemaps, public channel pages, robots.txt) use REST for maximum compatibility with crawlers and third-party consumers.
 
@@ -1177,7 +1177,7 @@ Platform requires 13+ (COPPA). No specific minor PII collection beyond standard 
 
 ### 12.9 XSS Prevention
 
-All public-facing content (public channel pages, sitemap entries, PublicChannelDTO fields) is sanitized using DOMPurify (T17) before rendering to prevent XSS attacks from user-generated content.
+All public-facing content (public channel pages, sitemap entries, PublicChannelDTO fields) is sanitized using sanitize-html (T17) before rendering to prevent XSS attacks from user-generated content.
 
 ### 12.10 Rationale
 
