@@ -22,7 +22,7 @@ Each feature spec was authored independently and defines its own modules, classe
 | **ORM** | Prisma 5.8+ | Type-safe schema definitions; auto-generated migrations; integrates with PostgreSQL enums. |
 | **Runtime Validation** | Zod 3.22+ | Composes with tRPC for automatic request/response validation; shared between client and server. |
 | **SSR Framework** | Next.js 14+ | Server-side rendering is critical for SEO; server components reduce client bundle for public pages. |
-| **HTML Sanitization** | DOMPurify 3.0+ | XSS prevention for user-generated content rendered on public pages. |
+| **HTML Sanitization** | sanitize-html 2.12+ | XSS prevention for user-generated content rendered on public pages. Node.js-native (no DOM dependency). |
 
 ### 1.3 tRPC + REST Split
 
@@ -156,14 +156,13 @@ classDiagram
         +serverId: UUID
         +name: string
         +slug: string
+        +type: ChannelType
         +visibility: ChannelVisibility
         +topic: string?
         +position: number
         +indexedAt: DateTime?
         +createdAt: DateTime
         +updatedAt: DateTime
-        +isPublic() boolean
-        +isIndexable() boolean
     }
 
     class Message {
@@ -237,6 +236,8 @@ classDiagram
     Channel "1" --> "0..1" GeneratedMetaTags
 ```
 
+> **Entity methods note:** `isPublic()` and `isIndexable()` are logical helpers shown in older diagrams. Because Prisma returns plain data objects, these **must not** be implemented as class methods on the entity. Implement them as utility functions in the service layer (e.g., `isPublicChannel(channel: Channel): boolean` in `visibility.service.ts`).
+
 ### 3.2 Interfaces, Enums & Events
 
 ```mermaid
@@ -252,6 +253,13 @@ classDiagram
         <<interface>>
         +generate(channelId) MetaTagSet
         +validate(tags) ValidationResult
+    }
+
+    class ChannelType {
+        <<enumeration>>
+        TEXT
+        VOICE
+        ANNOUNCEMENT
     }
 
     class ChannelVisibility {
@@ -681,6 +689,8 @@ classDiagram
     }
 ```
 
+> **Entity-to-DTO mapping:** Repositories always return domain entities (e.g. `Server`, `Channel`). The responsibility for mapping to public DTOs (e.g. `Server → PublicServerDTO`) belongs to the **controller layer**. No repository method should return a DTO directly.
+
 ### 3.8 Relationship Legend
 
 | Symbol | Meaning |
@@ -721,6 +731,7 @@ erDiagram
         UUID server_id FK
         VARCHAR_100 name
         VARCHAR_100 slug
+        VARCHAR_20 channel_type
         visibility_enum visibility
         TEXT topic
         INTEGER position
@@ -919,6 +930,8 @@ graph LR
 | `admin.updateMetaTags` | `{ channelId: UUID, overrides: Partial<MetaTagSet> }` | `MetaTagSet` | SEO Meta Tag Generation |
 | `admin.regenerateMetaTags` | `{ channelId: UUID }` | `{ jobId: string }` | SEO Meta Tag Generation |
 
+> **Channel identity note:** The `VisibilityToggle` frontend component currently receives `serverSlug` + `channelSlug`. When wiring to the real backend, the settings page must first call `channel.getSettings` (which returns `channelId` in `ChannelSettingsResponse`) and forward that UUID as a prop to `VisibilityToggle`. This slug→UUID resolution happens once at the settings page level; the tRPC procedures operate on UUIDs only.
+
 ### 5.2 Public APIs (REST)
 
 All REST endpoints are unauthenticated. Rate limiting applies.
@@ -1011,13 +1024,18 @@ graph TB
 | Label | Class | Visibility | Purpose |
 |-------|-------|------------|---------|
 | CL-C-B2.1 | VisibilityGuard | Public | Fast visibility checks (cache-first, DB fallback) |
-| CL-C-B2.2 | ContentFilter | Public | Strips PII, redacts mentions, sanitizes HTML via DOMPurify |
+| CL-C-B2.2 | ContentFilter | Public | Strips PII, redacts mentions, sanitizes HTML via sanitize-html |
 | CL-C-B2.3 | RateLimiter | Public | Sliding-window rate limiting per IP/user/bot |
 | CL-C-B2.4 | AnonymousSessionManager | Public | Cookie-based guest session with preferences |
 
 ### 6.3 M-B3: Visibility Management
 
 **Purpose:** Owns the visibility state machine for channels. Only admins can toggle visibility. Every change is audited and emits an event to downstream consumers.
+
+**Implementation requirements:**
+- `setVisibility()` **must** wrap the `UPDATE channels` and `INSERT INTO visibility_audit_log` writes in a single Prisma transaction — if the audit insert fails, the visibility update must roll back.
+- When transitioning to `PUBLIC_INDEXABLE`, `setVisibility()` also sets `indexed_at = NOW()` on the channel row (within the same transaction), recording the intent-to-index timestamp. This does not confirm the page has been crawled; it marks when the channel became indexable.
+- The controller layer (`ChannelController`) is responsible for mapping domain entities returned by services into response DTOs (`ChannelSettingsResponse`, `VisibilityUpdateResponse`) before sending them to the client. Repositories return domain entities only.
 
 **Internal Architecture:**
 
@@ -1136,7 +1154,7 @@ graph TB
 
 ### 6.6 M-B6: SEO & Indexing
 
-**Purpose:** Canonical owner of sitemap generation, `robots.txt` directives, canonical URLs, and search engine notification. Consumes `VISIBILITY_CHANGED` events to trigger sitemap rebuilds and indexing/de-indexing requests.
+**Purpose:** Canonical owner of sitemap generation, `robots.txt` directives, canonical URLs, and search engine notification. Consumes `VISIBILITY_CHANGED` events to trigger sitemap rebuilds and indexing/de-indexing requests. When a channel transitions to `PRIVATE` or `PUBLIC_NO_INDEX`, `IndexingService` also clears the `indexed_at` field (sets it to `NULL`) in the same DB write; the initial `indexed_at` timestamp when transitioning to `PUBLIC_INDEXABLE` is set by `ChannelVisibilityService` (§6.3).
 
 **Internal Architecture:**
 
@@ -1350,7 +1368,7 @@ sequenceDiagram
 | T13 | Bing Webmaster API | v1 | Microsoft search engine integration | M-B6 |
 | T14 | Jest | 29+ | Unit/integration testing | All |
 | T15 | Playwright | 1.40+ | E2E testing | All |
-| T16 | DOMPurify | 3.0+ | HTML sanitization (XSS prevention) | M-B2, M-B5 |
+| T16 | sanitize-html | 2.12+ | HTML sanitization (XSS prevention, Node.js-native) | M-B2, M-B5 |
 | T17 | natural | 6.0+ | NLP keyword extraction | M-B5 |
 | T18 | compromise | 14.0+ | NLP text parsing/summarization | M-B5 |
 | T19 | schema-dts | 1.1+ | Typed JSON-LD structured data | M-B5, M-B6 |
@@ -1366,7 +1384,7 @@ sequenceDiagram
 
 All user-generated content passes through `ContentFilter` (M-B2) before public rendering:
 
-1. **DOMPurify** strips all script tags and event handlers
+1. **sanitize-html** strips all script tags and event handlers (Node.js-native; no DOM dependency)
 2. **Mention redaction** replaces `@username` with `@user` to protect identities
 3. **PII detection** regex-based removal of email addresses, phone numbers
 4. **Attachment filtering** removes non-public attachments from responses
