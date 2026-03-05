@@ -18,12 +18,10 @@ Each feature spec was authored independently and defines its own modules, classe
 | **Database** | PostgreSQL 16+ | ACID guarantees for visibility state transitions; native `ENUM` types for visibility; `JSONB` for flexible audit payloads; partial indexes for efficient public-channel queries. |
 | **Cache / EventBus** | Redis 7.2+ | Sub-millisecond reads for visibility checks on every public page load; Pub/Sub for cross-module event propagation (`VISIBILITY_CHANGED`, `MESSAGE_CREATED`, etc.) without tight coupling. |
 | **Authenticated APIs** | tRPC 11 | End-to-end type inference between Next.js client and Express server; eliminates hand-written API clients for admin operations. |
-| **Public APIs** | REST (Express) | Search-engine crawlers, social-media link unfurlers, and CDN edge workers require plain HTTP. tRPC's binary protocol is invisible to these consumers. |
+| **Public APIs** | REST (Express) | Search-engine crawlers, social-media link unfurlers, and external consumers require plain HTTP. tRPC's binary protocol is invisible to these consumers. |
 | **ORM** | Prisma 5.8+ | Type-safe schema definitions; auto-generated migrations; integrates with PostgreSQL enums. |
 | **Runtime Validation** | Zod 3.22+ | Composes with tRPC for automatic request/response validation; shared between client and server. |
-| **Job Queue** | BullMQ 5.0+ (backed by Redis) | Async meta-tag regeneration and sitemap rebuilds need durable, retryable jobs with exponential backoff. |
 | **SSR Framework** | Next.js 14+ | Server-side rendering is critical for SEO; server components reduce client bundle for public pages. |
-| **CDN** | CloudFlare | Edge caching for public pages; DDoS protection; bot detection at the edge before requests hit origin. |
 | **HTML Sanitization** | DOMPurify 3.0+ | XSS prevention for user-generated content rendered on public pages. |
 
 ### 1.3 tRPC + REST Split
@@ -59,15 +57,10 @@ graph TB
         Bot["🤖 Search Engine Bot"]
     end
 
-    subgraph Edge["Edge Layer — CloudFlare"]
-        CDN["CDN Cache<br/>(CacheRouter)"]
-        BotDetect["Bot Detector"]
-    end
-
     subgraph Client["Client Layer — Next.js"]
         AdminUI["Admin Dashboard<br/>(M-CV1)"]
-        PublicUI["Public View SSR<br/>(M-CV2)"]
-        ClientInt["Client Interaction<br/>(M-GV1)"]
+        PublicUI["Public View SSR<br/>(M-GV1)"]
+        ClientInt["Client Interaction<br/>(M-GV2)"]
     end
 
     subgraph Server["Server Layer — Express + tRPC"]
@@ -83,7 +76,6 @@ graph TB
     subgraph Data["Data Layer"]
         PG[("PostgreSQL")]
         Redis[("Redis<br/>Cache + Pub/Sub")]
-        BullQ[("BullMQ<br/>Job Queue")]
     end
 
     subgraph ExtSystems["External Systems"]
@@ -92,11 +84,8 @@ graph TB
     end
 
     Admin -->|tRPC| AdminUI
-    Guest -->|HTTPS| CDN
-    Bot -->|HTTPS| CDN
-    CDN --> BotDetect
-    BotDetect -->|Cache Miss| PublicUI
-    CDN -->|Cache Hit| Guest
+    Guest -->|HTTPS| PublicUI
+    Bot -->|HTTPS| PublicUI
     AdminUI -->|tRPC| APIGateway
     PublicUI -->|Internal| APIGateway
     ClientInt -->|REST| APIGateway
@@ -114,7 +103,7 @@ graph TB
     VisBiz --> Redis
     ContentDel --> Redis
     MetaTag --> Redis
-    BgProcess --> BullQ
+    BgProcess --> Redis
     BgProcess --> Google
     BgProcess --> Bing
     SEOIndex --> Redis
@@ -136,7 +125,7 @@ The unified backend organizes into **shared backend modules** (prefixed `M-B`) a
 | M-B4 | Content Delivery | Server | Guest Public Channel View | Message retrieval, author privacy, attachment processing |
 | M-B5 | Meta Tag Engine | Server | SEO Meta Tag Generation | Meta tag generation, content analysis, OpenGraph, structured data |
 | M-B6 | SEO & Indexing | Server | Shared | Sitemap generation, search engine notifications, canonical URLs, robots directives |
-| M-B7 | Background Workers | Server | Shared | BullMQ workers for async meta-tag regeneration, sitemap rebuilds, search engine pings |
+| M-B7 | Background Workers | Server | Shared | Async workers for meta-tag regeneration, sitemap rebuilds, search engine pings (Redis Pub/Sub driven) |
 | M-D1 | Data Access | Data | Shared | Repositories (Channel, Message, Server, User, Attachment, AuditLog, MetaTag) |
 | M-D2 | Persistence | Data | Shared | PostgreSQL schemas (all tables) |
 | M-D3 | Cache | Data | Shared | Redis cache schemas and Pub/Sub event channels |
@@ -145,7 +134,7 @@ The unified backend organizes into **shared backend modules** (prefixed `M-B`) a
 
 ## 3. Unified Class Hierarchy
 
-### 3.1 Class Diagram
+### 3.1 Domain Model (Entities, DTOs, Events)
 
 ```mermaid
 classDiagram
@@ -258,7 +247,7 @@ classDiagram
         +contentHash: string
         +needsRegeneration: boolean
         +generatedAt: DateTime
-        +version: number
+        +schemaVersion: number
     }
 
     %% === Events ===
@@ -332,6 +321,19 @@ classDiagram
         +indexingStatus: string
     }
 
+    %% === Entity Relationships ===
+    Server "1" --> "*" Channel
+    Channel "1" --> "*" Message
+    Message "*" --> "1" User
+    Message "1" --> "*" Attachment
+    Channel "1" --> "*" AuditLogEntry
+    Channel "1" --> "0..1" GeneratedMetaTags
+```
+
+### 3.2 Service & Repository Layer
+
+```mermaid
+classDiagram
     %% === Services (M-B3: Visibility Management) ===
     class ChannelVisibilityService {
         -channelRepository: ChannelRepository
@@ -537,16 +539,9 @@ classDiagram
     PublicChannelController --> SEOService
     PublicServerController --> ServerRepository
     SEOController --> IndexingService
-
-    Server "1" --> "*" Channel
-    Channel "1" --> "*" Message
-    Message "*" --> "1" User
-    Message "1" --> "*" Attachment
-    Channel "1" --> "*" AuditLogEntry
-    Channel "1" --> "0..1" GeneratedMetaTags
 ```
 
-### 3.2 Relationship Legend
+### 3.3 Relationship Legend
 
 | Symbol | Meaning |
 |--------|---------|
@@ -636,19 +631,19 @@ erDiagram
 
     generated_meta_tags {
         UUID id PK
-        UUID channel_id FK_UK
+        UUID channel_id FK
         VARCHAR_120 title
         VARCHAR_320 description
         VARCHAR_120 og_title
         VARCHAR_320 og_description
         VARCHAR_500 og_image
         VARCHAR_20 twitter_card
-        TEXT_ARRAY keywords
+        TEXT keywords
         JSONB structured_data
         VARCHAR_64 content_hash
         BOOLEAN needs_regeneration
         TIMESTAMPTZ generated_at
-        INTEGER version
+        INTEGER schema_version
     }
 ```
 
@@ -723,7 +718,7 @@ graph LR
         IdxSvc["IndexingService<br/>(M-B6)"]
         MetaSvc["MetaTagService<br/>(M-B5)"]
         CacheMgr["Cache Invalidator<br/>(M-D3)"]
-        BgWorker["Background Workers<br/>(M-B7)"]
+        BgWorker["Event-Driven Workers<br/>(M-B7)"]
     end
 
     CVS --> VC
@@ -790,12 +785,12 @@ All REST endpoints are unauthenticated. Rate limiting applies.
 
 | Method | Path | Handler | Feature | Cache TTL |
 |--------|------|---------|---------|-----------|
-| GET | `/c/{serverSlug}/{channelSlug}` | `PublicChannelController.getPublicChannelPage` | Guest Public Channel View | 60s (CDN) |
+| GET | `/c/{serverSlug}/{channelSlug}` | `PublicChannelController.getPublicChannelPage` | Guest Public Channel View | 60s |
 | GET | `/api/public/channels/{channelId}/messages` | `PublicChannelController.getPublicMessages` | Guest Public Channel View | 60s |
 | GET | `/api/public/channels/{channelId}/messages/{messageId}` | `PublicChannelController.getPublicMessage` | Guest Public Channel View | 60s |
 | GET | `/api/public/servers/{serverSlug}` | `PublicServerController.getPublicServerInfo` | Guest Public Channel View | 300s |
 | GET | `/api/public/servers/{serverSlug}/channels` | `PublicServerController.getPublicChannelList` | Guest Public Channel View | 300s |
-| GET | `/s/{serverSlug}` | `PublicServerController.getServerLandingPage` | Guest Public Channel View | 300s (CDN) |
+| GET | `/s/{serverSlug}` | `PublicServerController.getServerLandingPage` | Guest Public Channel View | 300s |
 | GET | `/sitemap/{serverSlug}.xml` | `SEOController.getServerSitemap` | Channel Visibility Toggle | 3600s |
 | GET | `/robots.txt` | `SEOController.getRobotsTxt` | Channel Visibility Toggle | 86400s |
 
@@ -1027,7 +1022,7 @@ graph TB
 
 ### 6.7 M-B7: Background Workers
 
-**Purpose:** Handles asynchronous, potentially expensive operations: meta-tag regeneration, sitemap rebuilds, and search engine notification. Uses BullMQ for durable, retryable job processing.
+**Purpose:** Handles asynchronous, potentially expensive operations: meta-tag regeneration, sitemap rebuilds, and search engine notification. Workers subscribe to Redis Pub/Sub events and process them asynchronously.
 
 **Internal Architecture:**
 
@@ -1040,9 +1035,8 @@ graph TB
     end
 
     EL -->|subscribes| EventBus["Redis Pub/Sub"]
-    EL -->|enqueues| BullQ[("BullMQ Queue")]
-    MTUW -->|processes| BullQ
-    SU -->|processes| BullQ
+    EL -->|dispatches| MTUW
+    EL -->|dispatches| SU
     MTUW -->|calls| MetaSvc["MetaTagService (M-B5)"]
     SU -->|calls| IdxSvc["IndexingService (M-B6)"]
 ```
@@ -1051,9 +1045,9 @@ graph TB
 
 | Label | Class | Visibility | Purpose |
 |-------|-------|------------|---------|
-| CL-C-B7.1 | MetaTagUpdateWorker | Internal | Processes meta-tag regeneration jobs |
-| CL-C-B7.2 | EventListener | Internal | Subscribes to Redis Pub/Sub; routes events to job queues |
-| CL-C-B7.3 | SitemapUpdater | Internal | Processes sitemap rebuild + search engine notification jobs |
+| CL-C-B7.1 | MetaTagUpdateWorker | Internal | Processes meta-tag regeneration on event |
+| CL-C-B7.2 | EventListener | Internal | Subscribes to Redis Pub/Sub; dispatches to workers |
+| CL-C-B7.3 | SitemapUpdater | Internal | Processes sitemap rebuild + search engine notification on event |
 
 ### 6.8 M-D1: Data Access (Repositories)
 
@@ -1159,7 +1153,6 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Guest
-    participant CDN as CloudFlare CDN
     participant SSR as Next.js SSR (M-GV1)
     participant PCC as M-B1: PublicChannelController
     participant VG as M-B2: VisibilityGuard
@@ -1169,9 +1162,7 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant Redis as Redis Cache
 
-    Guest->>CDN: GET /c/gamedev/help
-    CDN->>CDN: Cache MISS
-    CDN->>SSR: Forward request
+    Guest->>SSR: GET /c/gamedev/help
 
     SSR->>PCC: getPublicChannelPage("gamedev", "help")
     PCC->>VG: isChannelPublic(channelId)
@@ -1191,8 +1182,7 @@ sequenceDiagram
 
     PCC-->>SSR: PublicChannelPage data
     SSR->>SSR: Render HTML with meta tags
-    SSR-->>CDN: HTML + Cache-Control: public, max-age=60
-    CDN-->>Guest: HTML Response
+    SSR-->>Guest: HTML Response
 ```
 
 ---
@@ -1211,20 +1201,18 @@ sequenceDiagram
 | T8 | tRPC | 11+ | Authenticated type-safe APIs | M-B1 |
 | T9 | Zod | 3.22+ | Runtime schema validation | All API layers |
 | T10 | TailwindCSS | 3.4+ | Utility-first CSS | M-CV1, M-GV1 |
-| T11 | CloudFlare | N/A | CDN, DDoS protection, edge cache | Edge layer |
-| T12 | Docker | 24+ | Containerization | Deployment |
-| T13 | Google Search Console API | v1 | Programmatic indexing/de-indexing | M-B6 |
-| T14 | Bing Webmaster API | v1 | Microsoft search engine integration | M-B6 |
-| T15 | Jest | 29+ | Unit/integration testing | All |
-| T16 | Playwright | 1.40+ | E2E testing | All |
-| T17 | DOMPurify | 3.0+ | HTML sanitization (XSS prevention) | M-B2, M-B5 |
-| T18 | BullMQ | 5.0+ | Durable job queue | M-B7 |
-| T19 | natural | 6.0+ | NLP keyword extraction | M-B5 |
-| T20 | compromise | 14.0+ | NLP text parsing/summarization | M-B5 |
-| T21 | schema-dts | 1.1+ | Typed JSON-LD structured data | M-B5, M-B6 |
-| T22 | sharp | 0.33+ | Image processing/thumbnails | M-B4 |
-| T23 | intersection-observer | polyfill | Infinite scroll (client) | M-GV2 |
-| T24 | Lighthouse CI | 11+ | Performance testing | CI/CD |
+| T11 | Docker | 24+ | Containerization | Deployment |
+| T12 | Google Search Console API | v1 | Programmatic indexing/de-indexing | M-B6 |
+| T13 | Bing Webmaster API | v1 | Microsoft search engine integration | M-B6 |
+| T14 | Jest | 29+ | Unit/integration testing | All |
+| T15 | Playwright | 1.40+ | E2E testing | All |
+| T16 | DOMPurify | 3.0+ | HTML sanitization (XSS prevention) | M-B2, M-B5 |
+| T17 | natural | 6.0+ | NLP keyword extraction | M-B5 |
+| T18 | compromise | 14.0+ | NLP text parsing/summarization | M-B5 |
+| T19 | schema-dts | 1.1+ | Typed JSON-LD structured data | M-B5, M-B6 |
+| T20 | sharp | 0.33+ | Image processing/thumbnails | M-B4 |
+| T21 | intersection-observer | polyfill | Infinite scroll (client) | M-GV2 |
+| T22 | Lighthouse CI | 11+ | Performance testing | CI/CD |
 
 ---
 
@@ -1247,9 +1235,8 @@ All user-generated content passes through `ContentFilter` (M-B2) before public r
 
 ### 9.3 Rate Limiting & Bot Protection
 
-- CloudFlare DDoS protection at the edge layer
 - Application-level sliding-window rate limiting (see §5.3)
-- CAPTCHA challenge after 500 views/hour from a single IP (via CloudFlare)
+- Express rate-limit middleware for per-IP throttling
 - Verified bot allowlist: Googlebot, Bingbot, Slackbot (by User-Agent + reverse DNS)
 
 ### 9.4 Security Headers
@@ -1332,7 +1319,7 @@ This section maps the unified backend modules back to the class labels used in e
 | **SSR** | Server-Side Rendering — HTML generated on the server for SEO |
 | **tRPC** | TypeScript Remote Procedure Call — type-safe API framework |
 | **EventBus** | Redis Pub/Sub messaging system for cross-module communication |
-| **BullMQ** | Redis-backed job queue for background processing |
+| **Event-Driven Workers** | Redis Pub/Sub subscribers that process background tasks asynchronously |
 | **Prisma** | Type-safe ORM for PostgreSQL |
 
 ## Appendix B: File Structure (Planned)
