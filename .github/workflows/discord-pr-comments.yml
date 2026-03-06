@@ -1,0 +1,35 @@
+name: Sync PR Comments to Discord
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  sync-comment:
+    # GitHub treats PRs as issues; this ensures it only runs on PR comments
+    if: ${{ github.event.issue.pull_request }} 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Route Comment to Discord Thread
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+          PR_BODY: ${{ github.event.issue.body }}
+        run: |
+          # Extract the numeric thread ID matching the visible text [1]
+          THREAD_ID=$(echo "$PR_BODY" | grep -oP '\*\*Discord Thread ID:\*\* \K[0-9]+')
+          
+          # Abort cleanly if no thread ID was found
+          if [ -z "$THREAD_ID" ]; then
+            echo "No associated Discord thread found for this PR."
+            exit 0
+          fi
+
+          # Send the comment directly to the specific forum thread [2]
+          jq -n \
+            --arg ct "**@$COMMENT_USER commented:**\n$COMMENT_BODY" \
+            '{content: $ct}' | \
+          curl -s -X POST "$WEBHOOK_URL?thread_id=$THREAD_ID" \
+            -H "Content-Type: application/json" \
+            -d @-
