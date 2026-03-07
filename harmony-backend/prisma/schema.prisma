@@ -57,6 +57,7 @@ model User {
   messages           Message[]
   visibilityAuditLog VisibilityAuditLog[] @relation("AuditActor")
   refreshTokens      RefreshToken[]
+  ownedServers       Server[]             @relation("ServerOwner")
 
   @@map("users")
 }
@@ -83,8 +84,10 @@ model Server {
   iconUrl     String?  @map("icon_url") @db.VarChar(500)
   isPublic    Boolean  @default(false) @map("is_public")
   memberCount Int      @default(0) @map("member_count")
+  ownerId     String   @map("owner_id") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
+  owner    User      @relation("ServerOwner", fields: [ownerId], references: [id])
   channels Channel[]
 
   // idx_servers_slug is pinned via map: on the @unique above.

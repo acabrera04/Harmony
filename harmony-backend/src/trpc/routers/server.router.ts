@@ -1,0 +1,54 @@
+import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import { router, authedProcedure, publicProcedure } from '../init';
+import { serverService } from '../../services/server.service';
+
+export const serverRouter = router({
+  getServers: publicProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(100).optional() }).optional())
+    .query(async ({ input }) => {
+      return serverService.getPublicServers(input?.limit);
+    }),
+
+  getServer: publicProcedure
+    .input(z.object({ slug: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const server = await serverService.getServer(input.slug);
+      if (!server || !server.isPublic) throw new TRPCError({ code: 'NOT_FOUND', message: 'Server not found' });
+      return server;
+    }),
+
+  createServer: authedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(2000).optional(),
+        iconUrl: z.string().url().max(500).optional(),
+        isPublic: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      return serverService.createServer({ ...input, ownerId: ctx.userId });
+    }),
+
+  updateServer: authedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().max(2000).optional(),
+        iconUrl: z.string().url().max(500).optional(),
+        isPublic: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, ...data } = input;
+      return serverService.updateServer(id, ctx.userId, data);
+    }),
+
+  deleteServer: authedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input, ctx }) => {
+      return serverService.deleteServer(input.id, ctx.userId);
+    }),
+});

@@ -11,15 +11,28 @@ import { channelService } from '../src/services/channel.service';
 
 const prisma = new PrismaClient();
 
+let userId: string;
 let serverId: string;
 let channelId: string;
 
 beforeAll(async () => {
+  const ts = Date.now();
+  const user = await prisma.user.create({
+    data: {
+      email: `channel-test-${ts}@example.com`,
+      username: `channel_test_${ts}`,
+      passwordHash: '$2a$12$placeholderHashForTestingOnly000000000000000000000000000',
+      displayName: 'Channel Test User',
+    },
+  });
+  userId = user.id;
+
   const server = await prisma.server.create({
     data: {
       name: 'Channel Test Server',
-      slug: `channel-test-${Date.now()}`,
+      slug: `channel-test-${ts}`,
       isPublic: false,
+      ownerId: userId,
     },
   });
   serverId = server.id;
@@ -28,6 +41,9 @@ beforeAll(async () => {
 afterAll(async () => {
   if (serverId) {
     await prisma.server.delete({ where: { id: serverId } }).catch(() => {});
+  }
+  if (userId) {
+    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
   }
   await prisma.$disconnect();
 });
@@ -163,6 +179,7 @@ describe('channelService.createDefaultChannel', () => {
         name: 'Default Channel Server',
         slug: `default-ch-test-${Date.now()}`,
         isPublic: false,
+        ownerId: userId,
       },
     });
     defaultServerId = server.id;

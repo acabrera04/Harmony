@@ -187,6 +187,7 @@ describe('Basic Prisma CRUD', () => {
         name: 'Test Server',
         slug: `test-server-${Date.now()}`,
         isPublic: false,
+        ownerId: userId,
       },
     });
     serverId = server.id;
