@@ -25,14 +25,21 @@ async function generateUniqueSlug(name: string): Promise<string> {
   return candidate;
 }
 
-async function createWithSlugRetry(
-  input: { name: string; slug: string; description?: string; iconUrl?: string; isPublic?: boolean; ownerId: string },
+/**
+ * Generic slug-collision retry helper.
+ * Calls fn(slug) up to maxRetries times, regenerating the slug on a P2002 unique violation.
+ */
+async function withSlugRetry(
+  name: string,
+  initialSlug: string,
+  fn: (slug: string) => Promise<Server>,
   maxRetries = 3,
 ): Promise<Server> {
+  let slug = initialSlug;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const slug = attempt === 0 ? input.slug : await generateUniqueSlug(input.name);
+    if (attempt > 0) slug = await generateUniqueSlug(name);
     try {
-      return await prisma.server.create({ data: { ...input, slug } });
+      return await fn(slug);
     } catch (err) {
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -48,8 +55,12 @@ async function createWithSlugRetry(
 }
 
 export const serverService = {
-  async getPublicServers(): Promise<Server[]> {
-    return prisma.server.findMany({ where: { isPublic: true }, orderBy: { createdAt: 'desc' } });
+  async getPublicServers(limit = 50): Promise<Server[]> {
+    return prisma.server.findMany({
+      where: { isPublic: true },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit, 100),
+    });
   },
 
   async getServer(slug: string): Promise<Server | null> {
@@ -64,7 +75,9 @@ export const serverService = {
     ownerId: string;
   }): Promise<Server> {
     const slug = await generateUniqueSlug(input.name);
-    return createWithSlugRetry({ ...input, slug });
+    return withSlugRetry(input.name, slug, (s) =>
+      prisma.server.create({ data: { ...input, slug: s } }),
+    );
   },
 
   async updateServer(
@@ -74,37 +87,37 @@ export const serverService = {
   ): Promise<Server> {
     const server = await prisma.server.findUnique({ where: { id } });
     if (!server) throw new TRPCError({ code: 'NOT_FOUND', message: 'Server not found' });
-    if (server.ownerId !== actorId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the server owner can update' });
+    if (server.ownerId !== actorId)
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the server owner can update' });
 
-    const updateData: typeof data & { slug?: string } = { ...data };
     if (data.name && data.name !== server.name) {
       const slug = await generateUniqueSlug(data.name);
-      // Retry on slug collision (P2002)
-      const maxRetries = 3;
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        updateData.slug = attempt === 0 ? slug : await generateUniqueSlug(data.name);
-        try {
-          return await prisma.server.update({ where: { id }, data: updateData });
-        } catch (err) {
-          if (
-            err instanceof Prisma.PrismaClientKnownRequestError &&
-            err.code === 'P2002' &&
-            attempt < maxRetries - 1
-          ) {
-            continue;
-          }
-          throw err;
-        }
-      }
-      throw new TRPCError({ code: 'CONFLICT', message: 'Unable to generate a unique slug' });
+      return withSlugRetry(data.name, slug, (s) =>
+        prisma.server.update({ where: { id }, data: { ...data, slug: s } }),
+      );
     }
-    return prisma.server.update({ where: { id }, data: updateData });
+    return prisma.server.update({ where: { id }, data });
   },
 
   async deleteServer(id: string, actorId: string): Promise<Server> {
     const server = await prisma.server.findUnique({ where: { id } });
     if (!server) throw new TRPCError({ code: 'NOT_FOUND', message: 'Server not found' });
-    if (server.ownerId !== actorId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the server owner can delete' });
+    if (server.ownerId !== actorId)
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the server owner can delete' });
     return prisma.server.delete({ where: { id } });
+  },
+
+  async incrementMemberCount(id: string): Promise<Server> {
+    return prisma.server.update({
+      where: { id },
+      data: { memberCount: { increment: 1 } },
+    });
+  },
+
+  async decrementMemberCount(id: string): Promise<Server> {
+    return prisma.server.update({
+      where: { id },
+      data: { memberCount: { decrement: 1 } },
+    });
   },
 };

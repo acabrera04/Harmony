@@ -4,9 +4,11 @@ import { router, authedProcedure, publicProcedure } from '../init';
 import { serverService } from '../../services/server.service';
 
 export const serverRouter = router({
-  getServers: publicProcedure.query(async () => {
-    return serverService.getPublicServers();
-  }),
+  getServers: publicProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(100).optional() }).optional())
+    .query(async ({ input }) => {
+      return serverService.getPublicServers(input?.limit);
+    }),
 
   getServer: publicProcedure
     .input(z.object({ slug: z.string().min(1) }))
