@@ -1,20 +1,23 @@
 import { z } from 'zod';
-import { router, authedProcedure } from '../init';
+import { router, authedProcedure, withPermission } from '../init';
 import { channelService } from '../../services/channel.service';
+import { visibilityService } from '../../services/visibility.service';
 
 const ChannelTypeSchema = z.enum(['TEXT', 'VOICE', 'ANNOUNCEMENT']);
 const ChannelVisibilitySchema = z.enum(['PUBLIC_INDEXABLE', 'PUBLIC_NO_INDEX', 'PRIVATE']);
 
 export const channelRouter = router({
-  getChannels: authedProcedure
+  /** Requires server membership (server:read) — prevents leaking channel metadata to non-members. */
+  getChannels: withPermission('server:read')
     .input(z.object({ serverId: z.string().uuid() }))
     .query(({ input }) => channelService.getChannels(input.serverId)),
 
+  /** Public channel lookup by slug — no membership required (slug is not secret). */
   getChannel: authedProcedure
     .input(z.object({ serverSlug: z.string(), channelSlug: z.string() }))
     .query(({ input }) => channelService.getChannelBySlug(input.serverSlug, input.channelSlug)),
 
-  createChannel: authedProcedure
+  createChannel: withPermission('channel:create')
     .input(
       z.object({
         serverId: z.string().uuid(),
@@ -28,9 +31,10 @@ export const channelRouter = router({
     )
     .mutation(({ input }) => channelService.createChannel(input)),
 
-  updateChannel: authedProcedure
+  updateChannel: withPermission('channel:update')
     .input(
       z.object({
+        serverId: z.string().uuid(),
         channelId: z.string().uuid(),
         name: z.string().min(1).max(100).optional(),
         topic: z.string().optional(),
@@ -38,11 +42,31 @@ export const channelRouter = router({
       }),
     )
     .mutation(({ input }) => {
-      const { channelId, ...patch } = input;
-      return channelService.updateChannel(channelId, patch);
+      const { channelId, serverId, ...patch } = input;
+      return channelService.updateChannel(channelId, serverId, patch);
     }),
 
-  deleteChannel: authedProcedure
-    .input(z.object({ channelId: z.string().uuid() }))
-    .mutation(({ input }) => channelService.deleteChannel(input.channelId)),
+  deleteChannel: withPermission('channel:delete')
+    .input(z.object({ serverId: z.string().uuid(), channelId: z.string().uuid() }))
+    .mutation(({ input }) =>
+      channelService.deleteChannel(input.channelId, input.serverId),
+    ),
+
+  /** Change a channel's visibility. Requires channel:manage_visibility (admin+). */
+  setVisibility: withPermission('channel:manage_visibility')
+    .input(
+      z.object({
+        serverId: z.string().uuid(),
+        channelId: z.string().uuid(),
+        visibility: ChannelVisibilitySchema,
+      }),
+    )
+    .mutation(({ input, ctx }) =>
+      visibilityService.setVisibility({
+        channelId: input.channelId,
+        visibility: input.visibility,
+        actorId: ctx.userId,
+        ip: ctx.ip,
+      }),
+    ),
 });

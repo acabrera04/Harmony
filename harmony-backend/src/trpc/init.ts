@@ -63,8 +63,9 @@ export function withPermission(action: Action) {
     const raw = await getRawInput();
     const input = raw as { serverId?: unknown };
     const serverId = input?.serverId;
-    if (typeof serverId !== 'string' || serverId.trim() === '') {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'serverId is required for permission checks and must be a non-empty string' });
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (typeof serverId !== 'string' || !UUID_RE.test(serverId)) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'serverId must be a valid UUID' });
     }
     try {
       await permissionService.requirePermission(ctx.userId, serverId, action);
