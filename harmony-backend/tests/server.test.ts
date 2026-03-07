@@ -1,35 +1,34 @@
 import request from 'supertest';
 import { createApp } from '../src/app';
-import { ServerService } from '../src/services/server.service';
+import { generateSlug } from '../src/services/server.service';
+import { serverService } from '../src/services/server.service';
 import type { Express } from 'express';
 
 // ─── Unit tests: slug generation ─────────────────────────────────────────────
 
-describe('ServerService.generateSlug', () => {
-  const service = new ServerService();
-
+describe('generateSlug', () => {
   it('converts name to lowercase kebab-case', () => {
-    expect(service.generateSlug('My Cool Server')).toBe('my-cool-server');
+    expect(generateSlug('My Cool Server')).toBe('my-cool-server');
   });
 
   it('strips special characters', () => {
-    expect(service.generateSlug('Game Dev!!! @#$')).toBe('game-dev');
+    expect(generateSlug('Game Dev!!! @#$')).toBe('game-dev');
   });
 
   it('collapses multiple spaces and hyphens', () => {
-    expect(service.generateSlug('a   b---c')).toBe('a-b-c');
+    expect(generateSlug('a   b---c')).toBe('a-b-c');
   });
 
   it('trims leading and trailing hyphens', () => {
-    expect(service.generateSlug(' --hello-- ')).toBe('hello');
+    expect(generateSlug(' --hello-- ')).toBe('hello');
   });
 
   it('handles unicode by stripping non-ascii', () => {
-    expect(service.generateSlug('café lounge')).toBe('caf-lounge');
+    expect(generateSlug('café lounge')).toBe('caf-lounge');
   });
 
   it('returns empty string for fully special-char names', () => {
-    expect(service.generateSlug('!@#$%')).toBe('');
+    expect(generateSlug('!@#$%')).toBe('');
   });
 });
 
@@ -44,7 +43,7 @@ describe('server tRPC router', () => {
 
   it('server.getServers returns a result (even if empty)', async () => {
     const getServersSpy = jest
-      .spyOn(ServerService.prototype, 'getServers')
+      .spyOn(serverService, 'getPublicServers')
       .mockResolvedValue([]);
 
     const res = await request(app).get('/trpc/server.getServers');

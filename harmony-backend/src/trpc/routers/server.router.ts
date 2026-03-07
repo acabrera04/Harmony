@@ -1,13 +1,11 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { router, authedProcedure, publicProcedure } from './init';
-import { ServerService } from '../services/server.service';
-
-const serverService = new ServerService();
+import { router, authedProcedure, publicProcedure } from '../init';
+import { serverService } from '../../services/server.service';
 
 export const serverRouter = router({
   getServers: publicProcedure.query(async () => {
-    return serverService.getServers();
+    return serverService.getPublicServers();
   }),
 
   getServer: publicProcedure
