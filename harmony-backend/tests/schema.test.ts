@@ -170,9 +170,12 @@ describe('Basic Prisma CRUD', () => {
   let serverId: string;
 
   beforeAll(async () => {
+    const ts = Date.now();
     const user = await prisma.user.create({
       data: {
-        username: `test_user_${Date.now()}`,
+        email: `test_user_${ts}@example.com`,
+        username: `test_user_${ts}`,
+        passwordHash: '$2a$12$placeholderHashForTestingOnly000000000000000000000000000',
         displayName: 'Test User',
         publicProfile: true,
       },
