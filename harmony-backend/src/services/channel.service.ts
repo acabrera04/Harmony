@@ -72,12 +72,13 @@ export const channelService = {
       data: { serverId, name, slug, type, visibility, topic, position },
     });
 
-    // Write-through: cache new visibility (best-effort, don't fail the mutation)
+    // Write-through: cache new visibility and invalidate server channel list (best-effort)
     cacheService.set(
       CacheKeys.channelVisibility(channel.id),
       channel.visibility,
       { ttl: CacheTTL.channelVisibility },
     ).catch(() => {});
+    cacheService.invalidate(`server:${sanitizeKeySegment(serverId)}:public_channels`).catch(() => {});
 
     return channel;
   },
@@ -97,8 +98,9 @@ export const channelService = {
       },
     });
 
-    // Write-through: invalidate message caches (best-effort)
+    // Write-through: invalidate message caches and server channel list (best-effort)
     cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(channelId)}:*`).catch(() => {});
+    cacheService.invalidate(`server:${sanitizeKeySegment(channel.serverId)}:public_channels`).catch(() => {});
 
     return updated;
   },
@@ -114,6 +116,7 @@ export const channelService = {
     // Write-through: invalidate all caches for deleted channel (best-effort)
     cacheService.invalidate(CacheKeys.channelVisibility(channelId)).catch(() => {});
     cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(channelId)}:*`).catch(() => {});
+    cacheService.invalidate(`server:${sanitizeKeySegment(channel.serverId)}:public_channels`).catch(() => {});
   },
 
   async createDefaultChannel(serverId: string) {
