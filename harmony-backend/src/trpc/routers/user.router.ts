@@ -17,8 +17,8 @@ export const userRouter = router({
   updateUser: authedProcedure
     .input(
       z.object({
-        displayName: z.string().min(1).max(100).optional(),
-        avatarUrl: z.string().url().max(500).nullable().optional(),
+        displayName: z.string().trim().min(1).max(100).optional(),
+        avatarUrl: z.string().url().regex(/^https?:\/\//).max(500).nullable().optional(),
         publicProfile: z.boolean().optional(),
         status: UserStatusSchema.optional(),
       }),

@@ -41,7 +41,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.user.deleteMany({
     where: { id: { in: [userId, privateUserId].filter(Boolean) } },
-  }).catch(() => {});
+  }).catch((e) => console.error('afterAll cleanup failed:', e));
   await prisma.$disconnect();
 });
 
@@ -68,6 +68,7 @@ describe('userService.getUser', () => {
     expect(user.username).toBe('anonymous');
     expect(user.avatarUrl).toBeNull();
     expect(user.status).toBe('OFFLINE');
+    expect(user.publicProfile).toBe(true); // flag itself is masked
   });
 
   it('never exposes passwordHash or email for a private user', async () => {

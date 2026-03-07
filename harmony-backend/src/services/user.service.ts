@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { UserStatus } from '@prisma/client';
+import { Prisma, UserStatus } from '@prisma/client';
 import { prisma } from '../db/prisma';
 
 export interface UpdateUserInput {
@@ -43,6 +43,8 @@ export const userService = {
    * Returns a user's profile by ID, respecting the publicProfile privacy flag.
    * Users with publicProfile=false are returned anonymised — per architecture §4.1:
    * "Users with public_profile = false are displayed as 'Anonymous' with no avatar."
+   * The publicProfile flag itself is also masked (returned as true) so callers
+   * cannot infer whether a user has a private profile.
    * Credential fields (passwordHash, email) are never returned.
    */
   async getUser(userId: string) {
@@ -59,6 +61,7 @@ export const userService = {
         username: 'anonymous',
         displayName: 'Anonymous',
         avatarUrl: null,
+        publicProfile: true, // mask the flag — callers cannot infer private status
         status: UserStatus.OFFLINE,
       };
     }
@@ -82,20 +85,22 @@ export const userService = {
   },
 
   async updateUser(userId: string, patch: UpdateUserInput) {
-    const exists = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
-    if (!exists) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+    try {
+      return await prisma.user.update({
+        where: { id: userId },
+        select: SELF_PROFILE_SELECT,
+        data: {
+          ...(patch.displayName !== undefined && { displayName: patch.displayName }),
+          ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl }),
+          ...(patch.publicProfile !== undefined && { publicProfile: patch.publicProfile }),
+          ...(patch.status !== undefined && { status: patch.status }),
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      }
+      throw e;
     }
-
-    return prisma.user.update({
-      where: { id: userId },
-      select: SELF_PROFILE_SELECT,
-      data: {
-        ...(patch.displayName !== undefined && { displayName: patch.displayName }),
-        ...(patch.avatarUrl !== undefined && { avatarUrl: patch.avatarUrl }),
-        ...(patch.publicProfile !== undefined && { publicProfile: patch.publicProfile }),
-        ...(patch.status !== undefined && { status: patch.status }),
-      },
-    });
   },
 };
