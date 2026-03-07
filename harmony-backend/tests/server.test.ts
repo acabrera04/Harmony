@@ -3,6 +3,7 @@ import { createApp } from '../src/app';
 import { generateSlug } from '../src/services/server.service';
 import { serverService } from '../src/services/server.service';
 import type { Express } from 'express';
+import type { Server } from '@prisma/client';
 
 // ─── Unit tests: slug generation ─────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ describe('server tRPC router', () => {
   it('server.getServer returns 404 for a private server (unauthenticated)', async () => {
     const getServerSpy = jest
       .spyOn(serverService, 'getServer')
-      .mockResolvedValue({ id: '1', slug: 'private-server', isPublic: false } as any);
+      .mockResolvedValue({ id: '1', slug: 'private-server', isPublic: false } as Server);
 
     const res = await request(app).get('/trpc/server.getServer?input=%7B%22slug%22%3A%22private-server%22%7D');
 
@@ -53,7 +54,7 @@ describe('server tRPC router', () => {
   });
 
   it('server.getServer returns the server when it is public', async () => {
-    const mockServer = { id: '1', slug: 'public-server', isPublic: true, name: 'Public Server' } as any;
+    const mockServer = { id: '1', slug: 'public-server', isPublic: true, name: 'Public Server' } as Server;
     const getServerSpy = jest
       .spyOn(serverService, 'getServer')
       .mockResolvedValue(mockServer);
