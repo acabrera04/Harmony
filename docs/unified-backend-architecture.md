@@ -718,6 +718,7 @@ erDiagram
     channels ||--o| generated_meta_tags : "has"
     messages }o--|| users : "authored by"
     messages ||--o{ attachments : "has"
+    users ||--o{ refresh_tokens : "has"
 
     servers {
         UUID id PK
@@ -756,10 +757,21 @@ erDiagram
 
     users {
         UUID id PK
-        VARCHAR_32 username
+        VARCHAR_254 email UK
+        VARCHAR_32 username UK
+        VARCHAR_72 password_hash
         VARCHAR_100 display_name
         VARCHAR_500 avatar_url
         BOOLEAN public_profile
+        TIMESTAMPTZ created_at
+    }
+
+    refresh_tokens {
+        UUID id PK
+        VARCHAR_64 token_hash UK
+        UUID user_id FK
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ revoked_at
         TIMESTAMPTZ created_at
     }
 
