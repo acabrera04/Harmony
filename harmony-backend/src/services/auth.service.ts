@@ -1,0 +1,146 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { prisma } from '../db/prisma';
+import { TRPCError } from '@trpc/server';
+
+const BCRYPT_ROUNDS = 12;
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-in-prod';
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret-change-in-prod';
+const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '15m';
+const REFRESH_EXPIRES_IN_DAYS = Number(process.env.JWT_REFRESH_EXPIRES_DAYS ?? '7');
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface JwtPayload {
+  sub: string; // userId
+}
+
+// ─── Token helpers ────────────────────────────────────────────────────────────
+
+function signAccessToken(userId: string): string {
+  return jwt.sign({ sub: userId } as JwtPayload, ACCESS_SECRET, {
+    expiresIn: ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+  });
+}
+
+function signRefreshToken(userId: string): string {
+  return jwt.sign({ sub: userId } as JwtPayload, REFRESH_SECRET, {
+    expiresIn: `${REFRESH_EXPIRES_IN_DAYS}d` as jwt.SignOptions['expiresIn'],
+  });
+}
+
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+async function storeRefreshToken(userId: string, rawToken: string): Promise<void> {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + REFRESH_EXPIRES_IN_DAYS);
+
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash: hashToken(rawToken),
+      userId,
+      expiresAt,
+    },
+  });
+}
+
+// ─── Auth service ─────────────────────────────────────────────────────────────
+
+export const authService = {
+  async register(email: string, username: string, password: string): Promise<AuthTokens> {
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'Email already in use' });
+    }
+
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'Username already taken' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        username,
+        passwordHash,
+        displayName: username,
+      },
+    });
+
+    const accessToken = signAccessToken(user.id);
+    const refreshToken = signRefreshToken(user.id);
+    await storeRefreshToken(user.id, refreshToken);
+
+    return { accessToken, refreshToken };
+  },
+
+  async login(email: string, password: string): Promise<AuthTokens> {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
+    }
+
+    const accessToken = signAccessToken(user.id);
+    const refreshToken = signRefreshToken(user.id);
+    await storeRefreshToken(user.id, refreshToken);
+
+    return { accessToken, refreshToken };
+  },
+
+  async logout(rawRefreshToken: string): Promise<void> {
+    const hash = hashToken(rawRefreshToken);
+    await prisma.refreshToken.updateMany({
+      where: { tokenHash: hash, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  },
+
+  async refreshTokens(rawRefreshToken: string): Promise<AuthTokens> {
+    let payload: JwtPayload;
+    try {
+      payload = jwt.verify(rawRefreshToken, REFRESH_SECRET) as JwtPayload;
+    } catch {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid refresh token' });
+    }
+
+    const hash = hashToken(rawRefreshToken);
+    const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hash } });
+
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Refresh token revoked or expired' });
+    }
+
+    // Rotate: revoke old, issue new
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+
+    const accessToken = signAccessToken(payload.sub);
+    const newRefreshToken = signRefreshToken(payload.sub);
+    await storeRefreshToken(payload.sub, newRefreshToken);
+
+    return { accessToken, refreshToken: newRefreshToken };
+  },
+
+  verifyAccessToken(token: string): JwtPayload {
+    try {
+      return jwt.verify(token, ACCESS_SECRET) as JwtPayload;
+    } catch {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid or expired access token' });
+    }
+  },
+};

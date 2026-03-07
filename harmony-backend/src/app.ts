@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import corsMiddleware, { CorsError } from './middleware/cors';
 import { appRouter } from './trpc/router';
 import { createContext } from './trpc/init';
+import { authRouter } from './routes/auth.router';
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,9 @@ export function createApp() {
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Auth endpoints
+  app.use('/api/auth', authRouter);
 
   // tRPC endpoint
   app.use(
