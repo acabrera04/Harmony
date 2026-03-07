@@ -6,7 +6,6 @@
  * Requires REDIS_URL pointing at a running Redis instance.
  */
 
-import Redis from 'ioredis';
 import { cacheService, CacheKeys, CacheTTL, CacheEntry } from '../src/services/cache.service';
 import { redis } from '../src/db/redis';
 
