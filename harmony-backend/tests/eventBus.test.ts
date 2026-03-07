@@ -11,6 +11,7 @@
  */
 
 import { eventBus, EventChannels } from '../src/events/eventBus';
+import { VisibilityChangedPayload } from '../src/events/eventTypes';
 import { cacheInvalidator } from '../src/services/cacheInvalidator.service';
 import { cacheService } from '../src/services/cache.service';
 import { redis } from '../src/db/redis';
@@ -70,7 +71,7 @@ describe('EventBus.publish / subscribe', () => {
     });
     await ready;
 
-    const payload = {
+    const payload: VisibilityChangedPayload = {
       channelId: TEST_CHANNEL_ID,
       serverId: TEST_SERVER_ID,
       oldVisibility: 'PRIVATE',
@@ -166,8 +167,8 @@ describe('EventBus.publish / subscribe', () => {
     await eventBus.publish(EventChannels.VISIBILITY_CHANGED, {
       channelId: TEST_CHANNEL_ID,
       serverId: TEST_SERVER_ID,
-      oldVisibility: 'PRIVATE',
-      newVisibility: 'PUBLIC_NO_INDEX',
+      oldVisibility: 'PRIVATE' as const,
+      newVisibility: 'PUBLIC_NO_INDEX' as const,
       actorId: TEST_ACTOR_ID,
       timestamp: new Date().toISOString(),
     });
@@ -206,8 +207,8 @@ describe('CacheInvalidator', () => {
     await eventBus.publish(EventChannels.VISIBILITY_CHANGED, {
       channelId: TEST_CHANNEL_ID,
       serverId: TEST_SERVER_ID,
-      oldVisibility: 'PRIVATE',
-      newVisibility: 'PUBLIC_INDEXABLE',
+      oldVisibility: 'PRIVATE' as const,
+      newVisibility: 'PUBLIC_INDEXABLE' as const,
       actorId: TEST_ACTOR_ID,
       timestamp: new Date().toISOString(),
     });
