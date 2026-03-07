@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import request from 'supertest';
 import { cacheMiddleware } from '../src/middleware/cache.middleware';
-import { cacheService } from '../src/services/cache.service';
+import { cacheService, CacheEntry } from '../src/services/cache.service';
 import { redis } from '../src/db/redis';
 
 beforeAll(async () => {
@@ -17,14 +17,15 @@ afterEach(async () => {
   if (keys.length > 0) await redis.del(...keys);
 });
 
-function createTestApp() {
+function createTestApp(ttl = 60) {
   const app = express();
   let callCount = 0;
 
   app.get(
     '/cached',
     cacheMiddleware({
-      ttl: 60,
+      ttl,
+      staleTtl: ttl, // keep stale entries for an extra TTL window
       keyFn: (req: Request) => `test:mw:${req.path}`,
     }),
     (_req: Request, res: Response) => {
@@ -36,7 +37,7 @@ function createTestApp() {
   app.post(
     '/cached',
     cacheMiddleware({
-      ttl: 60,
+      ttl,
       keyFn: (req: Request) => `test:mw:${req.path}`,
     }),
     (_req: Request, res: Response) => {
@@ -101,6 +102,29 @@ describe('cacheMiddleware', () => {
     expect(res.headers['x-cache']).toBe('MISS');
     expect(res.body).toEqual({ count: 2 });
     expect(getCallCount()).toBe(2);
+  });
+
+  it('returns X-Cache: STALE for stale entries and refreshes cache in background', async () => {
+    const { app, getCallCount } = createTestApp(60);
+
+    // Manually insert a stale entry (createdAt in the past)
+    const staleEntry: CacheEntry = { data: { count: 'stale' }, createdAt: Date.now() - 120_000 };
+    await redis.set('test:mw:/cached', JSON.stringify(staleEntry), 'EX', 300);
+
+    // Request should serve stale data immediately
+    const res = await request(app).get('/cached');
+    expect(res.headers['x-cache']).toBe('STALE');
+    expect(res.body).toEqual({ count: 'stale' });
+
+    // Handler should have been called in background to refresh
+    // Wait briefly for background revalidation
+    await new Promise((r) => setTimeout(r, 100));
+    expect(getCallCount()).toBe(1);
+
+    // Cache should now have fresh data
+    const entry = await cacheService.get('test:mw:/cached');
+    expect(entry).not.toBeNull();
+    expect(entry!.data).toEqual({ count: 1 });
   });
 
   it('includes X-Cache-Key header', async () => {

@@ -21,11 +21,13 @@ publicRouter.use(publicLimiter);
 /**
  * GET /api/public/channels/:channelId/messages
  * Returns paginated messages for a PUBLIC_INDEXABLE channel.
+ * Uses cache middleware with stale-while-revalidate.
  */
 publicRouter.get(
   '/channels/:channelId/messages',
   cacheMiddleware({
     ttl: CacheTTL.channelMessages,
+    staleTtl: CacheTTL.channelMessages, // keep stale data for an extra TTL window
     keyFn: (req: Request) => CacheKeys.channelMessages(req.params.channelId, Number(req.query.page) || 1),
   }),
   async (req: Request, res: Response) => {
@@ -62,7 +64,9 @@ publicRouter.get(
       res.json({ messages, page, pageSize });
     } catch (err) {
       console.error('Public messages route error:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   },
 );
@@ -70,11 +74,13 @@ publicRouter.get(
 /**
  * GET /api/public/channels/:channelId/messages/:messageId
  * Returns a single message from a PUBLIC_INDEXABLE channel.
+ * Uses cache middleware with stale-while-revalidate.
  */
 publicRouter.get(
   '/channels/:channelId/messages/:messageId',
   cacheMiddleware({
     ttl: CacheTTL.channelMessages,
+    staleTtl: CacheTTL.channelMessages,
     keyFn: (req: Request) => `channel:msg:${sanitizeKeySegment(req.params.channelId)}:${sanitizeKeySegment(req.params.messageId)}`,
   }),
   async (req: Request, res: Response) => {
@@ -111,14 +117,17 @@ publicRouter.get(
       res.json(message);
     } catch (err) {
       console.error('Public message route error:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   },
 );
 
 /**
  * GET /api/public/servers/:serverSlug
- * Returns public server info. Cache key: server:{serverId}:info per §4.4.
+ * Returns public server info. Uses getOrRevalidate for SWR.
+ * Cache key: server:{serverId}:info per §4.4.
  */
 publicRouter.get(
   '/servers/:serverSlug',
@@ -135,26 +144,27 @@ publicRouter.get(
       }
 
       const cacheKey = CacheKeys.serverInfo(server.id);
+      const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
 
-      // Check Redis cache
+      // Check cache state for X-Cache header
+      let xCache = 'MISS';
       try {
         const entry = await cacheService.get(cacheKey);
-        if (entry && !cacheService.isStale(entry, CacheTTL.serverInfo)) {
-          res.set('X-Cache', 'HIT');
-          res.set('X-Cache-Key', cacheKey);
-          res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-          res.json(entry.data);
-          return;
+        if (entry) {
+          xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
         }
-      } catch {
-        // Redis error — serve from DB
-      }
+      } catch { /* Redis error */ }
 
-      res.set('X-Cache', 'MISS');
+      const data = await cacheService.getOrRevalidate(
+        cacheKey,
+        async () => server, // fetcher — server already fetched from DB above
+        cacheOpts,
+      );
+
+      res.set('X-Cache', xCache);
       res.set('X-Cache-Key', cacheKey);
       res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-      cacheService.set(cacheKey, server, { ttl: CacheTTL.serverInfo }).catch(() => {});
-      res.json(server);
+      res.json(data);
     } catch (err) {
       console.error('Public server route error:', err);
       res.status(500).json({ error: 'Internal server error' });
@@ -164,7 +174,8 @@ publicRouter.get(
 
 /**
  * GET /api/public/servers/:serverSlug/channels
- * Returns public channels for a server. Cache key: server:{serverId}:public_channels per §4.4.
+ * Returns public channels for a server. Uses getOrRevalidate for SWR.
+ * Cache key: server:{serverId}:public_channels per §4.4.
  */
 publicRouter.get(
   '/servers/:serverSlug/channels',
@@ -181,33 +192,32 @@ publicRouter.get(
       }
 
       const cacheKey = `server:${sanitizeKeySegment(server.id)}:public_channels`;
+      const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
 
-      // Check Redis cache
+      const fetcher = async () => {
+        const channels = await prisma.channel.findMany({
+          where: { serverId: server.id, visibility: ChannelVisibility.PUBLIC_INDEXABLE },
+          orderBy: { position: 'asc' },
+          select: { id: true, name: true, slug: true, type: true, topic: true },
+        });
+        return { channels };
+      };
+
+      // Check cache state for X-Cache header
+      let xCache = 'MISS';
       try {
         const entry = await cacheService.get(cacheKey);
-        if (entry && !cacheService.isStale(entry, CacheTTL.serverInfo)) {
-          res.set('X-Cache', 'HIT');
-          res.set('X-Cache-Key', cacheKey);
-          res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-          res.json(entry.data);
-          return;
+        if (entry) {
+          xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
         }
-      } catch {
-        // Redis error — serve from DB
-      }
+      } catch { /* Redis error */ }
 
-      const channels = await prisma.channel.findMany({
-        where: { serverId: server.id, visibility: ChannelVisibility.PUBLIC_INDEXABLE },
-        orderBy: { position: 'asc' },
-        select: { id: true, name: true, slug: true, type: true, topic: true },
-      });
+      const data = await cacheService.getOrRevalidate(cacheKey, fetcher, cacheOpts);
 
-      const body = { channels };
-      res.set('X-Cache', 'MISS');
+      res.set('X-Cache', xCache);
       res.set('X-Cache-Key', cacheKey);
       res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-      cacheService.set(cacheKey, body, { ttl: CacheTTL.serverInfo }).catch(() => {});
-      res.json(body);
+      res.json(data);
     } catch (err) {
       console.error('Public channels route error:', err);
       res.status(500).json({ error: 'Internal server error' });
