@@ -24,6 +24,8 @@ export const CacheKeys = {
   channelVisibility: (id: string) => `channel:${sanitizeKeySegment(id)}:visibility`,
   channelMessages: (id: string, page: number) => `channel:msgs:${sanitizeKeySegment(id)}:page:${page}`,
   serverInfo: (id: string) => `server:${sanitizeKeySegment(id)}:info`,
+  metaChannel: (id: string) => `meta:channel:${sanitizeKeySegment(id)}`,
+  analysisChannel: (id: string) => `analysis:channel:${sanitizeKeySegment(id)}`,
 } as const;
 
 // TTLs from spec (seconds)
