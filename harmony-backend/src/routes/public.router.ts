@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { prisma } from '../db/prisma';
 import { ChannelVisibility } from '@prisma/client';
 import { cacheMiddleware } from '../middleware/cache.middleware';
-import { CacheKeys, CacheTTL, sanitizeKeySegment } from '../services/cache.service';
+import { cacheService, CacheKeys, CacheTTL, sanitizeKeySegment } from '../services/cache.service';
 
 export const publicRouter = Router();
 
@@ -118,14 +118,10 @@ publicRouter.get(
 
 /**
  * GET /api/public/servers/:serverSlug
- * Returns public server info.
+ * Returns public server info. Cache key: server:{serverId}:info per §4.4.
  */
 publicRouter.get(
   '/servers/:serverSlug',
-  cacheMiddleware({
-    ttl: CacheTTL.serverInfo,
-    keyFn: (req: Request) => `public:server:${sanitizeKeySegment(req.params.serverSlug)}`,
-  }),
   async (req: Request, res: Response) => {
     try {
       const server = await prisma.server.findUnique({
@@ -138,7 +134,26 @@ publicRouter.get(
         return;
       }
 
+      const cacheKey = CacheKeys.serverInfo(server.id);
+
+      // Check Redis cache
+      try {
+        const entry = await cacheService.get(cacheKey);
+        if (entry && !cacheService.isStale(entry, CacheTTL.serverInfo)) {
+          res.set('X-Cache', 'HIT');
+          res.set('X-Cache-Key', cacheKey);
+          res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
+          res.json(entry.data);
+          return;
+        }
+      } catch {
+        // Redis error — serve from DB
+      }
+
+      res.set('X-Cache', 'MISS');
+      res.set('X-Cache-Key', cacheKey);
       res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
+      cacheService.set(cacheKey, server, { ttl: CacheTTL.serverInfo }).catch(() => {});
       res.json(server);
     } catch (err) {
       console.error('Public server route error:', err);
@@ -149,14 +164,10 @@ publicRouter.get(
 
 /**
  * GET /api/public/servers/:serverSlug/channels
- * Returns public channels for a server (PUBLIC_INDEXABLE only).
+ * Returns public channels for a server. Cache key: server:{serverId}:public_channels per §4.4.
  */
 publicRouter.get(
   '/servers/:serverSlug/channels',
-  cacheMiddleware({
-    ttl: CacheTTL.serverInfo,
-    keyFn: (req: Request) => `public:server:${sanitizeKeySegment(req.params.serverSlug)}:channels`,
-  }),
   async (req: Request, res: Response) => {
     try {
       const server = await prisma.server.findUnique({
@@ -169,14 +180,34 @@ publicRouter.get(
         return;
       }
 
+      const cacheKey = `server:${sanitizeKeySegment(server.id)}:public_channels`;
+
+      // Check Redis cache
+      try {
+        const entry = await cacheService.get(cacheKey);
+        if (entry && !cacheService.isStale(entry, CacheTTL.serverInfo)) {
+          res.set('X-Cache', 'HIT');
+          res.set('X-Cache-Key', cacheKey);
+          res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
+          res.json(entry.data);
+          return;
+        }
+      } catch {
+        // Redis error — serve from DB
+      }
+
       const channels = await prisma.channel.findMany({
         where: { serverId: server.id, visibility: ChannelVisibility.PUBLIC_INDEXABLE },
         orderBy: { position: 'asc' },
         select: { id: true, name: true, slug: true, type: true, topic: true },
       });
 
+      const body = { channels };
+      res.set('X-Cache', 'MISS');
+      res.set('X-Cache-Key', cacheKey);
       res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-      res.json({ channels });
+      cacheService.set(cacheKey, body, { ttl: CacheTTL.serverInfo }).catch(() => {});
+      res.json(body);
     } catch (err) {
       console.error('Public channels route error:', err);
       res.status(500).json({ error: 'Internal server error' });
