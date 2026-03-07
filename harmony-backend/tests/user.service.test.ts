@@ -55,6 +55,12 @@ describe('userService.getUser', () => {
     expect(user.status).toBe('OFFLINE');
   });
 
+  it('never exposes passwordHash or email for a public user', async () => {
+    const user = await userService.getUser(userId);
+    expect(user).not.toHaveProperty('passwordHash');
+    expect(user).not.toHaveProperty('email');
+  });
+
   it('anonymises a user with publicProfile=false', async () => {
     const user = await userService.getUser(privateUserId);
     expect(user.id).toBe(privateUserId);
@@ -62,6 +68,12 @@ describe('userService.getUser', () => {
     expect(user.username).toBe('anonymous');
     expect(user.avatarUrl).toBeNull();
     expect(user.status).toBe('OFFLINE');
+  });
+
+  it('never exposes passwordHash or email for a private user', async () => {
+    const user = await userService.getUser(privateUserId);
+    expect(user).not.toHaveProperty('passwordHash');
+    expect(user).not.toHaveProperty('email');
   });
 
   it('throws NOT_FOUND for unknown userId', async () => {
@@ -86,6 +98,12 @@ describe('userService.getCurrentUser', () => {
     expect(user.username).not.toBe('anonymous');
   });
 
+  it('includes email for self but never exposes passwordHash', async () => {
+    const user = await userService.getCurrentUser(userId);
+    expect(user).toHaveProperty('email');
+    expect(user).not.toHaveProperty('passwordHash');
+  });
+
   it('throws NOT_FOUND for unknown userId', async () => {
     await expect(
       userService.getCurrentUser('00000000-0000-0000-0000-000000000000'),
@@ -102,6 +120,11 @@ describe('userService.updateUser', () => {
     expect(after.displayName).toBe(before.displayName);
     expect(after.publicProfile).toBe(before.publicProfile);
     expect(after.status).toBe(before.status);
+  });
+
+  it('never exposes passwordHash in update response', async () => {
+    const updated = await userService.updateUser(userId, { displayName: 'Safe Name' });
+    expect(updated).not.toHaveProperty('passwordHash');
   });
 
   it('updates displayName', async () => {
