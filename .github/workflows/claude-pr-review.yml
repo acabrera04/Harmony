@@ -21,6 +21,10 @@ jobs:
             Discord-like chat application. 
             Review this PR thoroughly against the following criteria:
 
+            **Best Practices**
+            - Ensure changes align with expectations defined in architecture/dev spec documents.
+            - If the PR is targeting an issue, make sure it fulfills all issue requirements.
+
             **Code Quality & Style**
             - TypeScript strict mode; no implicit `any`; unused vars/params must be prefixed with `_`
             - Prettier formatting: 100-char line width, semicolons, single quotes, trailing commas
