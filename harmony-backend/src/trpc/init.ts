@@ -1,5 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { Request } from 'express';
+import { authService } from '../services/auth.service';
 
 export interface TRPCContext {
   userId: string | null;
@@ -7,13 +8,19 @@ export interface TRPCContext {
 }
 
 export function createContext({ req }: { req: Request }): TRPCContext {
-  // TODO: wire to express-session (or JWT middleware) once auth is implemented.
-  // The cast below matches the shape that express-session would attach to req.
-  const session = (req as Request & { session?: { userId?: string } }).session;
-  return {
-    userId: session?.userId ?? null,
-    ip: req.ip ?? '',
-  };
+  let userId: string | null = null;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const payload = authService.verifyAccessToken(authHeader.slice(7));
+      userId = payload.sub;
+    } catch {
+      // Invalid token — context userId remains null; authedProcedure will reject
+    }
+  }
+
+  return { userId, ip: req.ip ?? '' };
 }
 
 const t = initTRPC.context<TRPCContext>().create();

@@ -17,7 +17,9 @@ let privateUserId: string;
 beforeAll(async () => {
   const user = await prisma.user.create({
     data: {
+      email: `testuser-${Date.now()}@test.com`,
       username: `testuser-${Date.now()}`,
+      passwordHash: 'testhash',
       displayName: 'Test User',
       publicProfile: true,
     },
@@ -26,7 +28,9 @@ beforeAll(async () => {
 
   const privateUser = await prisma.user.create({
     data: {
+      email: `private-${Date.now()}@test.com`,
       username: `private-${Date.now()}`,
+      passwordHash: 'testhash',
       displayName: 'Private User',
       publicProfile: false,
     },

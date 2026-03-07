@@ -45,7 +45,9 @@ enum ChannelType {
 
 model User {
   id            String     @id @default(uuid()) @db.Uuid
+  email         String     @unique @db.VarChar(254)
   username      String     @unique @db.VarChar(32)
+  passwordHash  String     @map("password_hash") @db.VarChar(72)
   displayName   String     @map("display_name") @db.VarChar(100)
   avatarUrl     String?    @map("avatar_url") @db.VarChar(500)
   publicProfile Boolean    @default(true) @map("public_profile")
@@ -54,8 +56,23 @@ model User {
 
   messages           Message[]
   visibilityAuditLog VisibilityAuditLog[] @relation("AuditActor")
+  refreshTokens      RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  tokenHash  String    @unique @map("token_hash") @db.VarChar(64)
+  userId     String    @map("user_id") @db.Uuid
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_refresh_tokens_user")
+  @@map("refresh_tokens")
 }
 
 model Server {
