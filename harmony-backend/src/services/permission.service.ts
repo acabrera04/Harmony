@@ -106,7 +106,7 @@ export const permissionService = {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Server not found' });
     }
 
-    const role = await this.getMemberRole(userId, serverId);
+    const role = await permissionService.getMemberRole(userId, serverId);
     if (role === null) return false;
 
     return ROLE_PERMISSIONS[role].has(action);

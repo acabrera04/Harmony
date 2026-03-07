@@ -218,8 +218,14 @@ describe('GUEST permissions', () => {
 // ─── Non-member ───────────────────────────────────────────────────────────────
 
 describe('non-member permissions', () => {
-  it('non-member is denied all actions', async () => {
-    const actions: Action[] = ['server:read', 'channel:read', 'message:read', 'message:create'];
+  it('non-member is denied common actions (spot-check)', async () => {
+    const actions: Action[] = [
+      'server:read',
+      'channel:read',
+      'message:read',
+      'message:create',
+      'settings:update',
+    ];
     for (const action of actions) {
       await expect(can('nonMember', action)).resolves.toBe(false);
     }

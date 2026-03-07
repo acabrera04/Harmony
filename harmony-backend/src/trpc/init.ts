@@ -61,10 +61,10 @@ export const authedProcedure = t.procedure.use(({ ctx, next }) => {
 export function withPermission(action: Action) {
   return authedProcedure.use(async ({ ctx, getRawInput, next }) => {
     const raw = await getRawInput();
-    const input = raw as { serverId?: string };
+    const input = raw as { serverId?: unknown };
     const serverId = input?.serverId;
-    if (!serverId) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'serverId is required for permission checks' });
+    if (typeof serverId !== 'string' || serverId.trim() === '') {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'serverId is required for permission checks and must be a non-empty string' });
     }
     try {
       await permissionService.requirePermission(ctx.userId, serverId, action);
