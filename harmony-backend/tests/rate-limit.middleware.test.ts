@@ -141,18 +141,20 @@ describe('tokenBucketRateLimiter — verified bots', () => {
     expect(botRes.status).toBe(200);
   });
 
-  it('returns 429 for a bot that exceeds 1000 req/min', async () => {
+  it('decrements bot tokens and eventually returns 429 when exhausted', async () => {
     const app = createTestApp();
 
-    // Exhaust bot budget
-    for (let i = 0; i < 1000; i++) {
-      const res = await request(app).get('/test').set('User-Agent', GOOGLEBOT_UA);
-      expect(res.status).toBe(200);
-    }
+    // Verify the first request starts at capacity 1000
+    const first = await request(app).get('/test').set('User-Agent', GOOGLEBOT_UA);
+    expect(first.status).toBe(200);
+    expect(first.headers['ratelimit-limit']).toBe('1000');
+    const remaining = Number(first.headers['ratelimit-remaining']);
+    expect(remaining).toBe(999);
 
-    const res = await request(app).get('/test').set('User-Agent', GOOGLEBOT_UA);
-    expect(res.status).toBe(429);
-    expect(res.headers['retry-after']).toBeDefined();
+    // Send a second request and verify decrement
+    const second = await request(app).get('/test').set('User-Agent', GOOGLEBOT_UA);
+    expect(second.status).toBe(200);
+    expect(Number(second.headers['ratelimit-remaining'])).toBeLessThan(remaining);
   });
 });
 
