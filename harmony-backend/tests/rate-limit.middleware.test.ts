@@ -14,6 +14,12 @@ function createTestApp() {
 
 beforeEach(() => {
   _clearBucketsForTesting();
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date('2025-01-01T00:00:00Z'));
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe('isVerifiedBot', () => {
@@ -141,7 +147,7 @@ describe('tokenBucketRateLimiter — verified bots', () => {
     expect(botRes.status).toBe(200);
   });
 
-  it('decrements bot tokens and eventually returns 429 when exhausted', async () => {
+  it('decrements bot tokens on consecutive requests', async () => {
     const app = createTestApp();
 
     // Verify the first request starts at capacity 1000
@@ -154,7 +160,7 @@ describe('tokenBucketRateLimiter — verified bots', () => {
     // Send a second request and verify decrement
     const second = await request(app).get('/test').set('User-Agent', GOOGLEBOT_UA);
     expect(second.status).toBe(200);
-    expect(Number(second.headers['ratelimit-remaining'])).toBeLessThan(remaining);
+    expect(Number(second.headers['ratelimit-remaining'])).toBe(remaining - 1);
   });
 });
 
@@ -165,5 +171,22 @@ describe('tokenBucketRateLimiter — response headers', () => {
     expect(res.headers['ratelimit-reset']).toBeDefined();
     // When tokens are available, reset is 0 (no wait needed)
     expect(Number(res.headers['ratelimit-reset'])).toBe(0);
+  });
+
+  it('sets RateLimit-Reset > 0 when last token is consumed', async () => {
+    const app = createTestApp();
+    const ip = '30.0.0.1';
+
+    // Exhaust all but the last token
+    for (let i = 0; i < 99; i++) {
+      await request(app).get('/test').set('X-Forwarded-For', ip);
+    }
+
+    // The 100th request consumes the last token
+    const lastAllowed = await request(app).get('/test').set('X-Forwarded-For', ip);
+    expect(lastAllowed.status).toBe(200);
+    expect(Number(lastAllowed.headers['ratelimit-remaining'])).toBe(0);
+    // After consuming the last token, reset should indicate wait time
+    expect(Number(lastAllowed.headers['ratelimit-reset'])).toBeGreaterThan(0);
   });
 });

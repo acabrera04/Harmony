@@ -111,8 +111,8 @@ function consumeToken(bucket: TokenBucket): void {
  * `capacity / WINDOW_MS` tokens per millisecond, up to the maximum capacity.
  *
  * Limits:
- *   - Verified bots (Googlebot, Bingbot): 1000 req/min per bot name
- *   - Human users / other clients:         100 req/min per IP
+ *   - Verified bots (Googlebot, Bingbot, Slackbot): 1000 req/min per bot name
+ *   - Human users / other clients:                    100 req/min per IP
  *
  * Responses:
  *   - 429 Too Many Requests + Retry-After header when limit is exceeded
@@ -127,24 +127,26 @@ export function tokenBucketRateLimiter(req: Request, res: Response, next: NextFu
   const capacity = botName ? BOT_CAPACITY : HUMAN_CAPACITY;
 
   const bucket = getOrRefillBucket(key, capacity);
-
-  // Set standard rate-limit response headers
-  // Reset = seconds until one token becomes available (meaningful for token bucket)
   const msPerToken = WINDOW_MS / capacity;
-  const resetSeconds = bucket.tokens >= 1 ? 0 : Math.max(1, Math.ceil(msPerToken / 1000));
-  res.set('RateLimit-Limit', String(capacity));
-  res.set('RateLimit-Remaining', String(Math.max(0, Math.floor(bucket.tokens))));
-  res.set('RateLimit-Reset', String(resetSeconds));
 
+  // If no tokens available, reject immediately
   if (bucket.tokens < 1) {
+    const resetSeconds = Math.max(1, Math.ceil(msPerToken / 1000));
+    res.set('RateLimit-Limit', String(capacity));
+    res.set('RateLimit-Remaining', '0');
+    res.set('RateLimit-Reset', String(resetSeconds));
     res.set('Retry-After', String(resetSeconds));
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }
 
+  // Consume a token, then compute headers based on post-consumption state
   consumeToken(bucket);
-  // Update Remaining header after consumption
+
+  const resetSeconds = bucket.tokens >= 1 ? 0 : Math.max(1, Math.ceil(msPerToken / 1000));
+  res.set('RateLimit-Limit', String(capacity));
   res.set('RateLimit-Remaining', String(Math.floor(bucket.tokens)));
+  res.set('RateLimit-Reset', String(resetSeconds));
 
   next();
 }
