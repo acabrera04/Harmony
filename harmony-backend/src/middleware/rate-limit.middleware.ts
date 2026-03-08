@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 
 /**
- * Verified crawler User-Agent substrings (lowercase) per §9.3 of the unified
- * backend architecture. Used to grant elevated rate limits (1000 req/min) to
- * known search engine bots.
+ * Known crawler User-Agent substrings (lowercase). Matched via case-insensitive
+ * substring check. Reverse-DNS verification is not yet implemented — see §9.3
+ * of the unified backend architecture for the full verification spec.
  */
 const VERIFIED_BOT_TOKENS: { token: string; name: string }[] = [
   { token: 'googlebot', name: 'googlebot' },
   { token: 'bingbot', name: 'bingbot' },
+  { token: 'slackbot', name: 'slackbot' },
 ];
 
 /**
@@ -59,6 +60,11 @@ function getOrRefillBucket(key: string, capacity: number): TokenBucket {
     // Evict stale entries when the map is over capacity
     if (buckets.size >= MAX_BUCKETS) {
       evictStaleBuckets();
+      // If still over capacity after eviction, drop the oldest entry
+      if (buckets.size >= MAX_BUCKETS) {
+        const oldestKey = buckets.keys().next().value;
+        if (oldestKey !== undefined) buckets.delete(oldestKey);
+      }
     }
     const bucket: TokenBucket = { tokens: capacity, lastRefill: now };
     buckets.set(key, bucket);
@@ -99,14 +105,6 @@ function consumeToken(bucket: TokenBucket): void {
 }
 
 /**
- * Compute seconds until one token becomes available again.
- */
-function retryAfterSeconds(capacity: number): number {
-  const msPerToken = WINDOW_MS / capacity;
-  return Math.max(1, Math.ceil(msPerToken / 1000));
-}
-
-/**
  * Token-bucket rate limiting middleware for the public API.
  *
  * Uses a true token-bucket algorithm: tokens refill continuously at a rate of
@@ -131,14 +129,15 @@ export function tokenBucketRateLimiter(req: Request, res: Response, next: NextFu
   const bucket = getOrRefillBucket(key, capacity);
 
   // Set standard rate-limit response headers
-  const resetAt = Math.ceil((bucket.lastRefill + WINDOW_MS) / 1000);
+  // Reset = seconds until one token becomes available (meaningful for token bucket)
+  const msPerToken = WINDOW_MS / capacity;
+  const resetSeconds = bucket.tokens >= 1 ? 0 : Math.max(1, Math.ceil(msPerToken / 1000));
   res.set('RateLimit-Limit', String(capacity));
   res.set('RateLimit-Remaining', String(Math.max(0, Math.floor(bucket.tokens))));
-  res.set('RateLimit-Reset', String(resetAt));
+  res.set('RateLimit-Reset', String(resetSeconds));
 
   if (bucket.tokens < 1) {
-    const retryAfter = retryAfterSeconds(capacity);
-    res.set('Retry-After', String(retryAfter));
+    res.set('Retry-After', String(resetSeconds));
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }

@@ -163,6 +163,7 @@ describe('tokenBucketRateLimiter — response headers', () => {
     const app = createTestApp();
     const res = await request(app).get('/test').set('X-Forwarded-For', '20.0.0.1');
     expect(res.headers['ratelimit-reset']).toBeDefined();
-    expect(Number(res.headers['ratelimit-reset'])).toBeGreaterThan(0);
+    // When tokens are available, reset is 0 (no wait needed)
+    expect(Number(res.headers['ratelimit-reset'])).toBe(0);
   });
 });

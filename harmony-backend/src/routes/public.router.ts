@@ -7,7 +7,7 @@ import { tokenBucketRateLimiter } from '../middleware/rate-limit.middleware';
 
 export const publicRouter = Router();
 
-// Token bucket rate limiting per §5.3: 100 req/min (human) / 1000 req/min (verified bots)
+// Token bucket rate limiting per issue #110: 100 req/min (human) / 1000 req/min (verified bots)
 publicRouter.use(tokenBucketRateLimiter);
 
 /**
