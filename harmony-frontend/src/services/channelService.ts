@@ -48,23 +48,54 @@ export async function getChannels(serverId: string): Promise<Channel[]> {
 
 /**
  * Returns a single channel by server slug + channel slug, or null if not found.
- * Uses the tRPC endpoint for full access.
  *
- * Note: makes two serial network calls — first to resolve the serverId via
- * `/api/public/servers/:slug`, then to `channel.getChannel`. The public GET is
- * also used by `getServer` which is React-cached, so when both run in the same
- * render pass the server fetch is typically served from the React cache.
+ * Strategy: try the public REST endpoint first so that guest `/c/*` pages work
+ * for PUBLIC_INDEXABLE channels without requiring an auth cookie. If the channel
+ * is not listed there (non-public or not found), fall back to the authenticated
+ * tRPC procedure.
+ *
+ * Note: the public endpoint returns only PUBLIC_INDEXABLE channels and omits
+ * fields like `serverId`, `visibility`, `position`, and `createdAt`. These are
+ * filled in from context (serverId from the server lookup, visibility hardcoded
+ * to PUBLIC_INDEXABLE).
  */
 export const getChannel = cache(async (serverSlug: string, channelSlug: string): Promise<Channel | null> => {
-  try {
-    // Resolve serverId from slug (needed for tRPC channel.getChannel input).
-    const serverData = await publicGet<Record<string, unknown>>(
-      `/servers/${encodeURIComponent(serverSlug)}`,
-    );
-    if (!serverData) return null;
+  // Resolve server first — needed both to supply serverId for the public channel
+  // list and as input to the tRPC fallback.
+  const serverData = await publicGet<Record<string, unknown>>(
+    `/servers/${encodeURIComponent(serverSlug)}`,
+  );
+  if (!serverData) return null;
+  const serverId = serverData.id as string;
 
+  // Try the public REST endpoint. It returns only PUBLIC_INDEXABLE channels, so
+  // a hit here means we can serve the guest view without an auth cookie.
+  try {
+    const publicData = await publicGet<{ channels: Record<string, unknown>[] }>(
+      `/servers/${encodeURIComponent(serverSlug)}/channels`,
+    );
+    if (publicData) {
+      const match = publicData.channels.find(
+        (c) => (c.slug as string) === channelSlug,
+      );
+      if (match) {
+        return toFrontendChannel({
+          ...match,
+          serverId,
+          visibility: 'PUBLIC_INDEXABLE',
+          position: (match.position as number | undefined) ?? 0,
+          createdAt: (match.createdAt as string | undefined) ?? new Date(0).toISOString(),
+        });
+      }
+    }
+  } catch {
+    // Public endpoint failed — continue to tRPC fallback.
+  }
+
+  // Fall back to the authenticated tRPC procedure (for PRIVATE / PUBLIC_NO_INDEX channels).
+  try {
     const data = await trpcQuery<Record<string, unknown>>('channel.getChannel', {
-      serverId: serverData.id as string,
+      serverId,
       serverSlug,
       channelSlug,
     });
@@ -96,12 +127,13 @@ export async function updateVisibility(
 }
 
 /**
- * Updates editable metadata (name, topic, description) of a channel via tRPC.
+ * Updates editable metadata (name, topic) of a channel via tRPC.
+ * Note: `description` is not forwarded — the backend only supports `name`, `topic`, and `position`.
  */
 export async function updateChannel(
   channelId: string,
   serverId: string,
-  patch: Partial<Pick<Channel, 'name' | 'topic' | 'description'>>,
+  patch: Partial<Pick<Channel, 'name' | 'topic'>>,
 ): Promise<Channel> {
   const data = await trpcMutate<Record<string, unknown>>('channel.updateChannel', {
     serverId,

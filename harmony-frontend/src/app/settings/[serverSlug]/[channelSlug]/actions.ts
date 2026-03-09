@@ -15,7 +15,7 @@ import type { Channel } from '@/types';
 export async function saveChannelSettings(
   serverSlug: string,
   channelSlug: string,
-  patch: Partial<Pick<Channel, 'name' | 'topic' | 'description'>>,
+  patch: Partial<Pick<Channel, 'name' | 'topic'>>,
 ): Promise<void> {
   // Resolve channel by route params (don't trust a raw channelId from the client)
   const channel = await getChannel(serverSlug, channelSlug);
@@ -31,7 +31,9 @@ export async function saveChannelSettings(
 
   // Build an explicit whitelist so callers cannot sneak in extra fields
   // (e.g. serverId, visibility) even though TS types restrict them at compile time.
-  const sanitizedPatch: Partial<Pick<Channel, 'name' | 'topic' | 'description'>> = {};
+  // Note: `description` is intentionally excluded — the backend `channel.updateChannel`
+  // procedure only supports `name`, `topic`, and `position`.
+  const sanitizedPatch: Partial<Pick<Channel, 'name' | 'topic'>> = {};
 
   if (patch.name !== undefined) {
     if (typeof patch.name !== 'string') throw new Error('Invalid channel name');
@@ -42,10 +44,6 @@ export async function saveChannelSettings(
   if (patch.topic !== undefined) {
     if (typeof patch.topic !== 'string') throw new Error('Invalid channel topic');
     sanitizedPatch.topic = patch.topic;
-  }
-  if (patch.description !== undefined) {
-    if (typeof patch.description !== 'string') throw new Error('Invalid channel description');
-    sanitizedPatch.description = patch.description;
   }
 
   // The backend updateChannel requires channelId and serverId

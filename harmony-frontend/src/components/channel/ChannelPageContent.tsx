@@ -32,8 +32,8 @@ export async function ChannelPageContent({
     )
   ).flat();
 
-  // Service returns newest-first; reverse for chronological display
-  const { messages } = await getMessages(channel.id);
+  // Service returns newest-first (both public and tRPC paths); reverse for chronological display
+  const { messages } = await getMessages(channel.id, 1, { serverId: server.id });
   const sortedMessages = [...messages].reverse();
 
   // TODO: Wire to real getServerMembers endpoint when backend implements it.

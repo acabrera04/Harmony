@@ -10,15 +10,15 @@ import { publicGet, trpcQuery, trpcMutate } from '@/lib/trpc-client';
 // ─── Type adapters ────────────────────────────────────────────────────────────
 
 /** Maps backend message shape to frontend Message type. */
-function toFrontendMessage(raw: Record<string, unknown>): Message {
+function toFrontendMessage(raw: Record<string, unknown>, fallbackChannelId = ''): Message {
   // Warn on missing required fields to catch backend shape mismatches early.
   if (typeof raw.id !== 'string') console.warn('[toFrontendMessage] missing or non-string "id"', raw);
-  if (!raw.channelId && !raw.channel_id) console.warn('[toFrontendMessage] missing "channelId"/"channel_id"', raw);
+  if (!raw.channelId && !raw.channel_id && !fallbackChannelId) console.warn('[toFrontendMessage] missing "channelId"/"channel_id"', raw);
   if (!raw.createdAt && !raw.created_at && !raw.timestamp) console.warn('[toFrontendMessage] missing timestamp field', raw);
   const author = raw.author as Record<string, unknown> | undefined;
   return {
     id: raw.id as string,
-    channelId: (raw.channelId ?? raw.channel_id ?? '') as string,
+    channelId: (raw.channelId ?? raw.channel_id ?? fallbackChannelId) as string,
     authorId: (raw.authorId ?? raw.author_id ?? author?.id ?? '') as string,
     author: {
       id: (author?.id ?? '') as string,
@@ -60,7 +60,9 @@ export async function getMessages(
     if (data === null) throw new Error(`getMessages: public channel not found for channelId=${channelId}`);
 
     return {
-      messages: data.messages.map(toFrontendMessage),
+      // Public endpoint returns newest-first; populate channelId from param since
+      // the backend select does not include it.
+      messages: data.messages.map((m) => toFrontendMessage(m, channelId)),
       hasMore: data.messages.length >= (data.pageSize ?? 50),
     };
   } catch {
@@ -78,8 +80,11 @@ export async function getMessages(
       limit: 50,
     });
     if (data === null) throw new Error(`getMessages: tRPC returned no data for channelId=${channelId}`);
+    // tRPC backend returns oldest-first (orderBy createdAt: 'asc'); reverse to
+    // match the public endpoint's newest-first ordering so callers get a
+    // consistent contract regardless of which path was taken.
     return {
-      messages: data.messages.map(toFrontendMessage),
+      messages: [...data.messages].reverse().map((m) => toFrontendMessage(m, channelId)),
       hasMore: !!data.nextCursor,
     };
   }
