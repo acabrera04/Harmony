@@ -382,8 +382,22 @@ describe('visibilityService.setVisibility — VISIBILITY_CHANGED event', () => {
       makeInput(textChannelId, ChannelVisibility.PUBLIC_INDEXABLE),
     );
 
-    // Wait for the callback to fire rather than using a fixed timeout
-    const payload = await eventReceived;
+    // Wait for the callback to fire rather than using a fixed timeout, but
+    // guard against hanging indefinitely if the event is never delivered.
+    const payload = await Promise.race<VisibilityChangedPayload>([
+      eventReceived,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `Timed out waiting for VISIBILITY_CHANGED event for channel ${textChannelId}`,
+              ),
+            ),
+          2000,
+        ),
+      ),
+    ]);
 
     expect(receivedPayloads.length).toBeGreaterThanOrEqual(1);
     expect(payload.channelId).toBe(textChannelId);
