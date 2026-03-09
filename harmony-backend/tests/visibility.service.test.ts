@@ -384,20 +384,27 @@ describe('visibilityService.setVisibility — VISIBILITY_CHANGED event', () => {
 
     // Wait for the callback to fire rather than using a fixed timeout, but
     // guard against hanging indefinitely if the event is never delivered.
+    // Clear the timer after the race to avoid a dangling handle that keeps
+    // the Node.js event loop alive after the test finishes.
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(
+        () =>
+          reject(
+            new Error(
+              `Timed out waiting for VISIBILITY_CHANGED event for channel ${textChannelId}`,
+            ),
+          ),
+        2000,
+      );
+    });
+
     const payload = await Promise.race<VisibilityChangedPayload>([
       eventReceived,
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () =>
-            reject(
-              new Error(
-                `Timed out waiting for VISIBILITY_CHANGED event for channel ${textChannelId}`,
-              ),
-            ),
-          2000,
-        ),
-      ),
+      timeoutPromise,
     ]);
+
+    clearTimeout(timeoutId!);
 
     expect(receivedPayloads.length).toBeGreaterThanOrEqual(1);
     expect(payload.channelId).toBe(textChannelId);
