@@ -4,15 +4,22 @@
  * Server Action: createChannelAction (Issue #44 — Channel Creation Modal)
  * Validates input and delegates to channelService.createChannel().
  * Mirrors the guard pattern in actions.ts / updateVisibility.ts.
+ *
+ * Auth note: the backend `channel.createChannel` tRPC procedure uses
+ * `withPermission('channel:create')`, which enforces authentication and verifies
+ * server membership + role before the mutation is processed. Unauthenticated or
+ * unauthorised requests are rejected by the backend with UNAUTHORIZED/FORBIDDEN.
+ * See: harmony-backend/src/trpc/routers/channel.router.ts
  */
 
 import { revalidatePath } from 'next/cache';
 import { ChannelType, ChannelVisibility, type Channel } from '@/types';
 import { createChannel, getChannels } from '@/services/channelService';
-import { getServer } from '@/services/serverService';
 
 export interface CreateChannelInput {
   serverId: string;
+  /** Server slug — used for targeted path revalidation after channel creation. */
+  serverSlug: string;
   /** Normalised slug — must be [a-z0-9-], no leading/trailing hyphens. Display name is derived from this. */
   slug: string;
   type: ChannelType;
@@ -68,14 +75,12 @@ export async function createChannelAction(input: CreateChannelInput): Promise<Ch
     position,
   });
 
-  // Revalidate all route segments so every user sees the new channel on their
-  // next navigation. Look up the server to get its slug for path revalidation.
+  // Revalidate only the server-scoped paths so unrelated server pages are not
+  // unnecessarily invalidated on every channel creation.
   try {
-    // We need the server slug for revalidation. Try to find it from channels data
-    // or make a query. For now, revalidate broadly.
-    revalidatePath('/channels', 'layout');
-    revalidatePath('/c', 'layout');
-    revalidatePath('/settings', 'layout');
+    revalidatePath(`/channels/${input.serverSlug}`, 'layout');
+    revalidatePath(`/c/${input.serverSlug}`, 'layout');
+    revalidatePath(`/settings/${input.serverSlug}`, 'layout');
   } catch {
     // Revalidation failure is non-fatal
   }

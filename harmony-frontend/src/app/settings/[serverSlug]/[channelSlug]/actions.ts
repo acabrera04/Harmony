@@ -1,5 +1,12 @@
 'use server';
 
+/**
+ * Auth note: `channel.updateChannel` tRPC procedure uses `withPermission('channel:update')`,
+ * which enforces authentication and verifies membership + role before any mutation is applied.
+ * Unauthenticated or unauthorised requests are rejected by the backend with UNAUTHORIZED/FORBIDDEN.
+ * See: harmony-backend/src/trpc/routers/channel.router.ts
+ */
+
 import { revalidatePath } from 'next/cache';
 import { updateChannel, getChannel } from '@/services/channelService';
 import { getServer } from '@/services/serverService';
