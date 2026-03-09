@@ -156,8 +156,6 @@ export function buildMockSeedData(raw: RawSnapshot = snapshot): BuiltMockSeedDat
   }));
 
   const servers = raw.servers.map<Prisma.ServerCreateManyInput>((server) => {
-    // The current Prisma schema does not persist server ownership yet, but the
-    // frozen snapshot still models it and should remain internally coherent.
     if (!userIds.has(server.ownerId)) {
       throw new Error(`Server ${server.id} references unknown snapshot owner ${server.ownerId}`);
     }
@@ -170,6 +168,7 @@ export function buildMockSeedData(raw: RawSnapshot = snapshot): BuiltMockSeedDat
       iconUrl: server.icon,
       isPublic: nonPrivateServerIds.has(server.id),
       memberCount: server.memberCount,
+      ownerId: userIds.get(server.ownerId)!,
       createdAt: parseDate(server.createdAt, `server ${server.id} createdAt`),
     };
   });
