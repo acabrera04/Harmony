@@ -53,10 +53,12 @@ export interface MetaTagsUpdatedPayload {
   timestamp: string;
 }
 
+export type RoleTypeValue = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER' | 'GUEST';
+
 export interface MemberJoinedPayload {
   userId: string;
   serverId: string;
-  role: string;
+  role: RoleTypeValue;
   timestamp: string;
 }
 

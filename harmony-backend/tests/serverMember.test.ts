@@ -1,4 +1,4 @@
-import { PrismaClient, RoleType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import { serverMemberService } from '../src/services/serverMember.service';
 
@@ -9,6 +9,7 @@ describe('serverMemberService (integration)', () => {
   let memberUserId: string;
   let otherUserId: string;
   let serverId: string;
+  let privateServerId: string;
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -44,7 +45,7 @@ describe('serverMemberService (integration)', () => {
     });
     otherUserId = other.id;
 
-    // Create a test server (raw, without the createServer flow to avoid auto-adding owner)
+    // Create a public test server (raw, without the createServer flow to avoid auto-adding owner)
     const server = await prisma.server.create({
       data: {
         name: `SM Test Server ${ts}`,
@@ -55,15 +56,26 @@ describe('serverMemberService (integration)', () => {
     });
     serverId = server.id;
 
+    // Create a private test server
+    const pvtServer = await prisma.server.create({
+      data: {
+        name: `SM Private Server ${ts}`,
+        slug: `sm-private-server-${ts}`,
+        ownerId: ownerUserId,
+        isPublic: false,
+      },
+    });
+    privateServerId = pvtServer.id;
+
     // Manually add owner as OWNER member
     await serverMemberService.addOwner(ownerUserId, serverId);
   });
 
   afterAll(async () => {
     // Clean up in reverse order of dependencies
-    await prisma.serverMember.deleteMany({ where: { serverId } }).catch(() => {});
-    await prisma.channel.deleteMany({ where: { serverId } }).catch(() => {});
-    await prisma.server.delete({ where: { id: serverId } }).catch(() => {});
+    await prisma.serverMember.deleteMany({ where: { serverId: { in: [serverId, privateServerId] } } }).catch(() => {});
+    await prisma.channel.deleteMany({ where: { serverId: { in: [serverId, privateServerId] } } }).catch(() => {});
+    await prisma.server.deleteMany({ where: { id: { in: [serverId, privateServerId] } } }).catch(() => {});
     await prisma.user.deleteMany({
       where: { id: { in: [ownerUserId, memberUserId, otherUserId] } },
     }).catch(() => {});
@@ -100,6 +112,14 @@ describe('serverMemberService (integration)', () => {
         .catch((e: TRPCError) => e);
       expect(err).toBeInstanceOf(TRPCError);
       expect((err as TRPCError).code).toBe('NOT_FOUND');
+    });
+
+    it('throws FORBIDDEN when joining a private server', async () => {
+      const err = await serverMemberService
+        .joinServer(memberUserId, privateServerId)
+        .catch((e: TRPCError) => e);
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe('FORBIDDEN');
     });
   });
 
@@ -192,7 +212,10 @@ describe('serverMemberService (integration)', () => {
       await prisma.serverMember.delete({
         where: { userId_serverId: { userId: otherUserId, serverId } },
       });
-      await serverService_decrementCount(serverId);
+      await prisma.server.update({
+        where: { id: serverId },
+        data: { memberCount: { decrement: 1 } },
+      });
 
       const err = await serverMemberService
         .changeRole(otherUserId, serverId, 'MEMBER', ownerUserId)
@@ -279,14 +302,3 @@ describe('serverMemberService (integration)', () => {
     });
   });
 });
-
-// Helper to decrement without the BAD_REQUEST guard, for test cleanup
-async function serverService_decrementCount(serverId: string) {
-  const { PrismaClient } = await import('@prisma/client');
-  const p = new PrismaClient();
-  await p.server.update({
-    where: { id: serverId },
-    data: { memberCount: { decrement: 1 } },
-  });
-  await p.$disconnect();
-}
