@@ -373,11 +373,14 @@ describe('visibilityService.setVisibility — VISIBILITY_CHANGED event', () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(receivedPayloads.length).toBeGreaterThanOrEqual(1);
-    const payload = receivedPayloads[receivedPayloads.length - 1] as Record<string, unknown>;
-    expect(payload.channelId).toBe(textChannelId);
-    expect(payload.oldVisibility).toBe(ChannelVisibility.PRIVATE);
-    expect(payload.newVisibility).toBe(ChannelVisibility.PUBLIC_INDEXABLE);
-    expect(payload.actorId).toBe(userId);
+    const payload = (receivedPayloads as Record<string, unknown>[]).find(
+      (p) => p.channelId === textChannelId,
+    );
+    expect(payload).toBeDefined();
+    expect(payload!.channelId).toBe(textChannelId);
+    expect(payload!.oldVisibility).toBe(ChannelVisibility.PRIVATE);
+    expect(payload!.newVisibility).toBe(ChannelVisibility.PUBLIC_INDEXABLE);
+    expect(payload!.actorId).toBe(userId);
 
     unsubscribe();
   });
