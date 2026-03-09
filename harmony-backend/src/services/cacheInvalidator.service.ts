@@ -19,6 +19,7 @@
 
 import { eventBus, EventChannels } from '../events/eventBus';
 import { cacheService, CacheKeys, sanitizeKeySegment } from './cache.service';
+import { indexingService } from './indexing.service';
 
 type UnsubscribeFn = () => void;
 
@@ -50,6 +51,11 @@ export const cacheInvalidator = {
         cacheService
           .invalidate(CacheKeys.metaChannel(payload.channelId))
           .catch((err) => console.error('[CacheInvalidator] VISIBILITY_CHANGED meta key failed:', err));
+
+        // Update sitemap on visibility changes
+        indexingService
+          .onVisibilityChanged(payload)
+          .catch((err) => console.error('[CacheInvalidator] VISIBILITY_CHANGED sitemap update failed:', err));
       });
 
       const sub2 = eventBus.subscribe(EventChannels.MESSAGE_CREATED, (payload) => {

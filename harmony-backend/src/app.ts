@@ -7,6 +7,7 @@ import { appRouter } from './trpc/router';
 import { createContext } from './trpc/init';
 import { authRouter } from './routes/auth.router';
 import { publicRouter } from './routes/public.router';
+import { seoRouter } from './routes/seo.router';
 
 // ─── Auth rate limiters ───────────────────────────────────────────────────────
 
@@ -46,6 +47,9 @@ export function createApp() {
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // SEO endpoints (robots.txt, sitemaps) — before auth so they're publicly accessible
+  app.use(seoRouter);
 
   // Auth endpoints
   app.use('/api/auth/login', loginLimiter);
