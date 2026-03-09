@@ -125,6 +125,8 @@ const TYPE_OPTIONS = [
 
 export interface CreateChannelModalProps {
   serverId: string;
+  /** Server slug — forwarded to createChannelAction for targeted path revalidation. */
+  serverSlug: string;
   /** Channels already in this server — used for duplicate-slug detection. */
   existingChannels: Channel[];
   /** Pre-select a channel type when opening from a specific category header. */
@@ -137,6 +139,7 @@ export interface CreateChannelModalProps {
 
 export function CreateChannelModal({
   serverId,
+  serverSlug,
   existingChannels,
   defaultType = ChannelType.TEXT,
   onCreated,
@@ -218,6 +221,7 @@ export function CreateChannelModal({
     try {
       const newChannel = await createChannelAction({
         serverId,
+        serverSlug,
         slug,
         type,
         visibility,

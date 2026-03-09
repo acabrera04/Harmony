@@ -236,6 +236,7 @@ export function HarmonyShell({
       {isCreateChannelOpen && (
         <CreateChannelModal
           serverId={currentServer.id}
+          serverSlug={currentServer.slug}
           existingChannels={localChannels}
           defaultType={createChannelDefaultType}
           onCreated={newChannel =>

@@ -32,14 +32,15 @@ async function getAuthToken(): Promise<string | undefined> {
 // ─── Public REST helpers ──────────────────────────────────────────────────────
 
 /**
- * GET from the public REST API. Throws on non-2xx responses.
+ * GET from the public REST API. Returns null on 404, throws on other non-2xx responses.
+ * Return type is `T | null` to make 404 handling explicit at call sites.
  */
-export async function publicGet<T>(path: string): Promise<T> {
+export async function publicGet<T>(path: string): Promise<T | null> {
   const res = await fetch(`${BASE}/api/public${path}`, {
     next: { revalidate: 60 }, // ISR: revalidate every 60s
   });
   if (!res.ok) {
-    if (res.status === 404) return null as T;
+    if (res.status === 404) return null;
     throw new Error(`Public API error: ${res.status} ${res.statusText}`);
   }
   return res.json() as Promise<T>;

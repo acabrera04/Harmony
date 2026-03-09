@@ -12,6 +12,11 @@ import { publicGet, trpcQuery, trpcMutate } from '@/lib/trpc-client';
 
 /** Maps the backend Prisma Channel shape to the frontend Channel type. */
 function toFrontendChannel(raw: Record<string, unknown>): Channel {
+  // Warn on missing required fields to catch backend shape mismatches early.
+  if (typeof raw.id !== 'string') console.warn('[toFrontendChannel] missing or non-string "id"', raw);
+  if (typeof raw.serverId !== 'string') console.warn('[toFrontendChannel] missing or non-string "serverId"', raw);
+  if (typeof raw.slug !== 'string') console.warn('[toFrontendChannel] missing or non-string "slug"', raw);
+  if (typeof raw.createdAt !== 'string') console.warn('[toFrontendChannel] missing or non-string "createdAt"', raw);
   return {
     id: raw.id as string,
     serverId: raw.serverId as string,
@@ -32,29 +37,28 @@ function toFrontendChannel(raw: Record<string, unknown>): Channel {
 /**
  * Returns all channels for a given server.
  * Uses tRPC authed endpoint for full channel list (including PRIVATE channels).
- * Falls back to public REST (PUBLIC_INDEXABLE only) if auth is not available.
+ * Errors propagate to the caller — callers that use the channel count (e.g.
+ * createChannelAction position computation) must not silently receive [] on a
+ * transient failure, which would corrupt channel ordering.
  */
 export async function getChannels(serverId: string): Promise<Channel[]> {
-  try {
-    const data = await trpcQuery<Record<string, unknown>[]>('channel.getChannels', { serverId });
-    return (data ?? []).map(toFrontendChannel);
-  } catch {
-    // Fallback: try public endpoint (only PUBLIC_INDEXABLE channels)
-    // This requires a server slug, but we only have serverId here.
-    // Return empty array if the authed call fails.
-    console.error(`[channelService.getChannels] tRPC call failed for serverId "${serverId}"`);
-    return [];
-  }
+  const data = await trpcQuery<Record<string, unknown>[]>('channel.getChannels', { serverId });
+  return (data ?? []).map(toFrontendChannel);
 }
 
 /**
  * Returns a single channel by server slug + channel slug, or null if not found.
- * Uses the tRPC endpoint for full access. Falls back to public REST on failure.
+ * Uses the tRPC endpoint for full access.
+ *
+ * Note: makes two serial network calls — first to resolve the serverId via
+ * `/api/public/servers/:slug`, then to `channel.getChannel`. The public GET is
+ * also used by `getServer` which is React-cached, so when both run in the same
+ * render pass the server fetch is typically served from the React cache.
  */
 export const getChannel = cache(async (serverSlug: string, channelSlug: string): Promise<Channel | null> => {
   try {
-    // First get the server to obtain its ID (needed for tRPC channel endpoint)
-    const serverData = await publicGet<Record<string, unknown> | null>(
+    // Resolve serverId from slug (needed for tRPC channel.getChannel input).
+    const serverData = await publicGet<Record<string, unknown>>(
       `/servers/${encodeURIComponent(serverSlug)}`,
     );
     if (!serverData) return null;

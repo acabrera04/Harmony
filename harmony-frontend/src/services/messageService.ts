@@ -11,6 +11,10 @@ import { publicGet, trpcQuery, trpcMutate } from '@/lib/trpc-client';
 
 /** Maps backend message shape to frontend Message type. */
 function toFrontendMessage(raw: Record<string, unknown>): Message {
+  // Warn on missing required fields to catch backend shape mismatches early.
+  if (typeof raw.id !== 'string') console.warn('[toFrontendMessage] missing or non-string "id"', raw);
+  if (!raw.channelId && !raw.channel_id) console.warn('[toFrontendMessage] missing "channelId"/"channel_id"', raw);
+  if (!raw.createdAt && !raw.created_at && !raw.timestamp) console.warn('[toFrontendMessage] missing timestamp field', raw);
   const author = raw.author as Record<string, unknown> | undefined;
   return {
     id: raw.id as string,

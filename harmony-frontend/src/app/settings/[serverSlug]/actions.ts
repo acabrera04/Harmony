@@ -1,5 +1,12 @@
 'use server';
 
+/**
+ * Auth note: `server.updateServer` and `server.deleteServer` tRPC procedures use
+ * `authedProcedure` and verify ownership/membership server-side before any mutation
+ * is applied. Unauthenticated requests are rejected by the backend with UNAUTHORIZED.
+ * See: harmony-backend/src/trpc/routers/server.router.ts
+ */
+
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { updateServer, deleteServer, getServer } from '@/services/serverService';

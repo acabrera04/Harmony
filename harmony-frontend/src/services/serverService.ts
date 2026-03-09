@@ -12,6 +12,10 @@ import { publicGet, trpcQuery, trpcMutate } from '@/lib/trpc-client';
 
 /** Maps the backend Prisma Server shape to the frontend Server type. */
 function toFrontendServer(raw: Record<string, unknown>): Server {
+  // Warn on missing required fields to catch backend shape mismatches early.
+  if (typeof raw.id !== 'string') console.warn('[toFrontendServer] missing or non-string "id"', raw);
+  if (typeof raw.slug !== 'string') console.warn('[toFrontendServer] missing or non-string "slug"', raw);
+  if (typeof raw.createdAt !== 'string') console.warn('[toFrontendServer] missing or non-string "createdAt"', raw);
   return {
     id: raw.id as string,
     name: raw.name as string,
@@ -30,15 +34,12 @@ function toFrontendServer(raw: Record<string, unknown>): Server {
 
 /**
  * Returns all public servers from the backend.
+ * Errors propagate to the caller — returning [] on failure would silently render
+ * an empty server list with no indication to the user that something went wrong.
  */
 export async function getServers(): Promise<Server[]> {
-  try {
-    const data = await trpcQuery<Record<string, unknown>[]>('server.getServers');
-    return (data ?? []).map(toFrontendServer);
-  } catch (error) {
-    console.error('[serverService.getServers] API call failed, returning empty list:', error);
-    return [];
-  }
+  const data = await trpcQuery<Record<string, unknown>[]>('server.getServers');
+  return (data ?? []).map(toFrontendServer);
 }
 
 /**
@@ -46,7 +47,7 @@ export async function getServers(): Promise<Server[]> {
  */
 export const getServer = cache(async (slug: string): Promise<Server | null> => {
   try {
-    const data = await publicGet<Record<string, unknown> | null>(`/servers/${encodeURIComponent(slug)}`);
+    const data = await publicGet<Record<string, unknown>>(`/servers/${encodeURIComponent(slug)}`);
     if (!data) return null;
     return toFrontendServer(data);
   } catch (error) {
