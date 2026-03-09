@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { cn } from '@/lib/utils';
 import { TopBar } from '@/components/channel/TopBar';
 import { MembersSidebar } from '@/components/channel/MembersSidebar';
@@ -61,9 +61,23 @@ export function HarmonyShell({
   members,
   basePath = '/c',
 }: HarmonyShellProps) {
-  const [isMembersOpen, setIsMembersOpen] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches,
+  // Track the user's explicit toggle preference; null means "follow viewport default".
+  const [membersOverride, setMembersOverride] = useState<boolean | null>(null);
+
+  // useSyncExternalStore: SSR returns false (getServerSnapshot), client returns live viewport.
+  // No useEffect setState needed — avoids both hydration mismatch and the linter rule.
+  const isDesktopViewport = useSyncExternalStore(
+    cb => {
+      const mql = window.matchMedia('(min-width: 640px)');
+      mql.addEventListener('change', cb);
+      return () => mql.removeEventListener('change', cb);
+    },
+    () => window.matchMedia('(min-width: 640px)').matches,
+    () => false,
   );
+
+  const isMembersOpen = membersOverride !== null ? membersOverride : isDesktopViewport;
+  const setIsMembersOpen = useCallback((val: boolean) => setMembersOverride(val), []);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -188,7 +202,7 @@ export function HarmonyShell({
           serverSlug={currentServer.slug}
           userRole={currentUser.role}
           isMembersOpen={isMembersOpen}
-          onMembersToggle={() => setIsMembersOpen(v => !v)}
+          onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
           onSearchOpen={() => setIsSearchOpen(true)}
           isMenuOpen={isMenuOpen}
           onMenuToggle={() => setIsMenuOpen(v => !v)}

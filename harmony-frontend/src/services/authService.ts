@@ -1,173 +1,169 @@
 /**
- * Auth Service (M4 — mock implementation)
- * Maintains in-session auth state via an in-memory variable.
+ * Auth Service (M4 — real backend integration, Issue #113)
+ *
+ * Replaces the mock implementation with real calls to:
+ *   REST  /api/auth/login   /api/auth/register   /api/auth/logout
+ *   tRPC  user.getCurrentUser   user.updateUser
+ *
+ * Token strategy:
+ *   - accessToken  : kept in module memory (cleared on page refresh, never in localStorage)
+ *   - refreshToken : stored in localStorage so sessions survive page reloads
+ *
+ * The api-client handles silent token refresh automatically on 401 responses.
  */
 
-import type { User } from '@/types';
-import { mockUsers } from '@/mocks';
+import type { User, UserStatus } from '@/types';
+import { apiClient, setTokens, clearTokens, getAccessToken, getRefreshToken } from '@/lib/api-client';
 
-// ─── In-memory auth state ─────────────────────────────────────────────────────
+// ─── Backend response shapes ──────────────────────────────────────────────────
 
-let currentUser: User | null = null;
-
-// ─── Registered users persistence ─────────────────────────────────────────────
-
-const REGISTERED_USERS_KEY = 'harmony_registered_users';
-
-const VALID_STATUSES = ['online', 'idle', 'dnd', 'offline'];
-const VALID_ROLES = ['owner', 'admin', 'moderator', 'member', 'guest'];
-
-/** Runtime check that parsed JSON has the required User shape and valid enum values. */
-function isValidUser(value: unknown): value is User {
-  if (typeof value !== 'object' || value === null) return false;
-  const obj = value as Record<string, unknown>;
-  return (
-    typeof obj.id === 'string' &&
-    typeof obj.username === 'string' &&
-    typeof obj.status === 'string' &&
-    VALID_STATUSES.includes(obj.status) &&
-    typeof obj.role === 'string' &&
-    VALID_ROLES.includes(obj.role)
-  );
+interface AuthTokensResponse {
+  accessToken: string;
+  refreshToken: string;
 }
 
-function loadRegisteredUsers(): void {
-  try {
-    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
-    if (stored) {
-      const parsed: unknown[] = JSON.parse(stored);
-      if (!Array.isArray(parsed)) return;
-      for (const u of parsed) {
-        if (isValidUser(u) && !mockUsers.some(m => m.id === u.id)) {
-          mockUsers.push(u);
-        }
-      }
-    }
-  } catch {
-    sessionStorage.removeItem(REGISTERED_USERS_KEY);
-  }
+/** Shape returned by tRPC user.getCurrentUser (SELF_PROFILE_SELECT) */
+interface BackendUser {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  publicProfile: boolean;
+  /** Backend enum values are uppercase: ONLINE | IDLE | DND | OFFLINE */
+  status: 'ONLINE' | 'IDLE' | 'DND' | 'OFFLINE';
+  createdAt: string;
 }
 
-function saveRegisteredUser(user: User): void {
-  try {
-    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
-    const users: User[] = stored ? JSON.parse(stored) : [];
-    users.push(user);
-    sessionStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
-  } catch {
-    // Storage full or unavailable — user won't persist across refresh
-  }
+// ─── Mapping helpers ──────────────────────────────────────────────────────────
+
+/** Convert backend uppercase UserStatus to frontend lowercase. */
+function mapStatus(s: BackendUser['status']): UserStatus {
+  return s.toLowerCase() as UserStatus;
 }
 
-// Restore registered users on module load
-if (typeof window !== 'undefined') {
-  loadRegisteredUsers();
+function mapBackendUser(b: BackendUser): User {
+  return {
+    id: b.id,
+    username: b.username,
+    displayName: b.displayName ?? b.username,
+    avatar: b.avatarUrl ?? undefined,
+    status: mapStatus(b.status),
+    // Roles are server-scoped in the backend (stored in ServerMember, not User).
+    // The global User object has no role field; use 'member' as a safe default.
+    // UI that needs to check admin/owner status must compare user.id to
+    // the server's ownerId or fetch server membership separately.
+    role: 'member',
+  };
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 /**
- * Returns the current authenticated user, or null if not logged in.
+ * Returns the current authenticated user by fetching from the backend.
+ * Returns null if no access token is present or the token is expired/invalid.
+ * The api-client will silently refresh the access token if a refresh token is
+ * available, so callers rarely need to handle 401 themselves.
  */
 export async function getCurrentUser(): Promise<User | null> {
-  return currentUser ? { ...currentUser } : null;
-}
-
-/**
- * Simulates login — validates username against mock users.
- * Any password is accepted for demo purposes.
- */
-export async function login(username: string, _password: string): Promise<User> {
-  const matched = mockUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-  if (!matched) {
-    throw new Error('Invalid username');
+  // No access token and no refresh token → definitely not logged in
+  if (!getAccessToken() && !getRefreshToken()) return null;
+  try {
+    const user = await apiClient.trpcQuery<BackendUser>('user.getCurrentUser');
+    return mapBackendUser(user);
+  } catch {
+    return null;
   }
-  currentUser = { ...matched };
-  return { ...currentUser };
 }
 
 /**
- * Restores the in-memory auth state (used after sessionStorage restore).
+ * Authenticates a user with email + password.
+ * Stores the returned JWT tokens and returns the fetched user profile.
  */
-export function setCurrentUser(user: User | null): void {
-  currentUser = user ? { ...user } : null;
+export async function login(email: string, password: string): Promise<User> {
+  const tokens = await apiClient.post<AuthTokensResponse>('/api/auth/login', { email, password });
+  setTokens(tokens.accessToken, tokens.refreshToken);
+
+  const user = await apiClient.trpcQuery<BackendUser>('user.getCurrentUser');
+  return mapBackendUser(user);
 }
 
 /**
- * Applies a partial update to the current user's profile fields.
- * Syncs the change to mockUsers and registered-users sessionStorage so
- * the update survives logout → login within the same session.
- * Returns the updated user, or throws if no user is logged in.
+ * Creates a new account and logs the user in.
+ * If a displayName different from the username is provided, it is applied via
+ * an immediate updateUser call so the profile reflects it straight away.
+ */
+export async function register(
+  email: string,
+  username: string,
+  displayName: string,
+  password: string,
+): Promise<User> {
+  const tokens = await apiClient.post<AuthTokensResponse>('/api/auth/register', {
+    email,
+    username,
+    password,
+  });
+  setTokens(tokens.accessToken, tokens.refreshToken);
+
+  let user = await apiClient.trpcQuery<BackendUser>('user.getCurrentUser');
+
+  // Backend defaults displayName to username; override if the user chose a different one.
+  if (displayName && displayName !== username) {
+    user = await apiClient.trpcMutation<BackendUser>('user.updateUser', { displayName });
+  }
+
+  return mapBackendUser(user);
+}
+
+/**
+ * Revokes the stored refresh token on the server and clears local token storage.
+ */
+export async function logout(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    try {
+      await apiClient.post('/api/auth/logout', { refreshToken });
+    } catch {
+      // Best-effort: clear tokens locally even if the server call fails
+    }
+  }
+  clearTokens();
+}
+
+/**
+ * Updates the current user's profile fields and returns the updated user.
+ * Throws if not authenticated.
  */
 export async function updateCurrentUser(
   patch: Partial<Pick<User, 'displayName' | 'status'>>,
 ): Promise<User> {
-  if (!currentUser) throw new Error('Not authenticated');
-  currentUser = { ...currentUser, ...patch };
-
-  // Sync to mockUsers array so login() picks up the change
-  const idx = mockUsers.findIndex(u => u.id === currentUser!.id);
-  if (idx !== -1) {
-    mockUsers[idx] = { ...mockUsers[idx], ...patch };
+  const input: Record<string, unknown> = {};
+  if (patch.displayName !== undefined) input.displayName = patch.displayName;
+  if (patch.status !== undefined) {
+    // Convert frontend lowercase status to backend uppercase enum
+    input.status = patch.status.toUpperCase();
   }
 
-  // Sync to registered-users sessionStorage (for accounts created this session)
-  try {
-    const stored = sessionStorage.getItem(REGISTERED_USERS_KEY);
-    if (stored) {
-      const users: User[] = JSON.parse(stored);
-      const regIdx = users.findIndex(u => u.id === currentUser!.id);
-      if (regIdx !== -1) {
-        users[regIdx] = { ...users[regIdx], ...patch };
-        sessionStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
-      }
-    }
-  } catch {
-    // sessionStorage unavailable — in-memory update is still applied
-  }
-
-  return { ...currentUser };
+  const updated = await apiClient.trpcMutation<BackendUser>('user.updateUser', input);
+  return mapBackendUser(updated);
 }
 
 /**
- * Simulates logout — clears the in-memory session.
+ * No-op stub kept for backward-compatibility with AuthContext restore logic.
+ * The real session state lives in the api-client's token storage.
  */
-export async function logout(): Promise<void> {
-  currentUser = null;
+export function setCurrentUser(_user: User | null): void {
+  // Token-based auth: no client-side user state to set here.
 }
 
 /**
- * Returns true if a user is currently logged in.
+ * Returns true if the current session resolves to a valid user.
+ * Calls getCurrentUser() so it handles token refresh transparently —
+ * a stale or revoked refresh token will return false rather than a false positive.
  */
 export async function isAuthenticated(): Promise<boolean> {
-  return currentUser !== null;
+  const user = await getCurrentUser();
+  return user !== null;
 }
 
-/**
- * Simulates account creation — adds a new user to mock data and logs them in.
- * Rejects duplicate usernames.
- */
-export async function register(
-  username: string,
-  displayName: string,
-  _password: string,
-): Promise<User> {
-  const exists = mockUsers.some(u => u.username.toLowerCase() === username.toLowerCase());
-  if (exists) {
-    throw new Error('Username already taken');
-  }
-
-  const newUser: User = {
-    id: `user-${Date.now()}`,
-    username,
-    displayName,
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-    status: 'online',
-    role: 'member',
-  };
-
-  mockUsers.push(newUser);
-  saveRegisteredUser(newUser);
-  currentUser = { ...newUser };
-  return { ...currentUser };
-}

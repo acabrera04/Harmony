@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 
 function LoginForm() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,7 +20,7 @@ function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await login(username, password);
+      await login(email, password);
       const raw = searchParams.get('returnUrl') ?? '';
       const returnUrl =
         raw.startsWith('/') && !raw.startsWith('//')
@@ -45,19 +45,19 @@ function LoginForm() {
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div>
             <label
-              htmlFor='username'
+              htmlFor='email'
               className='mb-2 block text-xs font-bold uppercase text-discord-text-muted'
             >
-              Username
+              Email
             </label>
             <input
-              id='username'
-              type='text'
+              id='email'
+              type='email'
               required
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className='w-full rounded bg-discord-bg-tertiary p-2.5 text-white placeholder-discord-text-muted outline-none focus:ring-2 focus:ring-discord-accent'
-              placeholder='Enter your username'
+              placeholder='Enter your email'
               disabled={isSubmitting}
             />
           </div>
