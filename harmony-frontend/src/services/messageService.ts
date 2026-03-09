@@ -20,14 +20,12 @@ function toFrontendMessage(raw: Record<string, unknown>): Message {
     id: raw.id as string,
     channelId: (raw.channelId ?? raw.channel_id ?? '') as string,
     authorId: (raw.authorId ?? raw.author_id ?? author?.id ?? '') as string,
-    author: author
-      ? {
-          id: author.id as string,
-          username: author.username as string,
-          displayName: (author.displayName ?? author.display_name) as string | undefined,
-          avatarUrl: (author.avatarUrl ?? author.avatar_url) as string | undefined,
-        }
-      : undefined,
+    author: {
+      id: (author?.id ?? '') as string,
+      username: (author?.username ?? '') as string,
+      displayName: (author?.displayName ?? author?.display_name) as string | undefined,
+      avatarUrl: (author?.avatarUrl ?? author?.avatar_url) as string | undefined,
+    },
     content: raw.content as string,
     timestamp: (raw.createdAt ?? raw.created_at ?? raw.timestamp) as string,
   };
