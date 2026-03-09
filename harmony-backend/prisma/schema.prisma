@@ -186,6 +186,10 @@ model Attachment {
   @@map("attachments")
 }
 
+/// Audit log for channel visibility changes.
+/// Retention policy: records must be retained for a minimum of 7 years
+/// for compliance. Automated purge jobs must not delete entries whose
+/// `timestamp` is within the 7-year retention window.
 model VisibilityAuditLog {
   id        String   @id @default(uuid()) @db.Uuid
   channelId String   @map("channel_id") @db.Uuid

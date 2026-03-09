@@ -16,6 +16,7 @@ import { TRPCError } from '@trpc/server';
 import { ChannelType, ChannelVisibility } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { eventBus, EventChannels } from '../events/eventBus';
+import { auditLogService } from './auditLog.service';
 
 export interface SetVisibilityInput {
   channelId: string;
@@ -92,17 +93,17 @@ export const visibilityService = {
         },
       });
 
-      const audit = await tx.visibilityAuditLog.create({
-        data: {
+      const audit = await auditLogService.logVisibilityChange(
+        {
           channelId,
           actorId,
-          action: 'VISIBILITY_CHANGED',
           oldValue: { visibility: current.visibility },
           newValue: { visibility },
           ipAddress: ip,
           userAgent,
         },
-      });
+        tx,
+      );
 
       return { updatedChannel: updated, auditEntry: audit, oldVisibility: current.visibility };
     });
