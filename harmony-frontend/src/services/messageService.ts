@@ -55,13 +55,14 @@ export async function getMessages(
       pageSize: number;
     }>(`/channels/${encodeURIComponent(channelId)}/messages?page=${page}`);
 
-    if (data?.messages) {
-      return {
-        messages: data.messages.map(toFrontendMessage),
-        hasMore: data.messages.length >= (data.pageSize ?? 50),
-      };
-    }
-    return { messages: [], hasMore: false };
+    // null means HTTP 404 — channel not found on public API. Throw so the catch
+    // block can attempt the tRPC fallback (or re-throw if no serverId).
+    if (data === null) throw new Error(`getMessages: public channel not found for channelId=${channelId}`);
+
+    return {
+      messages: data.messages.map(toFrontendMessage),
+      hasMore: data.messages.length >= (data.pageSize ?? 50),
+    };
   } catch {
     // Public endpoint unavailable or channel is not PUBLIC_INDEXABLE — try tRPC.
     // If serverId is not provided we cannot authenticate, so re-throw.
@@ -76,9 +77,10 @@ export async function getMessages(
       channelId,
       limit: 50,
     });
+    if (data === null) throw new Error(`getMessages: tRPC returned no data for channelId=${channelId}`);
     return {
-      messages: (data?.messages ?? []).map(toFrontendMessage),
-      hasMore: !!data?.nextCursor,
+      messages: data.messages.map(toFrontendMessage),
+      hasMore: !!data.nextCursor,
     };
   }
 }
