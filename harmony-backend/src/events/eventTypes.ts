@@ -11,6 +11,8 @@ export const EventChannels = {
   MESSAGE_EDITED: 'harmony:MESSAGE_EDITED',
   MESSAGE_DELETED: 'harmony:MESSAGE_DELETED',
   META_TAGS_UPDATED: 'harmony:META_TAGS_UPDATED',
+  MEMBER_JOINED: 'harmony:MEMBER_JOINED',
+  MEMBER_LEFT: 'harmony:MEMBER_LEFT',
 } as const;
 
 export type EventChannelName = (typeof EventChannels)[keyof typeof EventChannels];
@@ -51,6 +53,22 @@ export interface MetaTagsUpdatedPayload {
   timestamp: string;
 }
 
+export type RoleTypeValue = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER' | 'GUEST';
+
+export interface MemberJoinedPayload {
+  userId: string;
+  serverId: string;
+  role: RoleTypeValue;
+  timestamp: string;
+}
+
+export interface MemberLeftPayload {
+  userId: string;
+  serverId: string;
+  reason: 'LEFT' | 'KICKED';
+  timestamp: string;
+}
+
 // Map each channel to its payload type for type-safe subscribe/publish
 export interface EventPayloadMap {
   [EventChannels.VISIBILITY_CHANGED]: VisibilityChangedPayload;
@@ -58,6 +76,8 @@ export interface EventPayloadMap {
   [EventChannels.MESSAGE_EDITED]: MessageEditedPayload;
   [EventChannels.MESSAGE_DELETED]: MessageDeletedPayload;
   [EventChannels.META_TAGS_UPDATED]: MetaTagsUpdatedPayload;
+  [EventChannels.MEMBER_JOINED]: MemberJoinedPayload;
+  [EventChannels.MEMBER_LEFT]: MemberLeftPayload;
 }
 
 export type EventHandler<C extends EventChannelName> = (payload: EventPayloadMap[C]) => void;
