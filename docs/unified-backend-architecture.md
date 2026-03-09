@@ -1007,8 +1007,10 @@ All REST endpoints are unauthenticated. Rate limiting applies.
 | Consumer Type | Limit | Window | Scope |
 |---------------|-------|--------|-------|
 | Authenticated users | 100 req | 1 min | Per user |
-| Guest users (anonymous) | 60 req | 1 min | Per IP |
-| Verified bots (Googlebot, Bingbot) | 1000 req | 1 min | Per bot identity |
+| Guest users (anonymous) | 100 req | 1 min | Per IP |
+| Verified bots (Googlebot, Bingbot, Slackbot) | 1000 req | 1 min | Per bot identity (requires reverse-DNS verification — see §9.3) |
+
+> **Note:** Until reverse-DNS bot verification is implemented (§9.3), all requests — including those with bot User-Agents — are rate-limited at the guest/human rate (100 req/min per IP). See issue #110.
 
 Exceeding limits returns `429 Too Many Requests` with a `Retry-After` header.
 
