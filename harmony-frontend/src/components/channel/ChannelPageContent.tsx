@@ -43,6 +43,7 @@ export async function ChannelPageContent({
   ]);
   const sortedMessages = [...messages].reverse();
 
+
   const shell = (
     <HarmonyShell
       servers={servers}
