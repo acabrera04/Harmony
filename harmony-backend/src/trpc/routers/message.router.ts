@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { router, withPermission } from '../init';
 import { messageService } from '../../services/message.service';
 
+// sizeBytes is accepted as a plain number (JSON-safe).
+// The service layer casts it to BigInt before writing to Prisma.
 const AttachmentInputSchema = z.object({
   filename: z.string().min(1).max(255),
   url: z.string().url().max(500),
   contentType: z.string().min(1).max(100),
-  sizeBytes: z.bigint().positive(),
+  sizeBytes: z.number().int().positive(),
 });
 
 export const messageRouter = router({
@@ -22,6 +24,7 @@ export const messageRouter = router({
     )
     .query(({ input }) =>
       messageService.getMessages({
+        serverId: input.serverId,
         channelId: input.channelId,
         cursor: input.cursor,
         limit: input.limit,
@@ -40,6 +43,7 @@ export const messageRouter = router({
     )
     .mutation(({ input, ctx }) =>
       messageService.sendMessage({
+        serverId: input.serverId,
         channelId: input.channelId,
         authorId: ctx.userId,
         content: input.content,
@@ -61,6 +65,7 @@ export const messageRouter = router({
     )
     .mutation(({ input, ctx }) =>
       messageService.editMessage({
+        serverId: input.serverId,
         messageId: input.messageId,
         authorId: ctx.userId,
         content: input.content,
@@ -95,7 +100,7 @@ export const messageRouter = router({
         messageId: z.string().uuid(),
       }),
     )
-    .mutation(({ input }) => messageService.pinMessage(input.messageId)),
+    .mutation(({ input }) => messageService.pinMessage(input.messageId, input.serverId)),
 
   /** Unpin a message. Requires message:pin (MODERATOR+). */
   unpinMessage: withPermission('message:pin')
@@ -105,7 +110,7 @@ export const messageRouter = router({
         messageId: z.string().uuid(),
       }),
     )
-    .mutation(({ input }) => messageService.unpinMessage(input.messageId)),
+    .mutation(({ input }) => messageService.unpinMessage(input.messageId, input.serverId)),
 
   /** Get all pinned messages for a channel. Requires message:read (GUEST+). */
   getPinnedMessages: withPermission('message:read')
@@ -115,5 +120,5 @@ export const messageRouter = router({
         channelId: z.string().uuid(),
       }),
     )
-    .query(({ input }) => messageService.getPinnedMessages(input.channelId)),
+    .query(({ input }) => messageService.getPinnedMessages(input.channelId, input.serverId)),
 });

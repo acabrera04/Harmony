@@ -6,24 +6,28 @@ import { permissionService } from './permission.service';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface GetMessagesInput {
+  serverId: string;
   channelId: string;
   cursor?: string; // messageId to paginate from (exclusive)
-  limit?: number;  // default 20
+  limit?: number; // default 20
 }
 
 export interface SendMessageInput {
+  serverId: string;
   channelId: string;
   authorId: string;
   content: string;
+  // sizeBytes is number on the wire (JSON-safe); cast to BigInt for Prisma
   attachments?: Array<{
     filename: string;
     url: string;
     contentType: string;
-    sizeBytes: bigint;
+    sizeBytes: number;
   }>;
 }
 
 export interface EditMessageInput {
+  serverId: string;
   messageId: string;
   authorId: string;
   content: string;
@@ -35,7 +39,8 @@ export interface DeleteMessageInput {
   serverId: string;
 }
 
-// Author fields embedded with every message response
+// ─── Author / attachment projections ─────────────────────────────────────────
+
 const AUTHOR_SELECT = {
   id: true,
   username: true,
@@ -43,12 +48,15 @@ const AUTHOR_SELECT = {
   avatarUrl: true,
 } as const;
 
+// sizeBytes excluded from select — Prisma returns it as BigInt which JSON
+// cannot serialize with the default tRPC transformer. Clients that need the
+// raw byte count should read it from the HTTP Content-Length header or a
+// dedicated metadata endpoint once superjson is configured end-to-end.
 const ATTACHMENT_SELECT = {
   id: true,
   filename: true,
   url: true,
   contentType: true,
-  sizeBytes: true,
 } as const;
 
 const MESSAGE_INCLUDE = {
@@ -56,10 +64,50 @@ const MESSAGE_INCLUDE = {
   attachments: { select: ATTACHMENT_SELECT },
 } as const;
 
-// Cache key for cursor-paginated message pages
-function msgCacheKey(channelId: string, cursor: string | undefined, limit: number): string {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Cache key scoped to both server and channel so that private-channel entries
+ * cannot be hit by users authorized on a different server.
+ */
+function msgCacheKey(
+  serverId: string,
+  channelId: string,
+  cursor: string | undefined,
+  limit: number,
+): string {
   const c = sanitizeKeySegment(cursor ?? 'start');
-  return `channel:msgs:${sanitizeKeySegment(channelId)}:cursor:${c}:limit:${limit}`;
+  return (
+    `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}` +
+    `:cursor:${c}:limit:${limit}`
+  );
+}
+
+/**
+ * Resolve a channel and assert it belongs to the given server.
+ * Throws NOT_FOUND (collapsed from both "no channel" and "wrong server") to
+ * prevent callers from probing channel IDs across servers.
+ */
+async function requireChannelInServer(channelId: string, serverId: string) {
+  const channel = await prisma.channel.findUnique({ where: { id: channelId } });
+  if (!channel || channel.serverId !== serverId) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Channel not found in this server' });
+  }
+  return channel;
+}
+
+/**
+ * Resolve a message (non-deleted) and assert its channel belongs to `serverId`.
+ */
+async function requireMessageInServer(messageId: string, serverId: string) {
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    include: { channel: { select: { serverId: true } } },
+  });
+  if (!message || message.isDeleted || message.channel.serverId !== serverId) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found in this server' });
+  }
+  return message;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -71,10 +119,12 @@ export const messageService = {
    * Pass the last returned message's id as `cursor` to get the next page.
    */
   async getMessages(input: GetMessagesInput) {
-    const { channelId, cursor, limit = 20 } = input;
+    const { serverId, channelId, cursor, limit = 20 } = input;
     const clampedLimit = Math.min(Math.max(1, limit), 100);
 
-    const cacheKey = msgCacheKey(channelId, cursor, clampedLimit);
+    await requireChannelInServer(channelId, serverId);
+
+    const cacheKey = msgCacheKey(serverId, channelId, cursor, clampedLimit);
 
     return cacheService.getOrRevalidate(
       cacheKey,
@@ -102,29 +152,31 @@ export const messageService = {
    * Send a new message to a channel, optionally with attachment metadata.
    */
   async sendMessage(input: SendMessageInput) {
-    const { channelId, authorId, content, attachments } = input;
+    const { serverId, channelId, authorId, content, attachments } = input;
 
-    const channel = await prisma.channel.findUnique({ where: { id: channelId } });
-    if (!channel) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Channel not found' });
-    }
+    await requireChannelInServer(channelId, serverId);
 
     const message = await prisma.message.create({
       data: {
         channelId,
         authorId,
         content,
-        ...(attachments && attachments.length > 0 && {
-          attachments: {
-            create: attachments,
-          },
-        }),
+        ...(attachments &&
+          attachments.length > 0 && {
+            attachments: {
+              // Cast number → BigInt for Prisma; sizeBytes is excluded from responses
+              create: attachments.map((a) => ({ ...a, sizeBytes: BigInt(a.sizeBytes) })),
+            },
+          }),
       },
       include: MESSAGE_INCLUDE,
     });
 
-    // Invalidate all cached pages for this channel (best-effort)
-    cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(channelId)}:*`).catch(() => {});
+    cacheService
+      .invalidatePattern(
+        `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
+      )
+      .catch(() => {});
 
     return message;
   },
@@ -133,12 +185,10 @@ export const messageService = {
    * Edit a message's content. Only the message author may edit.
    */
   async editMessage(input: EditMessageInput) {
-    const { messageId, authorId, content } = input;
+    const { serverId, messageId, authorId, content } = input;
 
-    const message = await prisma.message.findUnique({ where: { id: messageId } });
-    if (!message || message.isDeleted) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found' });
-    }
+    const message = await requireMessageInServer(messageId, serverId);
+
     if (message.authorId !== authorId) {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'You can only edit your own messages' });
     }
@@ -149,7 +199,11 @@ export const messageService = {
       include: MESSAGE_INCLUDE,
     });
 
-    cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(message.channelId)}:*`).catch(() => {});
+    cacheService
+      .invalidatePattern(
+        `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(message.channelId)}:*`,
+      )
+      .catch(() => {});
 
     return updated;
   },
@@ -162,16 +216,19 @@ export const messageService = {
   async deleteMessage(input: DeleteMessageInput) {
     const { messageId, actorId, serverId } = input;
 
-    const message = await prisma.message.findUnique({ where: { id: messageId } });
-    if (!message || message.isDeleted) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found' });
-    }
+    const message = await requireMessageInServer(messageId, serverId);
 
     if (message.authorId !== actorId) {
-      // Not the author — requires elevated permission
-      const canDeleteAny = await permissionService.checkPermission(actorId, serverId, 'message:delete_any');
+      const canDeleteAny = await permissionService.checkPermission(
+        actorId,
+        serverId,
+        'message:delete_any',
+      );
       if (!canDeleteAny) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to delete this message' });
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to delete this message',
+        });
       }
     }
 
@@ -180,51 +237,78 @@ export const messageService = {
       data: { isDeleted: true },
     });
 
-    cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(message.channelId)}:*`).catch(() => {});
+    cacheService
+      .invalidatePattern(
+        `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(message.channelId)}:*`,
+      )
+      .catch(() => {});
   },
 
   /**
    * Pin a message. Requires message:pin (MODERATOR+), checked via router RBAC.
+   * Uses a transaction to atomically check-and-set, preventing concurrent
+   * double-pin races.
    */
-  async pinMessage(messageId: string) {
-    const message = await prisma.message.findUnique({ where: { id: messageId } });
-    if (!message || message.isDeleted) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found' });
-    }
-    if (message.pinned) {
-      throw new TRPCError({ code: 'CONFLICT', message: 'Message is already pinned' });
-    }
+  async pinMessage(messageId: string, serverId: string) {
+    const updated = await prisma.$transaction(async (tx) => {
+      const msg = await tx.message.findUnique({
+        where: { id: messageId },
+        include: { channel: { select: { serverId: true } } },
+      });
 
-    const updated = await prisma.message.update({
-      where: { id: messageId },
-      data: { pinned: true, pinnedAt: new Date() },
-      include: MESSAGE_INCLUDE,
+      if (!msg || msg.isDeleted || msg.channel.serverId !== serverId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found in this server' });
+      }
+      if (msg.pinned) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Message is already pinned' });
+      }
+
+      return tx.message.update({
+        where: { id: messageId },
+        data: { pinned: true, pinnedAt: new Date() },
+        include: MESSAGE_INCLUDE,
+      });
     });
 
-    cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(message.channelId)}:*`).catch(() => {});
+    cacheService
+      .invalidatePattern(
+        `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(updated.channelId)}:*`,
+      )
+      .catch(() => {});
 
     return updated;
   },
 
   /**
    * Unpin a message. Requires message:pin (MODERATOR+), checked via router RBAC.
+   * Uses a transaction to atomically check-and-clear.
    */
-  async unpinMessage(messageId: string) {
-    const message = await prisma.message.findUnique({ where: { id: messageId } });
-    if (!message || message.isDeleted) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found' });
-    }
-    if (!message.pinned) {
-      throw new TRPCError({ code: 'CONFLICT', message: 'Message is not pinned' });
-    }
+  async unpinMessage(messageId: string, serverId: string) {
+    const updated = await prisma.$transaction(async (tx) => {
+      const msg = await tx.message.findUnique({
+        where: { id: messageId },
+        include: { channel: { select: { serverId: true } } },
+      });
 
-    const updated = await prisma.message.update({
-      where: { id: messageId },
-      data: { pinned: false, pinnedAt: null },
-      include: MESSAGE_INCLUDE,
+      if (!msg || msg.isDeleted || msg.channel.serverId !== serverId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found in this server' });
+      }
+      if (!msg.pinned) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Message is not pinned' });
+      }
+
+      return tx.message.update({
+        where: { id: messageId },
+        data: { pinned: false, pinnedAt: null },
+        include: MESSAGE_INCLUDE,
+      });
     });
 
-    cacheService.invalidatePattern(`channel:msgs:${sanitizeKeySegment(message.channelId)}:*`).catch(() => {});
+    cacheService
+      .invalidatePattern(
+        `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(updated.channelId)}:*`,
+      )
+      .catch(() => {});
 
     return updated;
   },
@@ -232,7 +316,9 @@ export const messageService = {
   /**
    * Retrieve all pinned messages for a channel in pin order (pinnedAt DESC).
    */
-  async getPinnedMessages(channelId: string) {
+  async getPinnedMessages(channelId: string, serverId: string) {
+    await requireChannelInServer(channelId, serverId);
+
     return prisma.message.findMany({
       where: { channelId, pinned: true, isDeleted: false },
       orderBy: { pinnedAt: 'desc' },
