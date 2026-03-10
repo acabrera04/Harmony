@@ -25,10 +25,14 @@ export async function ChannelPageContent({
   const channel = serverChannels.find(c => c.slug === channelSlug);
   if (!channel) notFound();
 
-  // Gather all channels across servers for cross-server navigation
+  // Gather all channels across servers for cross-server navigation.
+  // Use .catch(() => []) so a FORBIDDEN error for servers the authenticated
+  // user is not a member of degrades gracefully instead of crashing the page.
   const allChannels = (
     await Promise.all(
-      servers.map(s => (s.id === server.id ? Promise.resolve(serverChannels) : getChannels(s.id))),
+      servers.map(s =>
+        s.id === server.id ? Promise.resolve(serverChannels) : getChannels(s.id).catch(() => []),
+      ),
     )
   ).flat();
 
