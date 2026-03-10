@@ -56,9 +56,28 @@ export const getServer = cache(async (slug: string): Promise<Server | null> => {
   }
 });
 
+/**
+ * Mirrors the backend's exported `ServerMemberWithUser` shape.
+ * Defined locally to avoid a cross-package import; must be kept in sync with
+ * `harmony-backend/src/services/server.service.ts → ServerMemberWithUser`.
+ */
+interface BackendServerMember {
+  userId: string;
+  serverId: string;
+  role: string;
+  joinedAt: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    status: string;
+  };
+}
+
 /** Maps a backend ServerMember+User record to the frontend User type. */
-function toFrontendMember(raw: Record<string, unknown>): User {
-  const user = raw.user as Record<string, unknown>;
+function toFrontendMember(raw: BackendServerMember): User {
+  const user = raw.user;
   const roleMap: Record<string, User['role']> = {
     OWNER: 'owner',
     ADMIN: 'admin',
@@ -73,12 +92,12 @@ function toFrontendMember(raw: Record<string, unknown>): User {
     OFFLINE: 'offline',
   };
   return {
-    id: user.id as string,
-    username: user.username as string,
-    displayName: (user.displayName as string | undefined) ?? undefined,
-    avatar: (user.avatarUrl as string | null) ?? undefined,
-    status: statusMap[user.status as string] ?? 'offline',
-    role: roleMap[raw.role as string] ?? 'member',
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName ?? undefined,
+    avatar: user.avatarUrl ?? undefined,
+    status: statusMap[user.status] ?? 'offline',
+    role: roleMap[raw.role] ?? 'member',
   };
 }
 
@@ -89,7 +108,7 @@ function toFrontendMember(raw: Record<string, unknown>): User {
  */
 export async function getServerMembers(serverId: string): Promise<User[]> {
   try {
-    const data = await trpcQuery<Record<string, unknown>[]>('server.getMembers', { serverId });
+    const data = await trpcQuery<BackendServerMember[]>('server.getMembers', { serverId });
     return (data ?? []).map(toFrontendMember);
   } catch (error) {
     console.warn('[serverService.getServerMembers] failed, returning []:', error);
