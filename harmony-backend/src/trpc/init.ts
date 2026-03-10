@@ -25,7 +25,17 @@ export function createContext({ req }: { req: Request }): TRPCContext {
   return { userId, ip: req.ip ?? '', userAgent: req.get('user-agent') ?? '' };
 }
 
-const t = initTRPC.context<TRPCContext>().create();
+const t = initTRPC.context<TRPCContext>().create({
+  errorFormatter({ shape }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        stack: process.env.NODE_ENV === 'development' ? shape.data.stack : undefined,
+      },
+    };
+  },
+});
 
 export const router = t.router;
 export const createCallerFactory = t.createCallerFactory;
