@@ -86,133 +86,138 @@ describe('serverService (integration)', () => {
     await prisma.$disconnect();
   });
 
-describe('serverService.createServer', () => {
-  it('created a server with auto-generated slug in beforeAll', async () => {
-    const server = await prisma.server.findUnique({ where: { id: createdServerId } });
-    expect(server).not.toBeNull();
-    expect(server!.name).toBe('My Test Server');
-    expect(server!.slug).toBe('my-test-server');
-    expect(server!.ownerId).toBe(ownerUserId);
-    expect(server!.isPublic).toBe(true);
-    expect(server!.memberCount).toBe(1); // owner auto-added as member
-  });
-
-  it('rejects a name that generates an empty slug', async () => {
-    await expect(
-      serverService.createServer({ name: '!@#$%', ownerId: ownerUserId }),
-    ).rejects.toThrow(TRPCError);
-  });
-});
-
-describe('serverService.getServer', () => {
-  it('returns the server by slug', async () => {
-    const server = await serverService.getServer('my-test-server');
-    expect(server).not.toBeNull();
-    expect(server!.id).toBe(createdServerId);
-  });
-
-  it('returns null for unknown slug', async () => {
-    const server = await serverService.getServer('no-such-server-xyz');
-    expect(server).toBeNull();
-  });
-});
-
-describe('serverService.getPublicServers', () => {
-  it('returns only public servers', async () => {
-    const servers = await serverService.getPublicServers();
-    expect(Array.isArray(servers)).toBe(true);
-    expect(servers.every((s) => s.isPublic)).toBe(true);
-    expect(servers.some((s) => s.id === createdServerId)).toBe(true);
-  });
-
-  it('respects the limit parameter', async () => {
-    const servers = await serverService.getPublicServers(1);
-    expect(servers.length).toBeLessThanOrEqual(1);
-  });
-});
-
-describe('serverService.updateServer', () => {
-  it('updates server name and regenerates slug', async () => {
-    const updated = await serverService.updateServer(createdServerId, ownerUserId, {
-      name: 'Renamed Server',
+  describe('serverService.createServer', () => {
+    it('created a server with auto-generated slug in beforeAll', async () => {
+      const server = await prisma.server.findUnique({ where: { id: createdServerId } });
+      expect(server).not.toBeNull();
+      expect(server!.name).toBe('My Test Server');
+      expect(server!.slug).toBe('my-test-server');
+      expect(server!.ownerId).toBe(ownerUserId);
+      expect(server!.isPublic).toBe(true);
+      expect(server!.memberCount).toBe(1); // owner auto-added as member
     });
-    expect(updated.name).toBe('Renamed Server');
-    expect(updated.slug).toBe('renamed-server');
-  });
 
-  it('updates description without changing slug', async () => {
-    const updated = await serverService.updateServer(createdServerId, ownerUserId, {
-      description: 'A great server',
+    it('adds the owner to server_members with OWNER role (issue #169)', async () => {
+      const membership = await prisma.serverMember.findUnique({
+        where: { userId_serverId: { userId: ownerUserId, serverId: createdServerId } },
+      });
+      expect(membership).not.toBeNull();
+      expect(membership!.role).toBe('OWNER');
     });
-    expect(updated.description).toBe('A great server');
-    expect(updated.slug).toBe('renamed-server');
+
+    it('rejects a name that generates an empty slug', async () => {
+      await expect(
+        serverService.createServer({ name: '!@#$%', ownerId: ownerUserId }),
+      ).rejects.toThrow(TRPCError);
+    });
   });
 
-  it('throws FORBIDDEN when non-owner tries to update', async () => {
-    await expect(
-      serverService.updateServer(createdServerId, otherUserId, { name: 'Hijacked' }),
-    ).rejects.toThrow(TRPCError);
-    const err = await serverService
-      .updateServer(createdServerId, otherUserId, { name: 'Hijacked' })
-      .catch((e: TRPCError) => e);
-    expect((err as TRPCError).code).toBe('FORBIDDEN');
+  describe('serverService.getServer', () => {
+    it('returns the server by slug', async () => {
+      const server = await serverService.getServer('my-test-server');
+      expect(server).not.toBeNull();
+      expect(server!.id).toBe(createdServerId);
+    });
+
+    it('returns null for unknown slug', async () => {
+      const server = await serverService.getServer('no-such-server-xyz');
+      expect(server).toBeNull();
+    });
   });
 
-  it('throws NOT_FOUND for unknown server id', async () => {
-    await expect(
-      serverService.updateServer('00000000-0000-0000-0000-000000000000', ownerUserId, {
-        name: 'Ghost',
-      }),
-    ).rejects.toThrow(TRPCError);
-  });
-});
+  describe('serverService.getPublicServers', () => {
+    it('returns only public servers', async () => {
+      const servers = await serverService.getPublicServers();
+      expect(Array.isArray(servers)).toBe(true);
+      expect(servers.every((s) => s.isPublic)).toBe(true);
+      expect(servers.some((s) => s.id === createdServerId)).toBe(true);
+    });
 
-describe('serverService.incrementMemberCount / decrementMemberCount', () => {
-  it('increments member count', async () => {
-    const updated = await serverService.incrementMemberCount(createdServerId);
-    // Starts at 1 (owner auto-added), so after increment → 2
-    expect(updated.memberCount).toBe(2);
+    it('respects the limit parameter', async () => {
+      const servers = await serverService.getPublicServers(1);
+      expect(servers.length).toBeLessThanOrEqual(1);
+    });
   });
 
-  it('decrements member count', async () => {
-    const updated = await serverService.decrementMemberCount(createdServerId);
-    expect(updated.memberCount).toBe(1);
+  describe('serverService.updateServer', () => {
+    it('updates server name and regenerates slug', async () => {
+      const updated = await serverService.updateServer(createdServerId, ownerUserId, {
+        name: 'Renamed Server',
+      });
+      expect(updated.name).toBe('Renamed Server');
+      expect(updated.slug).toBe('renamed-server');
+    });
+
+    it('updates description without changing slug', async () => {
+      const updated = await serverService.updateServer(createdServerId, ownerUserId, {
+        description: 'A great server',
+      });
+      expect(updated.description).toBe('A great server');
+      expect(updated.slug).toBe('renamed-server');
+    });
+
+    it('throws FORBIDDEN when non-owner tries to update', async () => {
+      await expect(
+        serverService.updateServer(createdServerId, otherUserId, { name: 'Hijacked' }),
+      ).rejects.toThrow(TRPCError);
+      const err = await serverService
+        .updateServer(createdServerId, otherUserId, { name: 'Hijacked' })
+        .catch((e: TRPCError) => e);
+      expect((err as TRPCError).code).toBe('FORBIDDEN');
+    });
+
+    it('throws NOT_FOUND for unknown server id', async () => {
+      await expect(
+        serverService.updateServer('00000000-0000-0000-0000-000000000000', ownerUserId, {
+          name: 'Ghost',
+        }),
+      ).rejects.toThrow(TRPCError);
+    });
   });
 
-  it('decrements member count to zero', async () => {
-    const updated = await serverService.decrementMemberCount(createdServerId);
-    expect(updated.memberCount).toBe(0);
+  describe('serverService.incrementMemberCount / decrementMemberCount', () => {
+    it('increments member count', async () => {
+      const updated = await serverService.incrementMemberCount(createdServerId);
+      // Starts at 1 (owner auto-added), so after increment → 2
+      expect(updated.memberCount).toBe(2);
+    });
+
+    it('decrements member count', async () => {
+      const updated = await serverService.decrementMemberCount(createdServerId);
+      expect(updated.memberCount).toBe(1);
+    });
+
+    it('decrements member count to zero', async () => {
+      const updated = await serverService.decrementMemberCount(createdServerId);
+      expect(updated.memberCount).toBe(0);
+    });
+
+    it('throws BAD_REQUEST when decrementing at zero', async () => {
+      await expect(serverService.decrementMemberCount(createdServerId)).rejects.toThrow(TRPCError);
+    });
   });
 
-  it('throws BAD_REQUEST when decrementing at zero', async () => {
-    await expect(
-      serverService.decrementMemberCount(createdServerId),
-    ).rejects.toThrow(TRPCError);
-  });
-});
+  describe('serverService.deleteServer', () => {
+    it('throws FORBIDDEN when non-owner tries to delete', async () => {
+      const err = await serverService
+        .deleteServer(createdServerId, otherUserId)
+        .catch((e: TRPCError) => e);
+      expect((err as TRPCError).code).toBe('FORBIDDEN');
+    });
 
-describe('serverService.deleteServer', () => {
-  it('throws FORBIDDEN when non-owner tries to delete', async () => {
-    const err = await serverService
-      .deleteServer(createdServerId, otherUserId)
-      .catch((e: TRPCError) => e);
-    expect((err as TRPCError).code).toBe('FORBIDDEN');
-  });
+    it('deletes the server when called by owner', async () => {
+      await serverService.deleteServer(createdServerId, ownerUserId);
+      createdServerId = ''; // prevent afterAll from double-deleting
+      const server = await prisma.server.findUnique({ where: { slug: 'renamed-server' } });
+      expect(server).toBeNull();
+    });
 
-  it('deletes the server when called by owner', async () => {
-    await serverService.deleteServer(createdServerId, ownerUserId);
-    createdServerId = ''; // prevent afterAll from double-deleting
-    const server = await prisma.server.findUnique({ where: { slug: 'renamed-server' } });
-    expect(server).toBeNull();
+    it('throws NOT_FOUND for already-deleted server', async () => {
+      await expect(
+        serverService.deleteServer('00000000-0000-0000-0000-000000000000', ownerUserId),
+      ).rejects.toThrow(TRPCError);
+    });
   });
-
-  it('throws NOT_FOUND for already-deleted server', async () => {
-    await expect(
-      serverService.deleteServer('00000000-0000-0000-0000-000000000000', ownerUserId),
-    ).rejects.toThrow(TRPCError);
-  });
-});
-
 }); // end serverService (integration)
 
 // ─── tRPC router integration tests ──────────────────────────────────────────
@@ -225,7 +230,9 @@ describe('server tRPC router', () => {
   });
 
   it('server.getServer requires authentication', async () => {
-    const res = await request(app).get('/trpc/server.getServer?input=%7B%22slug%22%3A%22some-server%22%7D');
+    const res = await request(app).get(
+      '/trpc/server.getServer?input=%7B%22slug%22%3A%22some-server%22%7D',
+    );
     expect(res.status).toBe(401);
   });
 
