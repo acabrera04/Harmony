@@ -6,7 +6,7 @@
  *
  * Protected routes:
  *   /channels/*  — require authentication
- *   /settings/*  — require authentication + admin/owner role
+ *   /settings/*  — require authentication (role enforcement is page-level)
  *
  * The middleware reads the `auth_token` httpOnly cookie set by the
  * `setSessionCookie` server action (or, after #113, by the backend directly).
@@ -18,15 +18,17 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
+import { AUTH_COOKIE_NAME } from '@/lib/auth-constants';
 
-const AUTH_COOKIE_NAME = 'auth_token';
-
-const ADMIN_ROLES = new Set(['owner', 'admin']);
+// NOTE: Role-based access for /settings/* is intentionally NOT enforced here.
+// Roles in the backend are server-scoped (stored in ServerMember, not User),
+// so the middleware cannot reliably determine admin status for a given server.
+// /settings/* pages must enforce this themselves via a server component that
+// fetches the server's membership and checks ownerId / role.
 
 interface SessionPayload {
   sub: string;
   username: string;
-  role: string;
 }
 
 /**
@@ -66,7 +68,6 @@ function decodeSessionCookie(cookieValue: string): SessionPayload | null {
     return {
       sub: obj.sub as string,
       username: typeof obj.username === 'string' ? obj.username : '',
-      role: typeof obj.role === 'string' ? obj.role : 'member',
     };
   } catch {
     return null;
@@ -102,12 +103,6 @@ export function middleware(request: NextRequest) {
     // Clear the bad cookie
     response.cookies.delete(AUTH_COOKIE_NAME);
     return response;
-  }
-
-  // ── Settings routes: require admin/owner role ─────────────────────────────
-  if (isSettingsRoute && !ADMIN_ROLES.has(session.role)) {
-    // Redirect non-admin users away from /settings/* — send them to channels
-    return NextResponse.redirect(new URL('/channels', request.url));
   }
 
   return NextResponse.next();
