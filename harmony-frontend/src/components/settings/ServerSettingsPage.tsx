@@ -8,7 +8,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, getUserErrorMessage } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { saveServerSettings, deleteServerAction } from '@/app/settings/[serverSlug]/actions';
 import type { Server } from '@/types';
@@ -92,7 +92,7 @@ function OverviewSection({
     } catch (err) {
       if (currentServerIdRef.current !== savedForServerId || saveCounterRef.current !== thisToken)
         return;
-      setSaveError(err instanceof Error ? err.message : 'Failed to save changes');
+      setSaveError(getUserErrorMessage(err, 'Failed to save changes.'));
     } finally {
       if (
         currentServerIdRef.current === savedForServerId &&
@@ -191,7 +191,7 @@ function DangerZoneSection({ server }: { server: Server }) {
       // deleteServerAction redirects — execution won't reach here on success
     } catch (err) {
       setDeleting(false);
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete server');
+      setDeleteError(getUserErrorMessage(err, 'Failed to delete server.'));
     }
   }
 

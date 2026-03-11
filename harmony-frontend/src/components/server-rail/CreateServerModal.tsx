@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { createServerAction } from '@/app/channels/actions';
 import type { Server, Channel } from '@/types';
+import { getUserErrorMessage } from '@/lib/utils';
 
 interface CreateServerModalProps {
   isOpen: boolean;
@@ -102,7 +103,7 @@ export function CreateServerModal({ isOpen, onClose, onCreated }: CreateServerMo
       onCreated(server, defaultChannel);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create server.';
+      const message = getUserErrorMessage(err, 'Failed to create server.');
       setError(message);
       showToast({ message, type: 'error' });
     } finally {

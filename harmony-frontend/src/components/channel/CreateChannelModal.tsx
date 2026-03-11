@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
 import { ChannelType, ChannelVisibility, type Channel } from '@/types';
 import { createChannelAction } from '@/app/actions/createChannel';
+import { getUserErrorMessage } from '@/lib/utils';
 
 // ─── Name normalisation ───────────────────────────────────────────────────────
 
@@ -231,7 +232,7 @@ export function CreateChannelModal({
       onCreated(newChannel);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create channel.');
+      setError(getUserErrorMessage(err, 'Failed to create channel.'));
     } finally {
       setIsLoading(false);
     }

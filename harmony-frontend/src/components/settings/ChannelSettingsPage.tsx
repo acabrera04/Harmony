@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, getUserErrorMessage } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { saveChannelSettings } from '@/app/settings/[serverSlug]/[channelSlug]/actions';
 import { VisibilityToggle } from '@/components/channel/VisibilityToggle';
@@ -115,7 +115,7 @@ function OverviewSection({
     } catch (err) {
       if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken)
         return;
-      setSaveError(err instanceof Error ? err.message : 'Failed to save changes');
+      setSaveError(getUserErrorMessage(err, 'Failed to save changes.'));
     } finally {
       if (
         currentChannelIdRef.current === savedForChannelId &&

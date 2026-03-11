@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { isAxiosError } from 'axios';
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -72,6 +73,35 @@ export function formatTimeOnly(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+/**
+ * Extracts a user-friendly error message from an unknown caught value.
+ *
+ * Handles:
+ *   - Axios errors: reads `response.data.error` (string or object with `.message`)
+ *   - tRPC HTTP errors embedded in axios: `response.data.error.message`
+ *   - Plain Error instances with a message
+ *   - Falls back to the provided `fallback` string
+ */
+export function getUserErrorMessage(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  if (isAxiosError(err)) {
+    const data = err.response?.data;
+    if (data) {
+      // REST endpoints: { error: "Invalid credentials" }
+      if (typeof data.error === 'string') return data.error;
+      // tRPC endpoints: { error: { message: "..." } }
+      if (typeof data.error?.message === 'string') return data.error.message;
+      // Some endpoints: { message: "..." }
+      if (typeof data.message === 'string') return data.message;
+    }
+  }
+  if (err instanceof Error && err.message) {
+    // Filter out raw axios status messages like "Request failed with status code 401"
+    if (/^Request failed with status code \d+$/.test(err.message)) return fallback;
+    return err.message;
+  }
+  return fallback;
 }
 
 /**

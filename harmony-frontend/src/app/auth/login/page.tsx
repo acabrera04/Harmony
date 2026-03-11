@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { getUserErrorMessage } from '@/lib/utils';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -28,7 +29,7 @@ function LoginForm() {
           : null;
       router.push(returnUrl ?? '/channels/harmony-hq/general');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(getUserErrorMessage(err, 'Invalid credentials. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

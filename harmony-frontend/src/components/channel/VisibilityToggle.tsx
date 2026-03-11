@@ -8,7 +8,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, getUserErrorMessage } from '@/lib/utils';
 import { useToast } from '@/hooks/useToast';
 import { ChannelVisibility } from '@/types';
 import { updateChannelVisibility } from '@/app/settings/[serverSlug]/[channelSlug]/updateVisibility';
@@ -236,7 +236,7 @@ export function VisibilityToggle({
       showToast({ message: 'Channel visibility updated.', type: 'success' });
     } catch (err) {
       showToast({
-        message: err instanceof Error ? err.message : 'Failed to update visibility.',
+        message: getUserErrorMessage(err, 'Failed to update visibility.'),
         type: 'error',
       });
     } finally {

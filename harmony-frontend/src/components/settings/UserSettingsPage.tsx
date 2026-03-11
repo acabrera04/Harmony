@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { getUserErrorMessage } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { UserStatus } from '@/types';
 import { isChannelGuestAccessible } from '@/app/settings/actions';
@@ -105,7 +106,7 @@ function AccountSection() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save');
+      setSaveError(getUserErrorMessage(err, 'Failed to save profile.'));
     } finally {
       setSaving(false);
     }
