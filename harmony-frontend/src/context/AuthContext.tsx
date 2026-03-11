@@ -4,6 +4,7 @@ import { createContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '@/types';
 import * as authService from '@/services/authService';
+import { getAccessToken } from '@/lib/api-client';
 import { setSessionCookie, clearSessionCookie } from '@/app/actions/session';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,9 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async restored => {
         if (restored) {
           setUser(restored);
-          // Re-set the httpOnly cookie so middleware can continue protecting
-          // routes without requiring a full re-login.
-          await setSessionCookie({ sub: restored.id, username: restored.username, role: restored.role });
+          // Re-set the httpOnly cookie with the current access token so
+          // server-side tRPC calls and middleware route protection stay active.
+          const token = getAccessToken();
+          if (token) await setSessionCookie(token);
         }
       })
       .catch(() => {
@@ -60,17 +62,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const loggedInUser = await authService.login(email, password);
     setUser(loggedInUser);
-    // Set httpOnly session cookie so middleware can protect routes server-side.
-    // When #113 lands with real JWT, this call is replaced by the backend
-    // setting the cookie via Set-Cookie on the /api/auth/login response.
-    await setSessionCookie({ sub: loggedInUser.id, username: loggedInUser.username, role: loggedInUser.role });
+    const token = getAccessToken();
+    if (token) await setSessionCookie(token);
   }, []);
 
   const register = useCallback(
     async (email: string, username: string, displayName: string, password: string) => {
       const newUser = await authService.register(email, username, displayName, password);
       setUser(newUser);
-      await setSessionCookie({ sub: newUser.id, username: newUser.username, role: newUser.role });
+      const token = getAccessToken();
+      if (token) await setSessionCookie(token);
     },
     [],
   );

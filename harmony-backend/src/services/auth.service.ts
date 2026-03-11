@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { TRPCError } from '@trpc/server';
+import { serverMemberService } from './serverMember.service';
 
 const BCRYPT_ROUNDS = 12;
 // Dummy hash used to equalise bcrypt timing when the email is not found
@@ -111,6 +112,19 @@ export const authService = {
         throw new TRPCError({ code: 'CONFLICT', message: 'Email or username already in use' });
       }
       throw err;
+    }
+
+    // Auto-join the default public server so new users land in a usable state.
+    const defaultServer = await prisma.server.findFirst({
+      where: { slug: 'harmony-hq', isPublic: true },
+      select: { id: true },
+    });
+    if (defaultServer) {
+      try {
+        await serverMemberService.joinServer(user.id, defaultServer.id);
+      } catch {
+        // Best-effort: don't block registration if the join fails
+      }
     }
 
     const accessToken = signAccessToken(user.id);

@@ -8,27 +8,17 @@ import { AUTH_COOKIE_NAME } from '@/lib/auth-constants';
 /** Maximum cookie age: 7 days (matches backend refresh token TTL). */
 const MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
-/** Shape of the session payload encoded in the auth cookie. */
-interface SessionPayload {
-  sub: string;
-  username: string;
-  role: string;
-}
-
 /**
  * Sets the auth session cookie (httpOnly, SameSite=Lax).
  *
- * Encodes `payload` as base64 JSON. This is intentionally NOT signed — it is
- * used only for routing decisions in middleware. All real authorization checks
- * are enforced server-side by the backend on every API/tRPC call.
- *
- * When real JWT auth lands (#113), swap the encoded payload for the raw JWT
- * access token received from the backend.
+ * Stores the raw JWT access token so that server-side tRPC calls
+ * (in trpc-client.ts) can forward it as a Bearer token to the backend.
+ * The middleware decodes the JWT payload for routing decisions only —
+ * all real authorization is enforced by the backend on every API call.
  */
-export async function setSessionCookie(payload: SessionPayload): Promise<void> {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+export async function setSessionCookie(accessToken: string): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE_NAME, encoded, {
+  cookieStore.set(AUTH_COOKIE_NAME, accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
