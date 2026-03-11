@@ -46,7 +46,6 @@ function OverviewSection({
 }) {
   const [name, setName] = useState(channel.name);
   const [topic, setTopic] = useState(channel.topic ?? '');
-  const [description, setDescription] = useState(channel.description ?? '');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -71,7 +70,6 @@ function OverviewSection({
     setPrevChannelId(channel.id);
     setName(channel.name);
     setTopic(channel.topic ?? '');
-    setDescription(channel.description ?? '');
     setSaved(false);
     setSaveError(null);
     setSaving(false);
@@ -107,7 +105,6 @@ function OverviewSection({
       await saveChannelSettings(serverSlug, channel.slug, {
         name: trimmedName,
         topic: topic.trim(),
-        description: description.trim(),
       });
       if (currentChannelIdRef.current !== savedForChannelId || saveCounterRef.current !== thisToken)
         return;
@@ -173,28 +170,6 @@ function OverviewSection({
           placeholder='Let members know what this channel is about'
           className={cn(
             'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
-            'focus:ring-2 focus:ring-[#5865f2]',
-            BG.input,
-          )}
-        />
-      </div>
-
-      {/* Description */}
-      <div>
-        <label
-          htmlFor='channel-description'
-          className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-300'
-        >
-          Description
-        </label>
-        <textarea
-          id='channel-description'
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          rows={4}
-          placeholder='Add a longer description for this channel'
-          className={cn(
-            'w-full resize-none rounded px-3 py-2 text-sm text-white placeholder-gray-500 outline-none',
             'focus:ring-2 focus:ring-[#5865f2]',
             BG.input,
           )}

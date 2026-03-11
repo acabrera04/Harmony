@@ -218,11 +218,12 @@ export function HarmonyShell({
             <MessageInput
               channelId={currentChannel.id}
               channelName={currentChannel.name}
+              serverId={currentServer.id}
               isReadOnly={currentUser.role === 'guest'}
               onMessageSent={handleMessageSent}
             />
             {!isAuthLoading && !isAuthenticated && (
-              <GuestPromoBanner serverName={currentServer.name} memberCount={members.length} />
+              <GuestPromoBanner serverName={currentServer.name} memberCount={currentServer.memberCount ?? members.length} />
             )}
           </div>
           <MembersSidebar
@@ -249,6 +250,7 @@ export function HarmonyShell({
       {isCreateChannelOpen && (
         <CreateChannelModal
           serverId={currentServer.id}
+          serverSlug={currentServer.slug}
           existingChannels={localChannels}
           defaultType={createChannelDefaultType}
           onCreated={newChannel =>

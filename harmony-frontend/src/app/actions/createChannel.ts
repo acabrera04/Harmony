@@ -4,15 +4,22 @@
  * Server Action: createChannelAction (Issue #44 — Channel Creation Modal)
  * Validates input and delegates to channelService.createChannel().
  * Mirrors the guard pattern in actions.ts / updateVisibility.ts.
+ *
+ * Auth note: the backend `channel.createChannel` tRPC procedure uses
+ * `withPermission('channel:create')`, which enforces authentication and verifies
+ * server membership + role before the mutation is processed. Unauthenticated or
+ * unauthorised requests are rejected by the backend with UNAUTHORIZED/FORBIDDEN.
+ * See: harmony-backend/src/trpc/routers/channel.router.ts
  */
 
 import { revalidatePath } from 'next/cache';
 import { ChannelType, ChannelVisibility, type Channel } from '@/types';
 import { createChannel, getChannels } from '@/services/channelService';
-import { mockServers } from '@/mocks';
 
 export interface CreateChannelInput {
   serverId: string;
+  /** Server slug — used for targeted path revalidation after channel creation. */
+  serverSlug: string;
   /** Normalised slug — must be [a-z0-9-], no leading/trailing hyphens. Display name is derived from this. */
   slug: string;
   type: ChannelType;
@@ -53,10 +60,6 @@ export async function createChannelAction(input: CreateChannelInput): Promise<Ch
       ? input.topic.trim().slice(0, 1024) || undefined
       : undefined;
 
-  // TODO (#71): This action has no server-side auth check. Anyone who can call
-  // it can create channels. Enforce a server-verifiable session + role check
-  // before this reaches production. (Same gap exists in actions.ts / updateVisibility.ts.)
-
   // Compute position server-side so concurrent creates don't collide on the
   // same client-supplied value.
   const existing = await getChannels(input.serverId);
@@ -65,20 +68,22 @@ export async function createChannelAction(input: CreateChannelInput): Promise<Ch
   const newChannel = await createChannel({
     serverId: input.serverId,
     slug,
-    name: slug, // display name == slug (matches existing mock convention)
+    name: slug, // display name == slug (matches existing convention)
     type: input.type,
     visibility: input.visibility,
     topic,
     position,
   });
 
-  // Revalidate all route segments so every user sees the new channel on their
-  // next navigation — mirrors the pattern in actions.ts and updateVisibility.ts.
-  const server = mockServers.find(s => s.id === input.serverId);
-  if (server) {
-    revalidatePath(`/channels/${server.slug}`, 'layout');
-    revalidatePath(`/c/${server.slug}`, 'layout');
-    revalidatePath(`/settings/${server.slug}`, 'layout');
+  // Revalidate only the server-scoped paths so unrelated server pages are not
+  // unnecessarily invalidated on every channel creation.
+  try {
+    revalidatePath(`/channels/${input.serverSlug}`, 'layout');
+    revalidatePath(`/c/${input.serverSlug}`, 'layout');
+    revalidatePath(`/settings/${input.serverSlug}`, 'layout');
+  } catch (err) {
+    // Revalidation failure is non-fatal but log so stale-cache issues are diagnosable.
+    console.error('[createChannelAction] revalidatePath failed:', err instanceof Error ? err.message : err);
   }
 
   return newChannel;

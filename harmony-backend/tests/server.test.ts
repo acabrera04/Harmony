@@ -3,8 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import { createApp } from '../src/app';
 import { generateSlug, serverService } from '../src/services/server.service';
+import { authService } from '../src/services/auth.service';
 import type { Express } from 'express';
 import type { Server } from '@prisma/client';
+import type { ServerMemberWithUser } from '../src/services/server.service';
 
 // ─── Unit tests: slug generation ─────────────────────────────────────────────
 
@@ -264,5 +266,68 @@ describe('server tRPC router', () => {
       .send({ id: '00000000-0000-0000-0000-000000000000' })
       .set('Content-Type', 'application/json');
     expect(res.status).toBe(401);
+  });
+
+  it('server.getMembers requires authentication', async () => {
+    const input = encodeURIComponent(JSON.stringify({ serverId: '00000000-0000-0000-0000-000000000000' }));
+    const res = await request(app).get(`/trpc/server.getMembers?input=${input}`);
+    expect(res.status).toBe(401);
+  });
+
+  it('server.getMembers returns FORBIDDEN for non-member', async () => {
+    const prismaLocal = new PrismaClient();
+    const ts = Date.now();
+    const { accessToken } = await authService.register(
+      `getmembers-nonmember-${ts}@example.com`,
+      `gm_nonmember_${ts}`,
+      'password123',
+    );
+    const user = await prismaLocal.user.findUnique({
+      where: { email: `getmembers-nonmember-${ts}@example.com` },
+    });
+
+    const input = encodeURIComponent(JSON.stringify({ serverId: '00000000-0000-0000-0000-000000000000' }));
+    const res = await request(app)
+      .get(`/trpc/server.getMembers?input=${input}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(res.status).toBe(403);
+
+    if (user) await prismaLocal.user.delete({ where: { id: user.id } }).catch(() => {});
+    await prismaLocal.$disconnect();
+  });
+
+  it('server.getMembers returns member list for authenticated server member', async () => {
+    const prismaLocal = new PrismaClient();
+    const ts = Date.now();
+
+    const { accessToken } = await authService.register(
+      `getmembers-member-${ts}@example.com`,
+      `gm_member_${ts}`,
+      'password123',
+    );
+    const user = await prismaLocal.user.findUniqueOrThrow({
+      where: { email: `getmembers-member-${ts}@example.com` },
+    });
+    const server = await prismaLocal.server.create({
+      data: { name: `GM Router ${ts}`, slug: `gm-router-${ts}`, ownerId: user.id },
+    });
+    await prismaLocal.serverMember.create({
+      data: { userId: user.id, serverId: server.id, role: 'OWNER' },
+    });
+
+    const input = encodeURIComponent(JSON.stringify({ serverId: server.id }));
+    const res = await request(app)
+      .get(`/trpc/server.getMembers?input=${input}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    const members = res.body.result.data as { userId: string; role: string }[];
+    expect(Array.isArray(members)).toBe(true);
+    expect(members.length).toBeGreaterThanOrEqual(1);
+    expect(members.some((m) => m.userId === user.id && m.role === 'OWNER')).toBe(true);
+
+    await prismaLocal.server.delete({ where: { id: server.id } }).catch(() => {});
+    await prismaLocal.user.delete({ where: { id: user.id } }).catch(() => {});
+    await prismaLocal.$disconnect();
   });
 });
