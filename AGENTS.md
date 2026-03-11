@@ -5,6 +5,7 @@ This file provides context and guidelines for AI coding agents (GitHub Copilot, 
 ## Harmony is a **search engine indexable chat application** @README.md .
 
 ## Agent Workflow Guidelines
+Always write design rationale comments if intentions are not immediately obvious and ensure these comments are up to date.
 Before starting any development task, read and follow the rules in @WORKFLOW.md 
 It defines workflow orchestration, task management, and core principles all agents must follow.
 
@@ -27,3 +28,4 @@ Always check for lint or build errors before committing code.
 
 #### PR Reviews 
 IF your current task involves conducting a code review or reviewing a Pull Request, THEN you MUST read and strictly adhere to the guidelines defined in `@.github/PR_REVIEW.md`. Do not begin the review until you have parsed this file.
+
