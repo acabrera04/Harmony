@@ -85,9 +85,7 @@ export const fetchPublicServer = cache(async (serverSlug: string): Promise<Publi
   try {
     const res = await fetch(
       `${API_CONFIG.BASE_URL}/api/public/servers/${encodeURIComponent(serverSlug)}`,
-      {
-        next: { revalidate: 60 },
-      },
+      { next: { revalidate: CACHE_DURATION.PUBLIC_API_REVALIDATE } },
     );
     if (!res.ok) return null;
 
