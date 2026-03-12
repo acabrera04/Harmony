@@ -8,6 +8,7 @@ import { createContext } from './trpc/init';
 import { authRouter } from './routes/auth.router';
 import { publicRouter } from './routes/public.router';
 import { seoRouter } from './routes/seo.router';
+import { eventsRouter } from './routes/events.router';
 
 // ─── Auth rate limiters ───────────────────────────────────────────────────────
 
@@ -59,6 +60,9 @@ export function createApp() {
 
   // Public API endpoints (cached, no auth required)
   app.use('/api/public', publicRouter);
+
+  // Real-time SSE endpoints
+  app.use('/api/events', eventsRouter);
 
   // tRPC endpoint
   app.use(
