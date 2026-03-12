@@ -31,6 +31,7 @@ export const CACHE_DURATION = {
   PUBLIC_CHANNEL: 300, // 5 minutes
   SEO_METADATA: 3600, // 1 hour
   SERVER_INFO: 600, // 10 minutes
+  PUBLIC_API_REVALIDATE: 60, // Next.js ISR revalidation for public REST fetches (matches backend channelMessages TTL)
 } as const;
 
 /**

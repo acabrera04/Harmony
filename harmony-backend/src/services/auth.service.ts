@@ -34,9 +34,7 @@ const REFRESH_EXPIRES_IN_DAYS: number = (() => {
   if (raw === undefined) return 7;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(
-      `Invalid JWT_REFRESH_EXPIRES_DAYS value "${raw}". Expected a positive number.`,
-    );
+    throw new Error(`Invalid JWT_REFRESH_EXPIRES_DAYS value "${raw}". Expected a positive number.`);
   }
   return parsed;
 })();
@@ -172,7 +170,7 @@ export const authService = {
     // ── Dev-only admin override ────────────────────────────────────────────
     // Login as admin@harmony.dev / admin to get a system-admin account that
     // bypasses all permission and ownership checks. Remove before production.
-    if (email === ADMIN_EMAIL && password === 'admin') {
+    if (process.env.NODE_ENV !== 'production' && email === ADMIN_EMAIL && password === 'admin') {
       const admin = await ensureAdminUser();
       const accessToken = signAccessToken(admin.id);
       const refreshToken = signRefreshToken(admin.id);
@@ -242,5 +240,4 @@ export const authService = {
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid or expired access token' });
     }
   },
-
 };

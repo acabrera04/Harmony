@@ -1,6 +1,6 @@
 'use server';
 
-import { getChannel, ChannelVisibility } from '@/services/channelService';
+import { API_CONFIG } from '@/lib/constants';
 
 /**
  * Returns true if the channel at the given slugs is publicly accessible to
@@ -14,7 +14,16 @@ export async function isChannelGuestAccessible(
   serverSlug: string,
   channelSlug: string,
 ): Promise<boolean> {
-  const channel = await getChannel(serverSlug, channelSlug);
-  if (!channel) return false;
-  return channel.visibility !== ChannelVisibility.PRIVATE;
+  try {
+    const res = await fetch(
+      `${API_CONFIG.BASE_URL}/api/public/servers/${encodeURIComponent(serverSlug)}/channels/${encodeURIComponent(channelSlug)}`,
+      { cache: 'no-store' },
+    );
+    // 200 = accessible (PUBLIC_INDEXABLE or PUBLIC_NO_INDEX)
+    // 403 = PRIVATE (not guest accessible)
+    // 404 = doesn't exist (not accessible)
+    return res.status === 200;
+  } catch {
+    return false;
+  }
 }

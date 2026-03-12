@@ -20,7 +20,8 @@ publicRouter.get(
   cacheMiddleware({
     ttl: CacheTTL.channelMessages,
     staleTtl: CacheTTL.channelMessages, // keep stale data for an extra TTL window
-    keyFn: (req: Request) => CacheKeys.channelMessages(req.params.channelId, Number(req.query.page) || 1),
+    keyFn: (req: Request) =>
+      CacheKeys.channelMessages(req.params.channelId, Number(req.query.page) || 1),
   }),
   async (req: Request, res: Response) => {
     try {
@@ -73,7 +74,8 @@ publicRouter.get(
   cacheMiddleware({
     ttl: CacheTTL.channelMessages,
     staleTtl: CacheTTL.channelMessages,
-    keyFn: (req: Request) => `channel:msg:${sanitizeKeySegment(req.params.channelId)}:${sanitizeKeySegment(req.params.messageId)}`,
+    keyFn: (req: Request) =>
+      `channel:msg:${sanitizeKeySegment(req.params.channelId)}:${sanitizeKeySegment(req.params.messageId)}`,
   }),
   async (req: Request, res: Response) => {
     try {
@@ -121,56 +123,115 @@ publicRouter.get(
  * Returns public server info. Uses getOrRevalidate for SWR.
  * Cache key: server:{serverId}:info per §4.4.
  */
-publicRouter.get(
-  '/servers/:serverSlug',
-  async (req: Request, res: Response) => {
-    try {
-      const server = await prisma.server.findUnique({
-        where: { slug: req.params.serverSlug },
-        select: { id: true, name: true, slug: true, iconUrl: true, description: true, memberCount: true, createdAt: true },
-      });
+publicRouter.get('/servers/:serverSlug', async (req: Request, res: Response) => {
+  try {
+    const server = await prisma.server.findUnique({
+      where: { slug: req.params.serverSlug },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        iconUrl: true,
+        description: true,
+        memberCount: true,
+        createdAt: true,
+      },
+    });
 
-      if (!server) {
-        res.status(404).json({ error: 'Server not found' });
-        return;
-      }
-
-      const cacheKey = CacheKeys.serverInfo(server.id);
-      const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
-
-      // Check cache state for X-Cache header
-      let xCache = 'MISS';
-      try {
-        const entry = await cacheService.get(cacheKey);
-        if (entry) {
-          xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
-        }
-      } catch { /* Redis error */ }
-
-      const data = await cacheService.getOrRevalidate(
-        cacheKey,
-        async () => server, // fetcher — server already fetched from DB above
-        cacheOpts,
-      );
-
-      res.set('X-Cache', xCache);
-      res.set('X-Cache-Key', cacheKey);
-      res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-      res.json(data);
-    } catch (err) {
-      console.error('Public server route error:', err);
-      res.status(500).json({ error: 'Internal server error' });
+    if (!server) {
+      res.status(404).json({ error: 'Server not found' });
+      return;
     }
-  },
-);
+
+    const cacheKey = CacheKeys.serverInfo(server.id);
+    const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
+
+    // Check cache state for X-Cache header
+    let xCache = 'MISS';
+    try {
+      const entry = await cacheService.get(cacheKey);
+      if (entry) {
+        xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
+      }
+    } catch {
+      /* Redis error */
+    }
+
+    const data = await cacheService.getOrRevalidate(
+      cacheKey,
+      async () => server, // fetcher — server already fetched from DB above
+      cacheOpts,
+    );
+
+    res.set('X-Cache', xCache);
+    res.set('X-Cache-Key', cacheKey);
+    res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
+    res.json(data);
+  } catch (err) {
+    console.error('Public server route error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * GET /api/public/servers/:serverSlug/channels
  * Returns public channels for a server. Uses getOrRevalidate for SWR.
  * Cache key: server:{serverId}:public_channels per §4.4.
  */
+publicRouter.get('/servers/:serverSlug/channels', async (req: Request, res: Response) => {
+  try {
+    const server = await prisma.server.findUnique({
+      where: { slug: req.params.serverSlug },
+      select: { id: true },
+    });
+
+    if (!server) {
+      res.status(404).json({ error: 'Server not found' });
+      return;
+    }
+
+    const cacheKey = `server:${sanitizeKeySegment(server.id)}:public_channels`;
+    const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
+
+    const fetcher = async () => {
+      const channels = await prisma.channel.findMany({
+        where: { serverId: server.id, visibility: ChannelVisibility.PUBLIC_INDEXABLE },
+        orderBy: { position: 'asc' },
+        select: { id: true, name: true, slug: true, type: true, topic: true },
+      });
+      return { channels };
+    };
+
+    // Check cache state for X-Cache header
+    let xCache = 'MISS';
+    try {
+      const entry = await cacheService.get(cacheKey);
+      if (entry) {
+        xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
+      }
+    } catch {
+      /* Redis error */
+    }
+
+    const data = await cacheService.getOrRevalidate(cacheKey, fetcher, cacheOpts);
+
+    res.set('X-Cache', xCache);
+    res.set('X-Cache-Key', cacheKey);
+    res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
+    res.json(data);
+  } catch (err) {
+    console.error('Public channels route error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/public/servers/:serverSlug/channels/:channelSlug
+ * Returns channel info by slug. Returns 403 for PRIVATE channels, 404 if not found.
+ * Supports PUBLIC_INDEXABLE and PUBLIC_NO_INDEX channels for guest access.
+ */
 publicRouter.get(
-  '/servers/:serverSlug/channels',
+  '/servers/:serverSlug/channels/:channelSlug',
   async (req: Request, res: Response) => {
     try {
       const server = await prisma.server.findUnique({
@@ -183,35 +244,35 @@ publicRouter.get(
         return;
       }
 
-      const cacheKey = `server:${sanitizeKeySegment(server.id)}:public_channels`;
-      const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
+      const channel = await prisma.channel.findFirst({
+        where: { serverId: server.id, slug: req.params.channelSlug },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          serverId: true,
+          type: true,
+          visibility: true,
+          topic: true,
+          position: true,
+          createdAt: true,
+        },
+      });
 
-      const fetcher = async () => {
-        const channels = await prisma.channel.findMany({
-          where: { serverId: server.id, visibility: ChannelVisibility.PUBLIC_INDEXABLE },
-          orderBy: { position: 'asc' },
-          select: { id: true, name: true, slug: true, type: true, topic: true },
-        });
-        return { channels };
-      };
+      if (!channel) {
+        res.status(404).json({ error: 'Channel not found' });
+        return;
+      }
 
-      // Check cache state for X-Cache header
-      let xCache = 'MISS';
-      try {
-        const entry = await cacheService.get(cacheKey);
-        if (entry) {
-          xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
-        }
-      } catch { /* Redis error */ }
+      if (channel.visibility === ChannelVisibility.PRIVATE) {
+        res.status(403).json({ error: 'Channel is private' });
+        return;
+      }
 
-      const data = await cacheService.getOrRevalidate(cacheKey, fetcher, cacheOpts);
-
-      res.set('X-Cache', xCache);
-      res.set('X-Cache-Key', cacheKey);
       res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
-      res.json(data);
+      res.json(channel);
     } catch (err) {
-      console.error('Public channels route error:', err);
+      console.error('Public channel route error:', err);
       res.status(500).json({ error: 'Internal server error' });
     }
   },
