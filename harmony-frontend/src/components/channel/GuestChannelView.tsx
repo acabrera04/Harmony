@@ -6,11 +6,13 @@
  */
 
 import { notFound } from 'next/navigation';
+import { isAxiosError } from 'axios';
 import {
   fetchPublicServer,
   fetchPublicChannel,
   fetchPublicMessages,
 } from '@/services/publicApiService';
+import { getChannels } from '@/services/channelService';
 import { AuthRedirect } from '@/components/channel/AuthRedirect';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 import { MessageList } from '@/components/channel/MessageList';
@@ -95,10 +97,29 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
 
   if (!server || !channelResult) notFound();
 
+  // Check if the authenticated user is a member of this server.
+  // Only redirect members to the full /channels/ view; non-members stay here
+  // so we don't create a redirect loop (ChannelPageContent → /c/ → /channels/ → loop).
+  //
+  // Error handling:
+  //   - Success  → confirmed member; redirect to /channels/
+  //   - 403      → confirmed non-member (valid token, no ServerMember row); stay on guest view
+  //   - 401/other → expired/invalid token; membership unknown — still render AuthRedirect so
+  //                 the client can redirect after the token is refreshed client-side.
+  //                 If the user turns out not to be a member, ChannelPageContent will redirect
+  //                 back here with a valid token and we'll get a 403, stopping any loop.
+  let isMember = false;
+  try {
+    await getChannels(server.id);
+    isMember = true;
+  } catch (err: unknown) {
+    isMember = !(isAxiosError(err) && err.response?.status === 403);
+  }
+
   if (channelResult.isPrivate) {
     return (
       <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
-        <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />
+        {isMember && <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />}
         <GuestHeader server={server} memberCount={server.memberCount ?? 0} />
         <VisibilityGuard visibility={ChannelVisibility.PRIVATE} isLoading={false}>
           {null}
@@ -114,7 +135,7 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
 
   return (
     <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
-      <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />
+      {isMember && <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />}
       <GuestHeader server={server} memberCount={memberCount} />
 
       <VisibilityGuard visibility={channel.visibility} isLoading={false}>

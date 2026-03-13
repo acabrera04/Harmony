@@ -26,10 +26,8 @@ function SignupForm() {
       await register(email, username, displayName || username, password);
       const raw = searchParams.get('returnUrl') ?? '';
       const returnUrl =
-        raw.startsWith('/') && !raw.startsWith('//')
-          ? raw.replace(/^\/c\//, '/channels/')
-          : null;
-      router.push(returnUrl ?? '/channels/harmony-hq/general');
+        raw.startsWith('/') && !raw.startsWith('//') ? raw.replace(/^\/c\//, '/channels/') : null;
+      router.push(returnUrl ?? '/channels');
     } catch (err) {
       setError(getUserErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {

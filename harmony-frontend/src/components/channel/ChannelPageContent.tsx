@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getServers, getServerMembers } from '@/services/serverService';
 import { getChannels } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
@@ -21,7 +21,13 @@ export async function ChannelPageContent({
   const server = servers.find(s => s.slug === serverSlug);
   if (!server) notFound();
 
-  const serverChannels = await getChannels(server.id);
+  let serverChannels;
+  try {
+    serverChannels = await getChannels(server.id);
+  } catch {
+    // User is authenticated but not a member of this server — show public guest view.
+    redirect(`/c/${serverSlug}/${channelSlug}`);
+  }
   const channel = serverChannels.find(c => c.slug === channelSlug);
   if (!channel) notFound();
 

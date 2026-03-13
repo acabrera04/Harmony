@@ -14,7 +14,12 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, username: string, displayName: string, password: string) => Promise<void>;
+  register: (
+    email: string,
+    username: string,
+    displayName: string,
+    password: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<Pick<User, 'displayName' | 'status'>>) => Promise<void>;
   /**
@@ -82,21 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearSessionCookie();
   }, []);
 
-  const updateUser = useCallback(
-    async (patch: Partial<Pick<User, 'displayName' | 'status'>>) => {
-      const updated = await authService.updateCurrentUser(patch);
-      setUser(updated);
-    },
-    [],
-  );
+  const updateUser = useCallback(async (patch: Partial<Pick<User, 'displayName' | 'status'>>) => {
+    const updated = await authService.updateCurrentUser(patch);
+    setUser(updated);
+  }, []);
 
-  const isAdmin = useCallback((serverOwnerId?: string) => {
-    if (!user) return false;
-    // Dev system admin bypasses all ownership checks
-    if (user.isSystemAdmin) return true;
-    if (serverOwnerId) return user.id === serverOwnerId;
-    return user.role === 'owner' || user.role === 'admin';
-  }, [user]);
+  const isAdmin = useCallback(
+    (serverOwnerId?: string) => {
+      if (!user) return false;
+      // Dev system admin bypasses all ownership checks
+      if (user.isSystemAdmin) return true;
+      if (serverOwnerId) return user.id === serverOwnerId;
+      return user.role === 'owner' || user.role === 'admin';
+    },
+    [user],
+  );
 
   const value: AuthContextValue = {
     user,

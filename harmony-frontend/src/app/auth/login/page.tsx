@@ -24,10 +24,8 @@ function LoginForm() {
       await login(email, password);
       const raw = searchParams.get('returnUrl') ?? '';
       const returnUrl =
-        raw.startsWith('/') && !raw.startsWith('//')
-          ? raw.replace(/^\/c\//, '/channels/')
-          : null;
-      router.push(returnUrl ?? '/channels/harmony-hq/general');
+        raw.startsWith('/') && !raw.startsWith('//') ? raw.replace(/^\/c\//, '/channels/') : null;
+      router.push(returnUrl ?? '/channels');
     } catch (err) {
       setError(getUserErrorMessage(err, 'Invalid credentials. Please try again.'));
     } finally {

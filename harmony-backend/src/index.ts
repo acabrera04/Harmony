@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createApp } from './app';
 import { cacheInvalidator } from './services/cacheInvalidator.service';
 

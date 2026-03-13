@@ -119,6 +119,35 @@ publicRouter.get(
 );
 
 /**
+ * GET /api/public/servers
+ * Returns a list of public servers ordered by member count (desc).
+ * Used by the home page to discover a default public channel to show visitors.
+ */
+publicRouter.get('/servers', async (_req: Request, res: Response) => {
+  try {
+    const servers = await prisma.server.findMany({
+      where: { isPublic: true },
+      orderBy: { memberCount: 'desc' },
+      take: 20,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        iconUrl: true,
+        description: true,
+        memberCount: true,
+        createdAt: true,
+      },
+    });
+    res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
+    res.json(servers);
+  } catch (err) {
+    console.error('Public servers list route error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/public/servers/:serverSlug
  * Returns public server info. Uses getOrRevalidate for SWR.
  * Cache key: server:{serverId}:info per §4.4.

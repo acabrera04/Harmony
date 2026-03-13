@@ -53,6 +53,14 @@ export function cacheMiddleware(options: CacheMiddlewareOptions) {
       res.set('X-Cache-Key', key);
     }
 
+    // When stale data was already sent, prevent the route handler from touching
+    // the committed response (res.set/setHeader throw ERR_HTTP_HEADERS_SENT).
+    if (servedStale) {
+      const noop = () => res;
+      res.setHeader = noop as typeof res.setHeader;
+      res.set = noop as typeof res.set;
+    }
+
     // Intercept res.json to cache the handler's response
     const originalJson = res.json.bind(res);
     res.json = (body: unknown) => {
