@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { prisma } from '../db/prisma';
 import { cacheService, CacheTTL, sanitizeKeySegment } from './cache.service';
 import { permissionService } from './permission.service';
+import { eventBus, EventChannels } from '../events/eventBus';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -178,6 +179,15 @@ export const messageService = {
       )
       .catch(() => {});
 
+    eventBus
+      .publish(EventChannels.MESSAGE_CREATED, {
+        messageId: message.id,
+        channelId,
+        authorId,
+        timestamp: message.createdAt.toISOString(),
+      })
+      .catch(() => {});
+
     return message;
   },
 
@@ -203,6 +213,14 @@ export const messageService = {
       .invalidatePattern(
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(message.channelId)}:*`,
       )
+      .catch(() => {});
+
+    eventBus
+      .publish(EventChannels.MESSAGE_EDITED, {
+        messageId,
+        channelId: message.channelId,
+        timestamp: updated.editedAt!.toISOString(),
+      })
       .catch(() => {});
 
     return updated;
@@ -241,6 +259,14 @@ export const messageService = {
       .invalidatePattern(
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(message.channelId)}:*`,
       )
+      .catch(() => {});
+
+    eventBus
+      .publish(EventChannels.MESSAGE_DELETED, {
+        messageId,
+        channelId: message.channelId,
+        timestamp: new Date().toISOString(),
+      })
       .catch(() => {});
   },
 

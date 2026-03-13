@@ -18,6 +18,7 @@ import { ServerRail } from '@/components/server-rail/ServerRail';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
 import { CreateChannelModal } from '@/components/channel/CreateChannelModal';
 import { useAuth } from '@/hooks/useAuth';
+import { useChannelEvents } from '@/hooks/useChannelEvents';
 import { ChannelType } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
@@ -107,9 +108,16 @@ export function HarmonyShell({
   }
   // Channel creation modal state.
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
-  const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(ChannelType.TEXT);
+  const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(
+    ChannelType.TEXT,
+  );
 
-  const { user: authUser, isAuthenticated, isLoading: isAuthLoading, isAdmin: checkIsAdmin } = useAuth();
+  const {
+    user: authUser,
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    isAdmin: checkIsAdmin,
+  } = useAuth();
 
   // Fallback for guest/unauthenticated view
   const currentUser: User = authUser ?? {
@@ -138,8 +146,34 @@ export function HarmonyShell({
   );
 
   const handleMessageSent = useCallback((msg: Message) => {
-    setLocalMessages(prev => [...prev, msg]);
+    // Dedup: the SSE event for the sender's own message can arrive before the tRPC
+    // response (Redis pub/sub on the same backend + established SSE connection beats
+    // the HTTP round-trip). Without this check, the message would be added twice.
+    setLocalMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
   }, []);
+
+  // ── Real-time SSE handlers ────────────────────────────────────────────────
+
+  const handleRealTimeCreated = useCallback((msg: Message) => {
+    // Dedup: skip if the message was already optimistically added (e.g. sent by this client)
+    setLocalMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+  }, []);
+
+  const handleRealTimeEdited = useCallback((msg: Message) => {
+    setLocalMessages(prev => prev.map(m => (m.id === msg.id ? msg : m)));
+  }, []);
+
+  const handleRealTimeDeleted = useCallback((messageId: string) => {
+    setLocalMessages(prev => prev.filter(m => m.id !== messageId));
+  }, []);
+
+  useChannelEvents({
+    channelId: currentChannel.id,
+    onMessageCreated: handleRealTimeCreated,
+    onMessageEdited: handleRealTimeEdited,
+    onMessageDeleted: handleRealTimeDeleted,
+    enabled: isAuthenticated,
+  });
 
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {
@@ -170,13 +204,17 @@ export function HarmonyShell({
         currentServerId={currentServer.id}
         basePath={basePath}
         isMobileVisible={isMenuOpen}
-        onAddServer={isAuthLoading ? undefined : () => {
-          if (!isAuthenticated) {
-            router.push('/auth/login');
-            return;
-          }
-          setIsCreateServerOpen(true);
-        }}
+        onAddServer={
+          isAuthLoading
+            ? undefined
+            : () => {
+                if (!isAuthenticated) {
+                  router.push('/auth/login');
+                  return;
+                }
+                setIsCreateServerOpen(true);
+              }
+        }
       />
 
       {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
@@ -189,14 +227,19 @@ export function HarmonyShell({
         onClose={() => setIsMenuOpen(false)}
         basePath={basePath}
         isAuthenticated={isAuthenticated}
-        onCreateChannel={(defaultType) => {
+        onCreateChannel={defaultType => {
           setCreateChannelDefaultType(defaultType);
           setIsCreateChannelOpen(true);
         }}
       />
 
       {/* 3. Main column */}
-      <main id='main-content' className='flex flex-1 flex-col overflow-hidden' aria-label={`${currentChannel.name} channel`} tabIndex={-1}>
+      <main
+        id='main-content'
+        className='flex flex-1 flex-col overflow-hidden'
+        aria-label={`${currentChannel.name} channel`}
+        tabIndex={-1}
+      >
         <TopBar
           channel={currentChannel}
           serverSlug={currentServer.slug}
@@ -223,7 +266,10 @@ export function HarmonyShell({
               onMessageSent={handleMessageSent}
             />
             {!isAuthLoading && !isAuthenticated && (
-              <GuestPromoBanner serverName={currentServer.name} memberCount={currentServer.memberCount ?? members.length} />
+              <GuestPromoBanner
+                serverName={currentServer.name}
+                memberCount={currentServer.memberCount ?? members.length}
+              />
             )}
           </div>
           <MembersSidebar
@@ -256,9 +302,10 @@ export function HarmonyShell({
           onCreated={newChannel =>
             setLocalChannels(prev => {
               // Insert before voice channels so text/announcement channels stay grouped correctly.
-              const insertIdx = newChannel.type === ChannelType.VOICE
-                ? prev.length
-                : prev.findIndex(c => c.type === ChannelType.VOICE);
+              const insertIdx =
+                newChannel.type === ChannelType.VOICE
+                  ? prev.length
+                  : prev.findIndex(c => c.type === ChannelType.VOICE);
               const at = insertIdx === -1 ? prev.length : insertIdx;
               return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
             })

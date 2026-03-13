@@ -19,6 +19,7 @@ Each feature spec was authored independently and defines its own modules, classe
 | **Cache / EventBus** | Redis 7.2+ | Sub-millisecond reads for visibility checks on every public page load; Pub/Sub for cross-module event propagation (`VISIBILITY_CHANGED`, `MESSAGE_CREATED`, etc.) without tight coupling. |
 | **Authenticated APIs** | tRPC 11 | End-to-end type inference between Next.js client and Express server; eliminates hand-written API clients for admin operations. |
 | **Public APIs** | REST (Express) | Search-engine crawlers, social-media link unfurlers, and external consumers require plain HTTP. tRPC's binary protocol is invisible to these consumers. |
+| **Real-time Transport** | SSE (Server-Sent Events) | Native browser `EventSource` requires no client library; unidirectional server→client push fits message delivery perfectly; works over existing HTTP infrastructure with no WebSocket upgrade negotiation. |
 | **ORM** | Prisma 5.8+ | Type-safe schema definitions; auto-generated migrations; integrates with PostgreSQL enums. |
 | **Runtime Validation** | Zod 3.22+ | Composes with tRPC for automatic request/response validation; shared between client and server. |
 | **SSR Framework** | Next.js 14+ | Server-side rendering is critical for SEO; server components reduce client bundle for public pages. |
@@ -927,6 +928,7 @@ graph LR
         MetaSvc["MetaTagService<br/>(M-B5)"]
         CacheMgr["Cache Invalidator<br/>(M-D3)"]
         BgWorker["Event-Driven Workers<br/>(M-B7)"]
+        SSEBridge["SSE Bridge<br/>(events.router)"]
     end
 
     CVS --> VC
@@ -940,20 +942,95 @@ graph LR
     VC --> CacheMgr
     MC --> MetaSvc
     MC --> CacheMgr
+    MC --> SSEBridge
     ME --> MetaSvc
     ME --> CacheMgr
+    ME --> SSEBridge
     MD --> MetaSvc
     MD --> CacheMgr
+    MD --> SSEBridge
     MTU --> BgWorker
 ```
 
 | Event | Payload | Producer | Consumers |
 |-------|---------|----------|-----------|
 | `VISIBILITY_CHANGED` | `{ channelId, serverId, oldVisibility, newVisibility, actorId, timestamp }` | ChannelVisibilityService (M-B3) | IndexingService (M-B6), MetaTagService (M-B5), Cache Invalidator (M-D3) |
-| `MESSAGE_CREATED` | `{ messageId, channelId, authorId, timestamp }` | Message System | MetaTagService (M-B5), Cache Invalidator (M-D3) |
-| `MESSAGE_EDITED` | `{ messageId, channelId, timestamp }` | Message System | MetaTagService (M-B5), Cache Invalidator (M-D3) |
-| `MESSAGE_DELETED` | `{ messageId, channelId, timestamp }` | Message System | MetaTagService (M-B5), Cache Invalidator (M-D3) |
+| `MESSAGE_CREATED` | `{ messageId, channelId, authorId, timestamp }` | Message System | MetaTagService (M-B5), Cache Invalidator (M-D3), SSE Bridge |
+| `MESSAGE_EDITED` | `{ messageId, channelId, timestamp }` | Message System | MetaTagService (M-B5), Cache Invalidator (M-D3), SSE Bridge |
+| `MESSAGE_DELETED` | `{ messageId, channelId, timestamp }` | Message System | MetaTagService (M-B5), Cache Invalidator (M-D3), SSE Bridge |
 | `META_TAGS_UPDATED` | `{ channelId, version, timestamp }` | MetaTagService (M-B5) | Background Workers (M-B7) for sitemap update |
+
+### 4.6 Real-Time Client Transport (SSE)
+
+The EventBus delivers events between server-side services, but clients require a persistent outbound channel to receive those events in real time. Harmony uses **Server-Sent Events (SSE)** — a lightweight, browser-native, HTTP/1.1-compatible push mechanism.
+
+#### Why SSE over WebSockets
+
+| Criterion | SSE | WebSockets |
+|-----------|-----|------------|
+| Direction | Server → Client only | Bidirectional |
+| Protocol | HTTP/1.1 (no upgrade) | WS upgrade required |
+| Client library | `EventSource` (built-in) | `ws` / `socket.io` |
+| Proxy / CDN compatibility | ✅ Works everywhere | ⚠️ Requires proxy support |
+| Reconnection | Automatic (browser) | Manual |
+| Fit for Harmony | ✅ Clients only receive; mutations go via tRPC | — |
+
+Harmony clients already send all mutations (send message, edit, delete) via tRPC. The SSE channel is receive-only, making WebSockets unnecessary complexity.
+
+#### Endpoint
+
+```
+GET /api/events/channel/:channelId?token=<access_token>
+```
+
+**Auth:** The browser `EventSource` API cannot set custom headers, so the JWT access token is passed as a `?token=` query parameter. The endpoint verifies it identically to `requireAuth`.
+
+**Authorisation:** The handler checks `serverMember` membership before opening the stream, preventing access to PRIVATE channel events by non-members.
+
+**SSE frame format:**
+```
+event: message:created
+data: {"id":"...","channelId":"...","author":{...},"content":"...","timestamp":"..."}
+
+event: message:edited
+data: {"id":"...","content":"...","editedAt":"..."}
+
+event: message:deleted
+data: {"messageId":"..."}
+```
+
+A heartbeat comment (`:\n\n`) is sent every 30 seconds to keep the connection alive through proxies and load balancers.
+
+#### Event Flow (Message Created)
+
+```
+Browser Client A          Express SSE            Redis Pub/Sub         Browser Client B
+      |                       |                        |                       |
+      |── tRPC sendMessage ──▶|                        |                       |
+      |                       |── INSERT message ─────▶DB                      |
+      |                       |── PUBLISH MESSAGE_CREATED ──────────────────▶ |
+      |                       |                        |── notify subscriber ─▶|
+      |                       |                        |  (SSE bridge)         |
+      |                       |◀── response ───────────|                       |
+      |◀── msg returned ──────|                        |── write SSE frame ───▶|
+      |  (optimistic update)  |                        |                       |  ← message appears
+```
+
+#### Client Integration
+
+The `useChannelEvents` React hook (`src/hooks/useChannelEvents.ts`) wraps `EventSource`:
+
+```ts
+useChannelEvents({
+  channelId,
+  onMessageCreated: (msg) => setMessages(prev => [...prev, msg]),
+  onMessageEdited:  (msg) => setMessages(prev => prev.map(m => m.id === msg.id ? msg : m)),
+  onMessageDeleted: (id)  => setMessages(prev => prev.filter(m => m.id !== id)),
+  enabled: isAuthenticated,
+});
+```
+
+The hook deduplicates `message:created` events against messages already added optimistically by the sender's own tRPC callback, preventing double-rendering when the SSE event races the HTTP response.
 
 ---
 
@@ -1443,6 +1520,33 @@ sequenceDiagram
     SSR-->>Guest: HTML Response
 ```
 
+### 7.3 Real-Time Message Broadcast
+
+When a message is created, edited, or deleted, the change propagates to all connected clients through the EventBus → SSE bridge:
+
+```mermaid
+sequenceDiagram
+    participant C1 as Client A (sender)
+    participant API as Express tRPC
+    participant DB as PostgreSQL
+    participant EB as Redis Pub/Sub
+    participant SSE as SSE Bridge
+    participant C2 as Client B (receiver)
+
+    C1->>API: mutation message.sendMessage
+    API->>DB: INSERT message
+    API-->>EB: PUBLISH MESSAGE_CREATED (fire-and-forget)
+    API-->>C1: return created message
+    Note over C1: Optimistic update via handleMessageSent
+
+    EB-->>SSE: notify subscriber
+    SSE->>DB: SELECT message (full shape)
+    SSE-->>C2: event: message:created\ndata: {...}
+    Note over C2: handleRealTimeCreated appends to localMessages
+```
+
+**Deduplication at the sender:** because the SSE event can arrive at Client A before the tRPC HTTP response (Redis pub/sub + established SSE connection beat the HTTP round-trip), both `handleMessageSent` and `handleRealTimeCreated` apply an `id`-based dedup guard. Only one copy of the message is ever added to local state.
+
 ---
 
 ## 8. Technology Stack (Unified)
@@ -1469,8 +1573,9 @@ sequenceDiagram
 | T18 | compromise | 14.0+ | NLP text parsing/summarization | M-B5 |
 | T19 | schema-dts | 1.1+ | Typed JSON-LD structured data | M-B5, M-B6 |
 | T20 | sharp | 0.33+ | Image processing/thumbnails | M-B4 |
-| T21 | intersection-observer | polyfill | Infinite scroll (client) | M-GV2 |
-| T22 | Lighthouse CI | 11+ | Performance testing | CI/CD |
+| T21 | EventSource (browser built-in) | — | Native browser API | SSE client: receives real-time message events from `/api/events/*` with automatic reconnection |
+| T22 | intersection-observer | polyfill | Infinite scroll (client) | M-GV2 |
+| T23 | Lighthouse CI | 11+ | Performance testing | CI/CD |
 
 ---
 
