@@ -340,7 +340,8 @@ function VisibilitySection({
           Visibility Change History
         </h3>
 
-        {auditLoading && (
+        {/* Initial load spinner — only shown before first data arrives */}
+        {auditLoading && !auditLog && (
           <div className='flex items-center gap-2 text-sm text-gray-400'>
             <svg className='h-4 w-4 animate-spin' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2}>
               <path d='M21 12a9 9 0 1 1-6.219-8.56' />
@@ -353,15 +354,17 @@ function VisibilitySection({
           <p role='alert' className='text-sm text-red-400'>{auditError}</p>
         )}
 
-        {!auditLoading && !auditError && auditLog && (
-          <>
+        {/* Keep previous entries visible while paginating to avoid height collapse
+            and scroll jump. Dim the table to signal the update is in-flight. */}
+        {auditLog && (
+          <div className={cn('transition-opacity', auditLoading ? 'opacity-50' : 'opacity-100')}>
             <AuditLogTable entries={auditLog.entries} />
             {auditLog.total > AUDIT_PAGE_SIZE && (
               <div className='mt-3 flex items-center gap-3 text-xs text-gray-400'>
                 <button
                   type='button'
                   onClick={handlePrev}
-                  disabled={auditOffset === 0}
+                  disabled={auditOffset === 0 || auditLoading}
                   className='rounded px-2 py-1 hover:bg-[#3d4148] disabled:opacity-40'
                 >
                   ← Prev
@@ -372,14 +375,14 @@ function VisibilitySection({
                 <button
                   type='button'
                   onClick={handleNext}
-                  disabled={!hasMore}
+                  disabled={!hasMore || auditLoading}
                   className='rounded px-2 py-1 hover:bg-[#3d4148] disabled:opacity-40'
                 >
                   Next →
                 </button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
