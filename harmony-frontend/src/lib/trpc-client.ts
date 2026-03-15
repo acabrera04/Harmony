@@ -62,6 +62,7 @@ export async function publicGet<T>(path: string): Promise<T | null> {
 export async function trpcQuery<T>(
   procedure: string,
   input?: unknown,
+  options?: { noCache?: boolean },
 ): Promise<T> {
   const url = new URL(`${BASE}/trpc/${procedure}`);
   if (input !== undefined) {
@@ -80,7 +81,9 @@ export async function trpcQuery<T>(
   try {
     res = await fetch(url.toString(), {
       headers,
-      next: { revalidate: 30 },
+      // noCache: skip ISR so callers that need fresh data (e.g. audit log after
+      // a visibility change) bypass the 30-second Next.js fetch cache.
+      ...(options?.noCache ? { cache: 'no-store' } : { next: { revalidate: 30 } }),
       signal: controller.signal,
     });
   } finally {

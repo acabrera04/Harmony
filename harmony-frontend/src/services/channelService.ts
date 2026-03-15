@@ -114,11 +114,8 @@ export const getChannel = cache(async (serverSlug: string, channelSlug: string):
 export async function updateVisibility(
   channelId: string,
   visibility: ChannelVisibility,
-  serverId?: string,
+  serverId: string,
 ): Promise<void> {
-  if (!serverId) {
-    throw new Error('serverId is required for updateVisibility');
-  }
   await trpcMutate('channel.setVisibility', {
     serverId,
     channelId,
@@ -162,13 +159,72 @@ export async function createChannel(
   return toFrontendChannel(data);
 }
 
+export interface AuditLogEntry {
+  id: string;
+  channelId: string;
+  actorId: string;
+  action: string;
+  oldValue: Record<string, unknown>;
+  newValue: Record<string, unknown>;
+  timestamp: string;
+  ipAddress: string;
+  userAgent: string;
+}
+
+export interface AuditLogPage {
+  entries: AuditLogEntry[];
+  total: number;
+}
+
+/** Validates an audit log entry from the API, guarding against schema changes. */
+function toAuditLogEntry(raw: Record<string, unknown>): AuditLogEntry {
+  // Warn on missing required string fields, mirroring toFrontendChannel.
+  if (typeof raw.id !== 'string') console.warn('[toAuditLogEntry] missing or non-string "id"');
+  if (typeof raw.channelId !== 'string') console.warn('[toAuditLogEntry] missing or non-string "channelId"');
+  if (typeof raw.actorId !== 'string') console.warn('[toAuditLogEntry] missing or non-string "actorId"');
+  if (typeof raw.action !== 'string') console.warn('[toAuditLogEntry] missing or non-string "action"');
+  const ts = raw.timestamp;
+  const validTimestamp =
+    typeof ts === 'string' && !isNaN(new Date(ts).getTime())
+      ? ts
+      : (() => {
+          console.warn('[toAuditLogEntry] missing or invalid "timestamp":', ts);
+          return new Date(0).toISOString();
+        })();
+  return {
+    id: raw.id as string,
+    channelId: raw.channelId as string,
+    actorId: raw.actorId as string,
+    action: raw.action as string,
+    oldValue: raw.oldValue as Record<string, unknown>,
+    newValue: raw.newValue as Record<string, unknown>,
+    timestamp: validTimestamp,
+    ipAddress: raw.ipAddress as string,
+    userAgent: raw.userAgent as string,
+  };
+}
+
+/**
+ * Fetches paginated visibility audit log for a channel via tRPC.
+ */
+export async function getAuditLog(
+  serverId: string,
+  channelId: string,
+  options: { limit?: number; offset?: number; startDate?: string } = {},
+): Promise<AuditLogPage> {
+  // noCache: audit log must reflect entries written moments ago by setVisibility.
+  const data = await trpcQuery<{ entries: Record<string, unknown>[]; total: number }>(
+    'channel.getAuditLog',
+    { serverId, channelId, ...options },
+    { noCache: true },
+  );
+  return { entries: data.entries.map(toAuditLogEntry), total: data.total };
+}
+
 /**
  * Deletes a channel by ID via tRPC. Returns true if deleted.
  */
-export async function deleteChannel(channelId: string, serverId?: string): Promise<boolean> {
-  if (!serverId) {
-    throw new Error('serverId is required for deleteChannel');
-  }
+export async function deleteChannel(channelId: string, serverId: string): Promise<boolean> {
   await trpcMutate('channel.deleteChannel', { serverId, channelId });
   return true;
 }
