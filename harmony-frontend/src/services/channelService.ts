@@ -178,6 +178,11 @@ export interface AuditLogPage {
 
 /** Validates an audit log entry from the API, guarding against schema changes. */
 function toAuditLogEntry(raw: Record<string, unknown>): AuditLogEntry {
+  // Warn on missing required string fields, mirroring toFrontendChannel.
+  if (typeof raw.id !== 'string') console.warn('[toAuditLogEntry] missing or non-string "id"');
+  if (typeof raw.channelId !== 'string') console.warn('[toAuditLogEntry] missing or non-string "channelId"');
+  if (typeof raw.actorId !== 'string') console.warn('[toAuditLogEntry] missing or non-string "actorId"');
+  if (typeof raw.action !== 'string') console.warn('[toAuditLogEntry] missing or non-string "action"');
   const ts = raw.timestamp;
   const validTimestamp =
     typeof ts === 'string' && !isNaN(new Date(ts).getTime())

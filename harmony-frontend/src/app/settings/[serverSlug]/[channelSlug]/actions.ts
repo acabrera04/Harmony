@@ -70,8 +70,6 @@ export async function fetchAuditLog(
   const channel = await getChannel(serverSlug, channelSlug);
   if (!channel) throw new Error('Channel not found');
 
-  const server = await getServer(serverSlug);
-  if (!server) throw new Error('Server not found');
-
-  return getAuditLog(server.id, channel.id, options);
+  // channel.serverId is already resolved by getChannel — no redundant server lookup needed.
+  return getAuditLog(channel.serverId, channel.id, options);
 }
