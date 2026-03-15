@@ -13,8 +13,7 @@
  */
 
 import { redis } from '../db/redis';
-import { eventBus } from '../events/eventBus';
-import { EventChannels } from '../events/eventTypes';
+import { eventBus, EventChannels } from '../events/eventBus';
 
 // ─── TTL ────────────────────────────────────────────────────────────────────
 
@@ -32,8 +31,8 @@ function sanitizeSegment(segment: string): string {
   return segment.replace(/[^a-zA-Z0-9\-_]/g, '');
 }
 
-/** Redis Set of userIds currently in a voice channel. */
-function participantsKey(channelId: string): string {
+/** Redis Set of userIds currently in a voice channel. Exported for router-layer membership checks. */
+export function participantsKey(channelId: string): string {
   return `voice:channel:${sanitizeSegment(channelId)}:participants`;
 }
 
@@ -136,13 +135,27 @@ export const voiceService = {
     const pKey = participantsKey(channelId);
     const uKey = userVoiceKey(userId);
 
-    // Atomically add to set and set user hash — pipeline for efficiency.
+    // Atomically add to set and initialize user hash — pipeline for efficiency.
+    // HSETNX sets each field only if it does not already exist, preserving a
+    // re-joining user's muted/deafened state rather than resetting it to '0'.
     const pipeline = redis.pipeline();
     pipeline.sadd(pKey, userId);
     pipeline.expire(pKey, VOICE_TTL_SECONDS);
-    pipeline.hset(uKey, 'channelId', channelId, 'muted', '0', 'deafened', '0');
+    pipeline.hsetnx(uKey, 'channelId', channelId);
+    pipeline.hsetnx(uKey, 'muted', '0');
+    pipeline.hsetnx(uKey, 'deafened', '0');
     pipeline.expire(uKey, VOICE_TTL_SECONDS);
-    await pipeline.exec();
+    const results = await pipeline.exec();
+
+    if (results === null) {
+      throw new Error('[VoiceService] Redis pipeline returned null on join');
+    }
+    const pipelineErrors = results.filter(([err]) => err !== null);
+    if (pipelineErrors.length > 0) {
+      throw new Error(
+        `[VoiceService] Redis pipeline errors on join: ${pipelineErrors.map(([e]) => String(e)).join(', ')}`,
+      );
+    }
 
     eventBus
       .publish(EventChannels.USER_JOINED_VOICE, {
