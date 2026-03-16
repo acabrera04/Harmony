@@ -204,7 +204,7 @@ function OverviewSection({
 // This is a read-only reference view — roles are assigned at the server level,
 // not the channel level, so there is no mutation API needed here.
 
-// Must stay in sync with RoleType in harmony-backend/src/services/permission.service.ts
+// Must stay in sync with the RoleType enum in harmony-backend/prisma/schema.prisma
 type PermissionRole = 'OWNER' | 'ADMIN' | 'MODERATOR' | 'MEMBER' | 'GUEST';
 
 interface PermissionRow {
@@ -317,7 +317,7 @@ function PermissionsSection() {
                 key={row.label}
                 className={idx % 2 === 0 ? 'bg-[#36393f]' : 'bg-[#2f3136]'}
               >
-                <td className='px-4 py-2 text-gray-300'>{row.label}</td>
+                <th scope='row' className='px-4 py-2 text-left font-normal text-gray-300'>{row.label}</th>
                 {ROLE_HIERARCHY.map(role => {
                   // Compute once per cell to avoid redundant calls across the 9×5 matrix
                   const allowed = hasPermission(role, row.allowedFrom);
