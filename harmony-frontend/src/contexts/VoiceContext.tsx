@@ -110,19 +110,23 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     const channelId = connectedChannelIdRef.current;
     const serverId = connectedServerIdRef.current;
 
-    // Disconnect Twilio room first so no more events fire.
+    // Remove listeners and disconnect Twilio first so no more events fire.
     if (room) {
+      room.removeAllListeners();
       room.disconnect();
     }
 
-    resetVoiceState();
-
-    if (channelId && serverId) {
-      try {
+    // Notify backend before resetting UI state so Redis stays in sync.
+    // resetVoiceState runs in finally so it always clears local state.
+    try {
+      if (channelId && serverId) {
         await apiClient.trpcMutation('voice.leave', { channelId, serverId });
-      } catch (err) {
-        console.error('[VoiceContext] leave error:', err);
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[VoiceContext] leave error:', message);
+    } finally {
+      resetVoiceState();
     }
   }, [resetVoiceState]);
 
@@ -146,6 +150,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
         setConnectedChannelId(channelId);
         setConnectedChannelName(channelName);
         setParticipants(initialParticipants);
+
+        // Validate token before passing to Twilio to avoid SDK errors leaking internals.
+        if (!token) {
+          throw new Error('voice.join returned an empty token');
+        }
 
         // Dynamic import keeps the Twilio SDK out of SSR.
         const TwilioVideo = await import('twilio-video');
@@ -193,11 +202,14 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
         });
 
         // Handle unexpected disconnects (network drop, room ended, etc.)
+        // Remove all listeners before resetting state so no events fire during teardown.
         room.on('disconnected', () => {
+          room.removeAllListeners();
           resetVoiceState();
         });
       } catch (err) {
-        console.error('[VoiceContext] joinChannel error:', err);
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error('[VoiceContext] joinChannel error:', message);
         resetVoiceState();
       } finally {
         setJoining(false);
@@ -208,14 +220,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
   const setMuted = useCallback(async (muted: boolean) => {
     const track = localAudioTrackRef.current;
+    // Optimistic update: apply immediately for responsive UI.
     if (track) {
-      if (muted) {
-        track.disable();
-      } else {
-        track.enable();
-      }
+      if (muted) track.disable();
+      else track.enable();
     }
-
     isMutedRef.current = muted;
     setIsMutedState(muted);
 
@@ -230,26 +239,35 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
           deafened: isDeafenedRef.current,
         });
       } catch (err) {
-        console.error('[VoiceContext] updateState (mute) error:', err);
+        // Revert optimistic update so UI matches actual state.
+        if (track) {
+          if (!muted) track.disable();
+          else track.enable();
+        }
+        isMutedRef.current = !muted;
+        setIsMutedState(!muted);
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error('[VoiceContext] updateState (mute) error:', message);
       }
     }
   }, []);
 
   const setDeafened = useCallback(async (deafened: boolean) => {
-    // Mute/unmute remote audio tracks via MediaStreamTrack.enabled.
     const room = roomRef.current;
-    if (room) {
+    // Optimistic update: apply track changes immediately for responsive UI.
+    const applyDeafenToRoom = (apply: boolean) => {
+      if (!room) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       room.participants.forEach((participant: any) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         participant.audioTracks.forEach((pub: any) => {
           if (pub.track?.mediaStreamTrack) {
-            pub.track.mediaStreamTrack.enabled = !deafened;
+            pub.track.mediaStreamTrack.enabled = !apply;
           }
         });
       });
-    }
-
+    };
+    applyDeafenToRoom(deafened);
     isDeafenedRef.current = deafened;
     setIsDeafenedState(deafened);
 
@@ -264,7 +282,12 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
           deafened,
         });
       } catch (err) {
-        console.error('[VoiceContext] updateState (deafen) error:', err);
+        // Revert optimistic update so audio state matches actual.
+        applyDeafenToRoom(!deafened);
+        isDeafenedRef.current = !deafened;
+        setIsDeafenedState(!deafened);
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.error('[VoiceContext] updateState (deafen) error:', message);
       }
     }
   }, []);
