@@ -170,6 +170,54 @@ describe('GET /api/events/server/:serverId — member event subscriptions', () =
 // ─── member:joined event delivery ─────────────────────────────────────────────
 
 describe('GET /api/events/server/:serverId — member:joined event', () => {
+  it('does not emit member:joined for a different server', async () => {
+    let memberJoinedHandler: ((payload: unknown) => Promise<void>) | null = null;
+
+    mockSubscribe.mockImplementation((channel: string, handler: (payload: unknown) => Promise<void>) => {
+      if (channel === 'harmony:MEMBER_JOINED') {
+        memberJoinedHandler = handler;
+      }
+      return { unsubscribe: jest.fn(), ready: Promise.resolve() };
+    });
+
+    const addr = httpServer.address();
+    if (!addr || typeof addr === 'string') throw new Error('Bad address');
+    const port = (addr as { port: number }).port;
+
+    const chunks: string[] = [];
+    await new Promise<void>((resolve, reject) => {
+      const req = http.get(
+        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?token=${VALID_TOKEN}` },
+        (res) => {
+          res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+
+          setTimeout(async () => {
+            if (memberJoinedHandler) {
+              // Fire with a different serverId — should be filtered out
+              await memberJoinedHandler({
+                userId: JOINING_USER_ID,
+                serverId: 'different-server-id',
+                role: 'MEMBER',
+                timestamp: new Date().toISOString(),
+              });
+            }
+
+            setTimeout(() => {
+              res.destroy();
+              resolve();
+            }, 50);
+          }, 50);
+
+          res.on('error', reject);
+        },
+      );
+      req.on('error', reject);
+    });
+
+    const body = chunks.join('');
+    expect(body).not.toContain('event: member:joined');
+  });
+
   it('fires the MEMBER_JOINED handler when a user joins', async () => {
     // Capture the MEMBER_JOINED subscriber so we can invoke it directly
     let memberJoinedHandler: ((payload: unknown) => Promise<void>) | null = null;
