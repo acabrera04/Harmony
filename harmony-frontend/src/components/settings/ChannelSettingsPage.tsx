@@ -319,7 +319,7 @@ function PermissionsSection() {
               >
                 <td className='px-4 py-2 text-gray-300'>{row.label}</td>
                 {ROLE_HIERARCHY.map(role => {
-                  // Compute once per cell to avoid redundant calls across the 11×5 matrix
+                  // Compute once per cell to avoid redundant calls across the 9×5 matrix
                   const allowed = hasPermission(role, row.allowedFrom);
                   return (
                     <td key={role} className='px-3 py-2 text-center'>
