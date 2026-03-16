@@ -1,0 +1,242 @@
+/**
+ * Message reply (thread) service tests — Issue #151
+ *
+ * Covers: createReply (success, NOT_FOUND parent, soft-deleted parent),
+ * getThreadMessages (chronological order), replyCount increment.
+ * Requires DATABASE_URL pointing at a running Postgres instance.
+ */
+
+import { PrismaClient } from '@prisma/client';
+import { TRPCError } from '@trpc/server';
+import bcrypt from 'bcryptjs';
+import { messageService } from '../src/services/message.service';
+
+const prisma = new PrismaClient();
+
+let serverId: string;
+let channelId: string;
+let authorId: string;
+
+beforeAll(async () => {
+  const user = await prisma.user.create({
+    data: {
+      email: `replies-test-${Date.now()}@example.com`,
+      username: `repliestest${Date.now()}`,
+      passwordHash: await bcrypt.hash('password', 10),
+      displayName: 'Reply Tester',
+    },
+  });
+  authorId = user.id;
+
+  const server = await prisma.server.create({
+    data: {
+      name: 'Reply Test Server',
+      slug: `reply-test-${Date.now()}`,
+      isPublic: false,
+      ownerId: authorId,
+    },
+  });
+  serverId = server.id;
+
+  const channel = await prisma.channel.create({
+    data: {
+      serverId,
+      name: 'threads',
+      slug: `threads-${Date.now()}`,
+      type: 'TEXT',
+      visibility: 'PRIVATE',
+    },
+  });
+  channelId = channel.id;
+
+  await prisma.serverMember.create({
+    data: { userId: authorId, serverId, role: 'MEMBER' },
+  });
+});
+
+afterAll(async () => {
+  if (serverId) {
+    await prisma.server.delete({ where: { id: serverId } }).catch(() => {});
+  }
+  if (authorId) {
+    await prisma.user.delete({ where: { id: authorId } }).catch(() => {});
+  }
+  await prisma.$disconnect();
+});
+
+// ─── createReply ──────────────────────────────────────────────────────────────
+
+describe('messageService.createReply', () => {
+  it('creates a reply and links it to the parent message', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Parent message',
+    });
+
+    const reply = await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'First reply',
+    });
+
+    expect(reply.id).toBeTruthy();
+    expect(reply.content).toBe('First reply');
+    expect(reply.parentMessageId).toBe(parent.id);
+    expect(reply.channelId).toBe(channelId);
+    expect(reply.author.id).toBe(authorId);
+    expect(reply.isDeleted).toBe(false);
+  });
+
+  it('increments replyCount on the parent message', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Count test parent',
+    });
+
+    expect(parent.replyCount).toBe(0);
+
+    await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'Reply 1',
+    });
+
+    await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'Reply 2',
+    });
+
+    const updated = await prisma.message.findUnique({ where: { id: parent.id } });
+    expect(updated?.replyCount).toBe(2);
+  });
+
+  it('throws NOT_FOUND when parent message does not exist', async () => {
+    await expect(
+      messageService.createReply({
+        parentMessageId: '00000000-0000-0000-0000-000000000000',
+        channelId,
+        serverId,
+        authorId,
+        content: 'orphan reply',
+      }),
+    ).rejects.toThrow(TRPCError);
+  });
+
+  it('throws NOT_FOUND when parent message is soft-deleted', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Will be deleted',
+    });
+
+    await messageService.deleteMessage({ messageId: parent.id, actorId: authorId, serverId });
+
+    await expect(
+      messageService.createReply({
+        parentMessageId: parent.id,
+        channelId,
+        serverId,
+        authorId,
+        content: 'reply to ghost',
+      }),
+    ).rejects.toThrow(TRPCError);
+  });
+});
+
+// ─── getThreadMessages ────────────────────────────────────────────────────────
+
+describe('messageService.getThreadMessages', () => {
+  it('returns replies in chronological order (ASC)', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Thread parent',
+    });
+
+    const contents = ['Alpha', 'Beta', 'Gamma'];
+    for (const c of contents) {
+      await messageService.createReply({
+        parentMessageId: parent.id,
+        channelId,
+        serverId,
+        authorId,
+        content: c,
+      });
+    }
+
+    const result = await messageService.getThreadMessages({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+    });
+
+    expect(result.replies).toHaveLength(3);
+    expect(result.replies.map((r) => r.content)).toEqual(contents);
+
+    // Verify chronological order
+    const times = result.replies.map((r) => r.createdAt.getTime());
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+
+  it('throws NOT_FOUND when parent message does not exist', async () => {
+    await expect(
+      messageService.getThreadMessages({
+        parentMessageId: '00000000-0000-0000-0000-000000000000',
+        channelId,
+        serverId,
+      }),
+    ).rejects.toThrow(TRPCError);
+  });
+});
+
+// ─── Soft-delete cascade ──────────────────────────────────────────────────────
+
+describe('deleteMessage cascade to replies', () => {
+  it('soft-deletes replies when parent is deleted', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Cascade parent',
+    });
+
+    const reply1 = await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'Cascade reply 1',
+    });
+
+    const reply2 = await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'Cascade reply 2',
+    });
+
+    await messageService.deleteMessage({ messageId: parent.id, actorId: authorId, serverId });
+
+    const [r1, r2] = await Promise.all([
+      prisma.message.findUnique({ where: { id: reply1.id } }),
+      prisma.message.findUnique({ where: { id: reply2.id } }),
+    ]);
+
+    expect(r1?.isDeleted).toBe(true);
+    expect(r2?.isDeleted).toBe(true);
+  });
+});

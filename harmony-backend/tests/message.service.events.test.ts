@@ -26,19 +26,37 @@ jest.mock('../src/events/eventBus', () => ({
 
 const mockMessageCreate = jest.fn();
 const mockMessageUpdate = jest.fn();
+const mockMessageUpdateMany = jest.fn();
 const mockMessageFindUnique = jest.fn();
 const mockChannelFindUnique = jest.fn();
+
+// $transaction: execute the callback with the same mock client
+const mockTransaction = jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+  cb({
+    message: {
+      create: mockMessageCreate,
+      update: mockMessageUpdate,
+      updateMany: mockMessageUpdateMany,
+      findUnique: mockMessageFindUnique,
+    },
+    channel: {
+      findUnique: mockChannelFindUnique,
+    },
+  }),
+);
 
 jest.mock('../src/db/prisma', () => ({
   prisma: {
     message: {
       create: mockMessageCreate,
       update: mockMessageUpdate,
+      updateMany: mockMessageUpdateMany,
       findUnique: mockMessageFindUnique,
     },
     channel: {
       findUnique: mockChannelFindUnique,
     },
+    $transaction: mockTransaction,
   },
 }));
 
