@@ -26,6 +26,8 @@ import type {
   ChannelUpdatedPayload,
   ChannelDeletedPayload,
   ServerUpdatedPayload,
+  MemberJoinedPayload,
+  MemberLeftPayload,
 } from '../events/eventTypes';
 
 export const eventsRouter = Router();
@@ -334,6 +336,45 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     },
   );
 
+  // ── Subscribe to member join/leave events ─────────────────────────────────
+  // When a member joins, look up their profile and push the full user object so
+  // clients can add the new member to the sidebar without a page reload.
+
+  const { unsubscribe: unsubMemberJoined } = eventBus.subscribe(
+    EventChannels.MEMBER_JOINED,
+    async (payload: MemberJoinedPayload) => {
+      if (payload.serverId !== serverId) return;
+
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        });
+        if (!user) return;
+
+        sendEvent(res, 'member:joined', {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          avatar: user.avatarUrl ?? undefined,
+          // New members always join as MEMBER role; cast to frontend UserRole
+          role: payload.role.toLowerCase(),
+          status: 'online',
+        });
+      } catch {
+        // Silently ignore DB errors — the client will re-fetch on next load
+      }
+    },
+  );
+
+  const { unsubscribe: unsubMemberLeft } = eventBus.subscribe(
+    EventChannels.MEMBER_LEFT,
+    (payload: MemberLeftPayload) => {
+      if (payload.serverId !== serverId) return;
+      sendEvent(res, 'member:left', { userId: payload.userId });
+    },
+  );
+
   // ── Heartbeat ────────────────────────────────────────────────────────────
   const heartbeat = setInterval(() => {
     res.write(':\n\n');
@@ -345,5 +386,7 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     unsubChannelCreated();
     unsubChannelUpdated();
     unsubChannelDeleted();
+    unsubMemberJoined();
+    unsubMemberLeft();
   });
 });
