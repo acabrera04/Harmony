@@ -100,6 +100,8 @@ const MOCK_MESSAGE = {
   isDeleted: false,
   pinned: false,
   pinnedAt: null,
+  parentMessageId: null,
+  replyCount: 0,
   author: { id: AUTHOR_ID, username: 'testuser', displayName: 'Test User', avatarUrl: null },
   attachments: [],
   channel: { serverId: SERVER_ID },

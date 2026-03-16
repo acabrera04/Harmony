@@ -164,7 +164,7 @@ model Message {
   pinnedAt        DateTime? @map("pinned_at") @db.Timestamptz
   /// Null for top-level messages; set to the parent message id for replies.
   parentMessageId String?   @map("parent_message_id") @db.Uuid
-  /// Denormalised count of non-deleted replies. Incremented/decremented atomically.
+  /// Denormalised count of non-deleted replies. Incremented on createReply; decremented when a reply is soft-deleted.
   replyCount      Int       @default(0) @map("reply_count")
 
   channel     Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)

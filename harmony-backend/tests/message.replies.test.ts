@@ -133,6 +133,33 @@ describe('messageService.createReply', () => {
     ).rejects.toThrow(TRPCError);
   });
 
+  it('throws BAD_REQUEST when attempting to reply to a reply (one-level threading)', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Top-level',
+    });
+
+    const reply = await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'First-level reply',
+    });
+
+    await expect(
+      messageService.createReply({
+        parentMessageId: reply.id,
+        channelId,
+        serverId,
+        authorId,
+        content: 'Nested reply',
+      }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
+
   it('throws NOT_FOUND when parent message is soft-deleted', async () => {
     const parent = await messageService.sendMessage({
       serverId,
@@ -200,11 +227,61 @@ describe('messageService.getThreadMessages', () => {
       }),
     ).rejects.toThrow(TRPCError);
   });
+
+  it('throws BAD_REQUEST when parentMessageId is itself a reply', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Thread root',
+    });
+
+    const reply = await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'First reply',
+    });
+
+    await expect(
+      messageService.getThreadMessages({
+        parentMessageId: reply.id,
+        channelId,
+        serverId,
+      }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
 });
 
 // ─── Soft-delete cascade ──────────────────────────────────────────────────────
 
 describe('deleteMessage cascade to replies', () => {
+  it('decrements replyCount on parent when a reply is deleted', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Decrement parent',
+    });
+
+    const reply = await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'Will be deleted',
+    });
+
+    const afterCreate = await prisma.message.findUnique({ where: { id: parent.id } });
+    expect(afterCreate?.replyCount).toBe(1);
+
+    await messageService.deleteMessage({ messageId: reply.id, actorId: authorId, serverId });
+
+    const afterDelete = await prisma.message.findUnique({ where: { id: parent.id } });
+    expect(afterDelete?.replyCount).toBe(0);
+  });
+
   it('soft-deletes replies when parent is deleted', async () => {
     const parent = await messageService.sendMessage({
       serverId,

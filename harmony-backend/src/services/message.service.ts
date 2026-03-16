@@ -273,6 +273,14 @@ export const messageService = {
         data: { isDeleted: true },
       });
 
+      // If this message is a reply, decrement the parent's replyCount (floor 0)
+      if (message.parentMessageId) {
+        await tx.message.update({
+          where: { id: message.parentMessageId },
+          data: { replyCount: { decrement: 1 } },
+        });
+      }
+
       // Cascade soft-delete any non-deleted replies to this message
       await tx.message.updateMany({
         where: { parentMessageId: messageId, isDeleted: false },
@@ -280,13 +288,17 @@ export const messageService = {
       });
     });
 
+    // If this message is a reply, its thread cache lives under the parent's id.
+    // If it's a parent, the thread cache lives under its own id.
+    const threadCacheId = message.parentMessageId ?? messageId;
+
     cacheService
       .invalidatePattern(
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(message.channelId)}:*`,
       )
       .catch(() => {});
     cacheService
-      .invalidatePattern(`thread:msgs:${sanitizeKeySegment(messageId)}:*`)
+      .invalidatePattern(`thread:msgs:${sanitizeKeySegment(threadCacheId)}:*`)
       .catch(() => {});
 
     eventBus
@@ -473,6 +485,14 @@ export const messageService = {
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Parent message not found in this channel',
+          });
+        }
+
+        // Enforce one-level threading: only top-level messages have threads
+        if (parent.parentMessageId !== null) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot fetch thread for a reply — only top-level messages have threads',
           });
         }
 
