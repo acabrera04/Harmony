@@ -64,10 +64,19 @@ async function ensureTwilioRoom(channelId: string): Promise<void> {
       process.env.TWILIO_API_SECRET,
       { accountSid: process.env.TWILIO_ACCOUNT_SID },
     );
-    await client.video.v1.rooms.create({ uniqueName: channelId, type: 'group' });
+    // 'go' rooms support up to 50 participants and auto-create on connect,
+    // making them more permissive than 'group' rooms (which require a paid plan).
+    // We still pre-create here so the room exists before the client SDK connects.
+    await client.video.v1.rooms.create({ uniqueName: channelId, type: 'go' });
+    console.log(`[VoiceService] Twilio room created: ${channelId}`);
   } catch (err: unknown) {
+    const code = (err as { code?: number }).code;
     // 53113 = room with this uniqueName already exists — not an error for us.
-    if ((err as { code?: number }).code === 53113) return;
+    if (code === 53113) {
+      console.log(`[VoiceService] Twilio room already exists: ${channelId}`);
+      return;
+    }
+    console.error(`[VoiceService] ensureTwilioRoom failed for ${channelId}:`, err);
     throw err;
   }
 }
