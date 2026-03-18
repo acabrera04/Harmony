@@ -9,6 +9,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { UserStatusBar } from '@/components/channel/UserStatusBar';
 import { ChannelVisibility, ChannelType } from '@/types';
@@ -339,24 +340,43 @@ export function ChannelSidebar({
                         const channelParticipants = allChannelParticipants[channel.id] ?? [];
                         if (channelParticipants.length === 0) return null;
                         return (
-                          <ul className='mb-1 ml-4 list-none space-y-0.5'>
+                          <ul className='mb-1 ml-2 list-none space-y-0.5'>
                             {channelParticipants.map(p => {
                               const member = memberMap.get(p.userId);
                               const displayName =
                                 member?.displayName ?? member?.username ?? p.userId.slice(0, 8);
+                              const initial = (displayName[0] ?? '?').toUpperCase();
                               const isSpeaking = dominantSpeakerId === p.userId;
                               return (
                                 <li
                                   key={p.userId}
-                                  className={cn(
-                                    'flex items-center gap-1.5 rounded px-2 py-0.5 text-xs',
-                                    isSpeaking ? 'text-green-400' : 'text-gray-400',
-                                  )}
+                                  className='flex items-center gap-1.5 rounded px-2 py-0.5 text-xs text-gray-400'
                                 >
-                                  {isSpeaking && (
-                                    <span className='h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-green-400' />
-                                  )}
-                                  <span className='truncate'>{displayName}</span>
+                                  {/* Avatar with green ring when speaking */}
+                                  <div
+                                    className={cn(
+                                      'h-5 w-5 flex-shrink-0 overflow-hidden rounded-full',
+                                      isSpeaking && 'ring-2 ring-green-400 ring-offset-1 ring-offset-[#2f3136]',
+                                    )}
+                                  >
+                                    {member?.avatar ? (
+                                      <Image
+                                        src={member.avatar}
+                                        alt={displayName}
+                                        width={20}
+                                        height={20}
+                                        className='h-5 w-5 rounded-full'
+                                        unoptimized
+                                      />
+                                    ) : (
+                                      <div className='flex h-5 w-5 items-center justify-center rounded-full bg-[#5865f2] text-[9px] font-bold text-white'>
+                                        {initial}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className={cn('flex-1 truncate', isSpeaking && 'text-green-400')}>
+                                    {displayName}
+                                  </span>
                                   {p.muted && (
                                     <span className='ml-auto text-[10px] opacity-60'>🔇</span>
                                   )}

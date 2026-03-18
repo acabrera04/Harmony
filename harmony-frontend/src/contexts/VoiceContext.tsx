@@ -159,8 +159,10 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
     const room = roomRef.current;
     const channelId = connectedChannelIdRef.current;
     const serverId = connectedServerIdRef.current;
+    // Capture before resetVoiceState nulls the ref.
+    const localIdentity = localParticipantIdentityRef.current;
 
-    // Remove listeners and disconnect Twilio first so no more events fire.
+    // Remove listeners and disconnect first so no more events fire.
     if (room) {
       room.removeAllListeners();
       room.disconnect();
@@ -176,6 +178,14 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('[VoiceContext] leave error:', message);
     } finally {
+      // Remove local user from channelParticipants so the sidebar updates immediately.
+      // Must happen before resetVoiceState, which clears localParticipantIdentityRef.
+      if (channelId && localIdentity) {
+        setChannelParticipants(prev => ({
+          ...prev,
+          [channelId]: (prev[channelId] ?? []).filter(p => p.userId !== localIdentity),
+        }));
+      }
       resetVoiceState();
     }
   }, [resetVoiceState]);
@@ -293,7 +303,14 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
         room.on('disconnected', () => {
           const cId = connectedChannelIdRef.current;
           const sId = connectedServerIdRef.current;
+          const localId = localParticipantIdentityRef.current;
           room.removeAllListeners();
+          if (cId && localId) {
+            setChannelParticipants(prev => ({
+              ...prev,
+              [cId]: (prev[cId] ?? []).filter(p => p.userId !== localId),
+            }));
+          }
           resetVoiceState();
           // Fire-and-forget: keep Redis in sync on unexpected disconnect.
           if (cId && sId) {
