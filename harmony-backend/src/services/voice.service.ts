@@ -52,6 +52,34 @@ function isMockMode(): boolean {
 // ─── Twilio room helpers (real mode only) ────────────────────────────────────
 
 /**
+ * Ensure a Twilio Video room exists before the client SDK connects.
+ * Does NOT specify a room type — uses the account's configured default,
+ * since legacy explicit types (go, group) now return error 53113.
+ * Silently ignores 53113 (already exists). Other errors are re-thrown.
+ */
+async function ensureTwilioRoom(channelId: string): Promise<void> {
+  try {
+    const twilio = await import('twilio');
+    const client = twilio.default(
+      process.env.TWILIO_API_KEY,
+      process.env.TWILIO_API_SECRET,
+      { accountSid: process.env.TWILIO_ACCOUNT_SID },
+    );
+    await client.video.v1.rooms.create({ uniqueName: channelId });
+    console.log(`[VoiceService] Twilio room created: ${channelId}`);
+  } catch (err: unknown) {
+    const code = (err as { code?: number }).code;
+    if (code === 53113) {
+      console.log(`[VoiceService] Twilio room already exists: ${channelId}`);
+      return;
+    }
+    console.error(`[VoiceService] ensureTwilioRoom error (code=${code}):`, (err as Error).message);
+    // Non-fatal: if pre-creation fails, let TwilioVideo.connect() attempt auto-create.
+    // This handles accounts with "Auto-create Rooms" enabled in the Twilio console.
+  }
+}
+
+/**
  * Attempt to destroy the Twilio Video room identified by `channelId`.
  * Errors are logged but not re-thrown — a stale room is recoverable;
  * blocking the last-leave flow on a Twilio API error is not acceptable.
@@ -165,6 +193,10 @@ export const voiceService = {
         timestamp: new Date().toISOString(),
       })
       .catch((err: unknown) => console.error('[VoiceService] publish USER_JOINED_VOICE error:', err));
+
+    if (!isMockMode()) {
+      await ensureTwilioRoom(channelId);
+    }
 
     const token = voiceService.generateToken(userId, channelId);
     console.log(
