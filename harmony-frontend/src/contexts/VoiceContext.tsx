@@ -304,10 +304,15 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        // Log full error object so Twilio error codes are visible in the browser console.
         console.error('[VoiceContext] joinChannel error:', message, err);
-        console.error('[VoiceContext] joinChannel error detail:', JSON.stringify(err, Object.getOwnPropertyNames(err as object)));
-        showToast({ message: 'Could not connect to voice channel. Please try again.', type: 'error' });
+        // Distinguish getUserMedia device errors from Twilio server errors for actionable toasts.
+        const isDeviceError =
+          err instanceof DOMException &&
+          (err.name === 'NotFoundError' || err.name === 'NotReadableError' || err.name === 'OverconstrainedError');
+        const toastMessage = isDeviceError
+          ? 'Microphone not found. Check System Settings → Privacy & Security → Microphone and grant access to your browser.'
+          : 'Could not connect to voice channel. Please try again.';
+        showToast({ message: toastMessage, type: 'error' });
         // If voice.join succeeded (refs were written) but Twilio connect failed,
         // notify the backend so Redis state is not left stale.
         if (connectedChannelIdRef.current) {
