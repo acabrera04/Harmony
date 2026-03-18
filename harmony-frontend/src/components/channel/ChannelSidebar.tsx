@@ -341,7 +341,7 @@ export function ChannelSidebar({
                         const channelParticipants = allChannelParticipants[channel.id] ?? [];
                         if (channelParticipants.length === 0) return null;
                         return (
-                          <ul className='mb-1 ml-2 list-none space-y-0.5'>
+                          <ul className='mb-1 ml-8 mt-1 list-none space-y-0.5'>
                             {channelParticipants.map(p => {
                               const member = memberMap.get(p.userId);
                               const displayName =
@@ -354,7 +354,7 @@ export function ChannelSidebar({
                               return (
                                 <li
                                   key={p.userId}
-                                  className='flex items-center gap-1.5 rounded px-2 py-0.5 text-xs text-gray-400'
+                                  className='flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs text-gray-400'
                                 >
                                   {/* Avatar with green ring when speaking */}
                                   <div
