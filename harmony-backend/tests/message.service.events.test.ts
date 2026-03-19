@@ -30,6 +30,8 @@ const mockMessageUpdateMany = jest.fn();
 const mockMessageFindUnique = jest.fn();
 const mockChannelFindUnique = jest.fn();
 
+const mockExecuteRaw = jest.fn().mockResolvedValue(1);
+
 // $transaction: execute the callback with the same mock client
 const mockTransaction = jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
   cb({
@@ -42,6 +44,7 @@ const mockTransaction = jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
     channel: {
       findUnique: mockChannelFindUnique,
     },
+    $executeRaw: mockExecuteRaw,
   }),
 );
 

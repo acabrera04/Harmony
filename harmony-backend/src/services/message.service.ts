@@ -273,12 +273,15 @@ export const messageService = {
         data: { isDeleted: true },
       });
 
-      // If this message is a reply, decrement the parent's replyCount (floor 0)
+      // If this message is a reply, decrement the parent's replyCount floored at 0.
+      // Prisma's { decrement: 1 } maps to raw subtraction with no floor; use
+      // GREATEST(..., 0) to guard against negative counts from races or anomalies.
       if (message.parentMessageId) {
-        await tx.message.update({
-          where: { id: message.parentMessageId },
-          data: { replyCount: { decrement: 1 } },
-        });
+        await tx.$executeRaw`
+          UPDATE "messages"
+          SET reply_count = GREATEST(reply_count - 1, 0)
+          WHERE id = ${message.parentMessageId}::uuid
+        `;
       }
 
       // Cascade soft-delete any non-deleted replies and reset the denormalised counter
