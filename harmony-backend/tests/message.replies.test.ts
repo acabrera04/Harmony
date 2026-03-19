@@ -228,6 +228,25 @@ describe('messageService.getThreadMessages', () => {
     ).rejects.toThrow(TRPCError);
   });
 
+  it('throws NOT_FOUND when parent message is soft-deleted', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Will be deleted before thread fetch',
+    });
+
+    await messageService.deleteMessage({ messageId: parent.id, actorId: authorId, serverId });
+
+    await expect(
+      messageService.getThreadMessages({
+        parentMessageId: parent.id,
+        channelId,
+        serverId,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
   it('throws BAD_REQUEST when parentMessageId is itself a reply', async () => {
     const parent = await messageService.sendMessage({
       serverId,
@@ -277,6 +296,38 @@ describe('deleteMessage cascade to replies', () => {
     expect(afterCreate?.replyCount).toBe(1);
 
     await messageService.deleteMessage({ messageId: reply.id, actorId: authorId, serverId });
+
+    const afterDelete = await prisma.message.findUnique({ where: { id: parent.id } });
+    expect(afterDelete?.replyCount).toBe(0);
+  });
+
+  it('resets replyCount to 0 on parent when cascade-deleting', async () => {
+    const parent = await messageService.sendMessage({
+      serverId,
+      channelId,
+      authorId,
+      content: 'Cascade count parent',
+    });
+
+    await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'R1',
+    });
+    await messageService.createReply({
+      parentMessageId: parent.id,
+      channelId,
+      serverId,
+      authorId,
+      content: 'R2',
+    });
+
+    const beforeDelete = await prisma.message.findUnique({ where: { id: parent.id } });
+    expect(beforeDelete?.replyCount).toBe(2);
+
+    await messageService.deleteMessage({ messageId: parent.id, actorId: authorId, serverId });
 
     const afterDelete = await prisma.message.findUnique({ where: { id: parent.id } });
     expect(afterDelete?.replyCount).toBe(0);

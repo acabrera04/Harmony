@@ -281,10 +281,14 @@ export const messageService = {
         });
       }
 
-      // Cascade soft-delete any non-deleted replies to this message
+      // Cascade soft-delete any non-deleted replies and reset the denormalised counter
       await tx.message.updateMany({
         where: { parentMessageId: messageId, isDeleted: false },
         data: { isDeleted: true },
+      });
+      await tx.message.update({
+        where: { id: messageId },
+        data: { replyCount: 0 },
       });
     });
 
@@ -470,7 +474,11 @@ export const messageService = {
     return cacheService.getOrRevalidate(
       cacheKey,
       async () => {
-        // Verify parent exists in this channel/server
+        // Validate the parent on every cache miss. This costs a serial DB round-trip,
+        // but it is sound: deleteMessage invalidates `thread:msgs:<messageId>:*`, so a
+        // soft-deleted parent's cache entries are always busted before this guard could
+        // serve a stale thread. The check is therefore redundant in the happy path and
+        // only fires for genuinely invalid requests.
         const parent = await prisma.message.findUnique({
           where: { id: parentMessageId },
           include: { channel: { select: { id: true, serverId: true } } },

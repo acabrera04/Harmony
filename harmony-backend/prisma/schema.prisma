@@ -171,7 +171,7 @@ model Message {
   author      User        @relation(fields: [authorId], references: [id])
   attachments Attachment[]
   /// The message this is a reply to (null for top-level messages).
-  parent      Message?    @relation("MessageReplies", fields: [parentMessageId], references: [id])
+  parent      Message?    @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   /// Direct replies to this message.
   replies     Message[]   @relation("MessageReplies")
 
