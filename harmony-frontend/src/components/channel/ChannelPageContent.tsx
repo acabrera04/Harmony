@@ -63,7 +63,7 @@ export async function ChannelPageContent({
   );
 
   return (
-    <VisibilityGuard visibility={channel.visibility} isLoading={false}>
+    <VisibilityGuard visibility={channel.visibility} isLoading={false} serverOwnerId={server.ownerId}>
       {shell}
     </VisibilityGuard>
   );

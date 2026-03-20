@@ -257,16 +257,21 @@ export function HarmonyShell({
       setLocalChannels(prev => prev.map(c => (c.id === channel.id ? channel : c)));
 
       // If the current user is viewing this channel and it just became PRIVATE,
-      // redirect non-owner members to the server root so VisibilityGuard can
-      // gate access on re-render. Server owners are not redirected because they
-      // may have intentionally made the change and still need access.
+      // redirect non-admin members to the server root so VisibilityGuard can
+      // gate access on re-render. Server owners and admins are not redirected
+      // because they retain access to PRIVATE channels.
       // Note: useServerEvents is only enabled for authenticated users, so this
       // callback only fires for authenticated sessions.
+      //
+      // checkIsAdmin(ownerId) covers the server owner and system admins.
+      // checkIsAdmin() (no arg) covers users whose server-scoped role is 'owner'
+      // or 'admin' — non-owner admins whose role is populated from the member list.
+      const userIsAdminOrOwner = checkIsAdmin(currentServer.ownerId) || checkIsAdmin();
       if (
         channel.id === currentChannel.id &&
         oldVisibility !== ChannelVisibility.PRIVATE &&
         channel.visibility === ChannelVisibility.PRIVATE &&
-        !checkIsAdmin(currentServer.ownerId)
+        !userIsAdminOrOwner
       ) {
         router.push(`${basePath}/${currentServer.slug}`);
       }

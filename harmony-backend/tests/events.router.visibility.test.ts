@@ -236,6 +236,67 @@ describe('GET /api/events/server/:serverId — channel:visibility-changed event'
     expect(body).toContain('PRIVATE');
   });
 
+  it('does not emit channel:visibility-changed when channel no longer exists (race condition)', async () => {
+    // Covers the `if (!channel) return;` guard in the VISIBILITY_CHANGED handler.
+    // This race can occur when a channel is deleted between the VISIBILITY_CHANGED
+    // event being published and the handler fetching the channel from the DB.
+    let visibilityChangedHandler: ((payload: unknown) => Promise<void>) | null = null;
+
+    mockSubscribe.mockImplementation(
+      (channel: string, handler: (payload: unknown) => Promise<void>) => {
+        if (channel === 'harmony:VISIBILITY_CHANGED') {
+          visibilityChangedHandler = handler;
+        }
+        return { unsubscribe: jest.fn(), ready: Promise.resolve() };
+      },
+    );
+
+    const addr = httpServer.address();
+    if (!addr || typeof addr === 'string') throw new Error('Bad address');
+    const port = (addr as { port: number }).port;
+
+    const chunks: string[] = [];
+    await new Promise<void>((resolve, reject) => {
+      const req = http.get(
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}?token=${VALID_TOKEN}`,
+        },
+        (res) => {
+          res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+
+          setTimeout(async () => {
+            // Simulate channel deleted between event publish and handler execution
+            (prisma.channel.findUnique as jest.Mock).mockResolvedValueOnce(null);
+
+            if (visibilityChangedHandler) {
+              await visibilityChangedHandler({
+                channelId: CHANNEL_ID,
+                serverId: VALID_SERVER_ID,
+                oldVisibility: 'PUBLIC_INDEXABLE',
+                newVisibility: 'PRIVATE',
+                actorId: 'test-user-id',
+                timestamp: new Date().toISOString(),
+              });
+            }
+
+            setTimeout(() => {
+              res.destroy();
+              resolve();
+            }, 50);
+          }, 50);
+
+          res.on('error', reject);
+        },
+      );
+      req.on('error', reject);
+    });
+
+    const body = chunks.join('');
+    expect(body).not.toContain('event: channel:visibility-changed');
+  });
+
   it('does not emit channel:visibility-changed for a different server', async () => {
     let visibilityChangedHandler: ((payload: unknown) => Promise<void>) | null = null;
 
