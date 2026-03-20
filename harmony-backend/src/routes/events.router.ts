@@ -348,15 +348,19 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
       try {
         const user = await prisma.user.findUnique({
           where: { id: payload.userId },
-          select: { id: true, username: true, displayName: true, avatarUrl: true, status: true },
+          select: { id: true, username: true, displayName: true, avatarUrl: true, status: true, publicProfile: true },
         });
         if (!user) return;
 
+        // Respect the publicProfile privacy flag — consistent with userService.getUser().
+        // Users who have opted out of public profile display appear as Anonymous with no avatar.
+        // id and status are still emitted; they do not reveal identity.
+        const isPublic = user.publicProfile;
         sendEvent(res, 'member:joined', {
           id: user.id,
-          username: user.username,
-          displayName: user.displayName,
-          avatar: user.avatarUrl ?? undefined,
+          username: isPublic ? user.username : 'Anonymous',
+          displayName: isPublic ? user.displayName : undefined,
+          avatar: isPublic ? (user.avatarUrl ?? undefined) : undefined,
           // Cast backend RoleTypeValue (e.g. 'MEMBER') to frontend UserRole (e.g. 'member')
           role: payload.role.toLowerCase(),
           // Cast DB UserStatus (e.g. 'ONLINE') to frontend UserStatus (e.g. 'online')
