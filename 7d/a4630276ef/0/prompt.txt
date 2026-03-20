@@ -1,0 +1,5 @@
+What are we missing from the requirements of @"P4: Backend Development | CS 485 AI-Assisted Software Engineering (Sp26).html"
+
+---
+
+In a new branch, update @docs/dev-spec-channel-visibility-toggle.md and @docs/dev-spec-guest-public-channel-view.mdto use mermaid diagrams and to ensure unified strucutes with the backend architecture document

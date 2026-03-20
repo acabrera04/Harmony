@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.5.0",
+  "checkpoint_id": "7da4630276ef",
+  "session_id": "5856b47f-b181-4fab-9c1c-47c8fb53c0b2",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-20T19:55:40.706875Z",
+  "branch": "docs/p4-mermaid-diagrams",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/dev-spec-channel-visibility-toggle.md",
+    "docs/dev-spec-guest-public-channel-view.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-4-6",
+  "turn_id": "a1b8b68308b4",
+  "token_usage": {
+    "input_tokens": 32,
+    "cache_creation_tokens": 115408,
+    "cache_read_tokens": 2149963,
+    "output_tokens": 12157,
+    "api_call_count": 28
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-20T19:55:40.376458Z",
+    "agent_lines": 783,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 783,
+    "agent_percentage": 100
+  }
+}

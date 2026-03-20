@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.5.0",
+  "checkpoint_id": "7da4630276ef",
+  "strategy": "manual-commit",
+  "branch": "docs/p4-mermaid-diagrams",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/dev-spec-channel-visibility-toggle.md",
+    "docs/dev-spec-guest-public-channel-view.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7d/a4630276ef/0/metadata.json",
+      "transcript": "/7d/a4630276ef/0/full.jsonl",
+      "content_hash": "/7d/a4630276ef/0/content_hash.txt",
+      "prompt": "/7d/a4630276ef/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 32,
+    "cache_creation_tokens": 115408,
+    "cache_read_tokens": 2149963,
+    "output_tokens": 12157,
+    "api_call_count": 28
+  }
+}
