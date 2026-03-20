@@ -137,10 +137,16 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
 
   // ── Fetch participant lists for all voice channels on mount / server change ──
   // This populates the sidebar before the user has joined any channel.
+  // Stable string key so text-channel mutations don't trigger a re-fetch here.
+  // voiceChannelIds itself changes reference on every setLocalChannels call in HarmonyShell,
+  // but the IDs only change when a voice channel is actually added or removed.
+  const voiceChannelIdsKey = voiceChannelIds.join(',');
+
   useEffect(() => {
-    if (!serverId || voiceChannelIds.length === 0) return;
+    if (!serverId || !voiceChannelIdsKey) return;
+    const ids = voiceChannelIdsKey.split(',');
     void Promise.all(
-      voiceChannelIds.map(channelId =>
+      ids.map(channelId =>
         apiClient
           .trpcQuery<VoiceParticipant[]>('voice.getParticipants', { serverId, channelId })
           .then(ps => setChannelParticipants(prev => ({ ...prev, [channelId]: ps })))
@@ -152,7 +158,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
           }),
       ),
     );
-  }, [serverId, voiceChannelIds]);
+  }, [serverId, voiceChannelIdsKey]);
 
   const resetVoiceState = useCallback(() => {
     // Detach all remote audio elements before clearing other state.
@@ -261,7 +267,6 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
 
         // Dynamic import keeps the Twilio SDK out of SSR.
         const TwilioVideo = await import('twilio-video');
-        console.log(`[VoiceContext] TwilioVideo.connect — room=${channelId} tokenPrefix=${token.slice(0, 20)}...`);
         const room = await TwilioVideo.connect(token, {
           name: channelId,
           audio: true,

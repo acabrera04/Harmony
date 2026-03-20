@@ -211,141 +211,141 @@ export function HarmonyShell({
   return (
     <VoiceProvider serverId={currentServer.id} voiceChannelIds={voiceChannelIds}>
       <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
-      {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
-      <a
-        href='#main-content'
-        className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#5865f2] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none'
-      >
-        Skip to content
-      </a>
+        {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
+        <a
+          href='#main-content'
+          className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#5865f2] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none'
+        >
+          Skip to content
+        </a>
 
-      {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
-      <ServerRail
-        servers={localServers}
-        allChannels={allChannels}
-        currentServerId={currentServer.id}
-        basePath={basePath}
-        isMobileVisible={isMenuOpen}
-        onBrowseServers={isAuthenticated ? () => setIsBrowseServersOpen(true) : undefined}
-        onAddServer={
-          isAuthLoading
-            ? undefined
-            : () => {
-                if (!isAuthenticated) {
-                  router.push('/auth/login');
-                  return;
+        {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
+        <ServerRail
+          servers={localServers}
+          allChannels={allChannels}
+          currentServerId={currentServer.id}
+          basePath={basePath}
+          isMobileVisible={isMenuOpen}
+          onBrowseServers={isAuthenticated ? () => setIsBrowseServersOpen(true) : undefined}
+          onAddServer={
+            isAuthLoading
+              ? undefined
+              : () => {
+                  if (!isAuthenticated) {
+                    router.push('/auth/login');
+                    return;
+                  }
+                  setIsCreateServerOpen(true);
                 }
-                setIsCreateServerOpen(true);
-              }
-        }
-      />
-
-      {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
-      <ChannelSidebar
-        server={currentServer}
-        channels={localChannels}
-        currentChannelId={currentChannel.id}
-        currentUser={currentUser}
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        basePath={basePath}
-        isAuthenticated={isAuthenticated}
-        serverId={currentServer.id}
-        members={members}
-        onCreateChannel={defaultType => {
-          setCreateChannelDefaultType(defaultType);
-          setIsCreateChannelOpen(true);
-        }}
-      />
-
-      {/* 3. Main column */}
-      <main
-        id='main-content'
-        className='flex flex-1 flex-col overflow-hidden'
-        aria-label={`${currentChannel.name} channel`}
-        tabIndex={-1}
-      >
-        <TopBar
-          channel={currentChannel}
-          serverSlug={currentServer.slug}
-          isAdmin={checkIsAdmin(currentServer.ownerId)}
-          isMembersOpen={isMembersOpen}
-          onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
-          onSearchOpen={() => setIsSearchOpen(true)}
-          isMenuOpen={isMenuOpen}
-          onMenuToggle={() => setIsMenuOpen(v => !v)}
-        />
-
-        <div className='flex flex-1 overflow-hidden'>
-          <div className={cn('flex flex-1 flex-col overflow-hidden', BG.primary)}>
-            <MessageList
-              key={currentChannel.id}
-              channel={currentChannel}
-              messages={localMessages}
-            />
-            <MessageInput
-              channelId={currentChannel.id}
-              channelName={currentChannel.name}
-              serverId={currentServer.id}
-              isReadOnly={currentUser.role === 'guest'}
-              onMessageSent={handleMessageSent}
-            />
-            {!isAuthLoading && !isAuthenticated && (
-              <GuestPromoBanner
-                serverName={currentServer.name}
-                memberCount={currentServer.memberCount ?? members.length}
-              />
-            )}
-          </div>
-          <MembersSidebar
-            members={members}
-            isOpen={isMembersOpen}
-            onClose={() => setIsMembersOpen(false)}
-          />
-        </div>
-      </main>
-
-      <CreateServerModal
-        isOpen={isCreateServerOpen}
-        onClose={() => setIsCreateServerOpen(false)}
-        onCreated={handleServerCreated}
-      />
-
-      <BrowseServersModal
-        isOpen={isBrowseServersOpen}
-        onClose={() => setIsBrowseServersOpen(false)}
-        joinedServerIds={new Set(localServers.map(s => s.id))}
-        defaultChannelByServerId={defaultChannelByServerId}
-        basePath={basePath}
-      />
-
-      <SearchModal
-        messages={localMessages}
-        channelName={currentChannel.name}
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
-
-      {isCreateChannelOpen && (
-        <CreateChannelModal
-          serverId={currentServer.id}
-          serverSlug={currentServer.slug}
-          existingChannels={localChannels}
-          defaultType={createChannelDefaultType}
-          onCreated={newChannel =>
-            setLocalChannels(prev => {
-              // Insert before voice channels so text/announcement channels stay grouped correctly.
-              const insertIdx =
-                newChannel.type === ChannelType.VOICE
-                  ? prev.length
-                  : prev.findIndex(c => c.type === ChannelType.VOICE);
-              const at = insertIdx === -1 ? prev.length : insertIdx;
-              return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
-            })
           }
-          onClose={() => setIsCreateChannelOpen(false)}
         />
-      )}
+
+        {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
+        <ChannelSidebar
+          server={currentServer}
+          channels={localChannels}
+          currentChannelId={currentChannel.id}
+          currentUser={currentUser}
+          isOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          basePath={basePath}
+          isAuthenticated={isAuthenticated}
+          serverId={currentServer.id}
+          members={members}
+          onCreateChannel={defaultType => {
+            setCreateChannelDefaultType(defaultType);
+            setIsCreateChannelOpen(true);
+          }}
+        />
+
+        {/* 3. Main column */}
+        <main
+          id='main-content'
+          className='flex flex-1 flex-col overflow-hidden'
+          aria-label={`${currentChannel.name} channel`}
+          tabIndex={-1}
+        >
+          <TopBar
+            channel={currentChannel}
+            serverSlug={currentServer.slug}
+            isAdmin={checkIsAdmin(currentServer.ownerId)}
+            isMembersOpen={isMembersOpen}
+            onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
+            onSearchOpen={() => setIsSearchOpen(true)}
+            isMenuOpen={isMenuOpen}
+            onMenuToggle={() => setIsMenuOpen(v => !v)}
+          />
+
+          <div className='flex flex-1 overflow-hidden'>
+            <div className={cn('flex flex-1 flex-col overflow-hidden', BG.primary)}>
+              <MessageList
+                key={currentChannel.id}
+                channel={currentChannel}
+                messages={localMessages}
+              />
+              <MessageInput
+                channelId={currentChannel.id}
+                channelName={currentChannel.name}
+                serverId={currentServer.id}
+                isReadOnly={currentUser.role === 'guest'}
+                onMessageSent={handleMessageSent}
+              />
+              {!isAuthLoading && !isAuthenticated && (
+                <GuestPromoBanner
+                  serverName={currentServer.name}
+                  memberCount={currentServer.memberCount ?? members.length}
+                />
+              )}
+            </div>
+            <MembersSidebar
+              members={members}
+              isOpen={isMembersOpen}
+              onClose={() => setIsMembersOpen(false)}
+            />
+          </div>
+        </main>
+
+        <CreateServerModal
+          isOpen={isCreateServerOpen}
+          onClose={() => setIsCreateServerOpen(false)}
+          onCreated={handleServerCreated}
+        />
+
+        <BrowseServersModal
+          isOpen={isBrowseServersOpen}
+          onClose={() => setIsBrowseServersOpen(false)}
+          joinedServerIds={new Set(localServers.map(s => s.id))}
+          defaultChannelByServerId={defaultChannelByServerId}
+          basePath={basePath}
+        />
+
+        <SearchModal
+          messages={localMessages}
+          channelName={currentChannel.name}
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+        />
+
+        {isCreateChannelOpen && (
+          <CreateChannelModal
+            serverId={currentServer.id}
+            serverSlug={currentServer.slug}
+            existingChannels={localChannels}
+            defaultType={createChannelDefaultType}
+            onCreated={newChannel =>
+              setLocalChannels(prev => {
+                // Insert before voice channels so text/announcement channels stay grouped correctly.
+                const insertIdx =
+                  newChannel.type === ChannelType.VOICE
+                    ? prev.length
+                    : prev.findIndex(c => c.type === ChannelType.VOICE);
+                const at = insertIdx === -1 ? prev.length : insertIdx;
+                return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
+              })
+            }
+            onClose={() => setIsCreateChannelOpen(false)}
+          />
+        )}
       </div>
     </VoiceProvider>
   );

@@ -66,11 +66,9 @@ async function ensureTwilioRoom(channelId: string): Promise<void> {
       { accountSid: process.env.TWILIO_ACCOUNT_SID },
     );
     await client.video.v1.rooms.create({ uniqueName: channelId });
-    console.log(`[VoiceService] Twilio room created: ${channelId}`);
   } catch (err: unknown) {
     const code = (err as { code?: number }).code;
     if (code === 53113) {
-      console.log(`[VoiceService] Twilio room already exists: ${channelId}`);
       return;
     }
     console.error(`[VoiceService] ensureTwilioRoom error (code=${code}):`, (err as Error).message);
@@ -199,9 +197,6 @@ export const voiceService = {
     }
 
     const token = voiceService.generateToken(userId, channelId);
-    console.log(
-      `[VoiceService] join — userId=${userId} channelId=${channelId} mockMode=${isMockMode()} tokenPrefix=${token.slice(0, 20)}...`,
-    );
     const participants = await voiceService.getParticipants(channelId);
 
     return { token, participants };
