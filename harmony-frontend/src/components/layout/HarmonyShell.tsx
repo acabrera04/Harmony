@@ -117,6 +117,14 @@ export function HarmonyShell({
     setPrevChannelsProp(channels);
     setLocalChannels(channels);
   }
+  // Local members state so join/leave/status events update the sidebar without reload.
+  const [localMembers, setLocalMembers] = useState<User[]>(members);
+  // Reset when the members prop changes (server navigation or SSR revalidation).
+  const [prevMembersProp, setPrevMembersProp] = useState(members);
+  if (prevMembersProp !== members) {
+    setPrevMembersProp(members);
+    setLocalMembers(members);
+  }
   // Channel creation modal state.
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [createChannelDefaultType, setCreateChannelDefaultType] = useState<ChannelType>(
@@ -227,11 +235,32 @@ export function HarmonyShell({
     [currentChannel.id, currentServer.slug, basePath, router],
   );
 
+  // ── Real-time member list updates ─────────────────────────────────────────
+
+  const handleMemberJoined = useCallback((user: User) => {
+    setLocalMembers(prev => {
+      // Dedup: ignore if the user is already in the list
+      if (prev.some(m => m.id === user.id)) return prev;
+      return [...prev, user];
+    });
+  }, []);
+
+  const handleMemberLeft = useCallback((userId: string) => {
+    setLocalMembers(prev => prev.filter(m => m.id !== userId));
+  }, []);
+
+  const handleMemberStatusChanged = useCallback(({ id, status }: { id: string; status: string }) => {
+    setLocalMembers(prev => prev.map(m => (m.id === id ? { ...m, status } : m)));
+  }, []);
+
   useServerEvents({
     serverId: currentServer.id,
     onChannelCreated: handleChannelCreated,
     onChannelUpdated: handleChannelUpdated,
     onChannelDeleted: handleChannelDeleted,
+    onMemberJoined: handleMemberJoined,
+    onMemberLeft: handleMemberLeft,
+    onMemberStatusChanged: handleMemberStatusChanged,
     enabled: isAuthenticated,
   });
 
@@ -328,12 +357,12 @@ export function HarmonyShell({
             {!isAuthLoading && !isAuthenticated && (
               <GuestPromoBanner
                 serverName={currentServer.name}
-                memberCount={currentServer.memberCount ?? members.length}
+                memberCount={currentServer.memberCount ?? localMembers.length}
               />
             )}
           </div>
           <MembersSidebar
-            members={members}
+            members={localMembers}
             isOpen={isMembersOpen}
             onClose={() => setIsMembersOpen(false)}
           />

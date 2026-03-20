@@ -1,7 +1,11 @@
 /**
- * useServerEvents — Issue #185
+ * useServerEvents — Issue #185 / #186 / #231
  *
- * Subscribes to real-time SSE events for a server's channel list.
+ * Subscribes to real-time SSE events for a server.
+ * Handles channel list updates (created/updated/deleted), member list
+ * updates (joined/left), and member status changes over the single
+ * /api/events/server/:serverId endpoint.
+ *
  * Uses the native EventSource API (no library needed).
  *
  * Usage:
@@ -10,6 +14,11 @@
  *     onChannelCreated: (ch) => setChannels(prev => [...prev, ch]),
  *     onChannelUpdated: (ch) => setChannels(prev => prev.map(c => c.id === ch.id ? ch : c)),
  *     onChannelDeleted: (id) => setChannels(prev => prev.filter(c => c.id !== id)),
+ *     onMemberJoined: (user) => setMembers(prev => [...prev, user]),
+ *     onMemberLeft: (userId) => setMembers(prev => prev.filter(m => m.id !== userId)),
+ *     onMemberStatusChanged: ({ id, status }) => setMembers(prev =>
+ *       prev.map(m => m.id === id ? { ...m, status } : m)
+ *     ),
  *   });
  */
 
@@ -17,6 +26,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { Channel } from '@/types/channel';
+import type { User } from '@/types/user';
 import { getAccessToken } from '@/lib/api-client';
 
 export interface UseServerEventsOptions {
@@ -24,6 +34,12 @@ export interface UseServerEventsOptions {
   onChannelCreated: (channel: Channel) => void;
   onChannelUpdated: (channel: Channel) => void;
   onChannelDeleted: (channelId: string) => void;
+  /** Called when a member joins the server. Optional. */
+  onMemberJoined?: (user: User) => void;
+  /** Called with the userId when a member leaves or is kicked. Optional. */
+  onMemberLeft?: (userId: string) => void;
+  /** Called when a member's presence status changes (online/idle/offline). Optional. */
+  onMemberStatusChanged?: (data: { id: string; status: string }) => void;
   /** Set to false to disable the connection (e.g. for unauthenticated guests). Defaults to true. */
   enabled?: boolean;
 }
@@ -33,17 +49,26 @@ export function useServerEvents({
   onChannelCreated,
   onChannelUpdated,
   onChannelDeleted,
+  onMemberJoined,
+  onMemberLeft,
+  onMemberStatusChanged,
   enabled = true,
 }: UseServerEventsOptions): void {
   // Keep stable references to callbacks so the effect doesn't re-run on every render.
   const onCreatedRef = useRef(onChannelCreated);
   const onUpdatedRef = useRef(onChannelUpdated);
   const onDeletedRef = useRef(onChannelDeleted);
+  const onMemberJoinedRef = useRef(onMemberJoined);
+  const onMemberLeftRef = useRef(onMemberLeft);
+  const onMemberStatusChangedRef = useRef(onMemberStatusChanged);
 
   useLayoutEffect(() => {
     onCreatedRef.current = onChannelCreated;
     onUpdatedRef.current = onChannelUpdated;
     onDeletedRef.current = onChannelDeleted;
+    onMemberJoinedRef.current = onMemberJoined;
+    onMemberLeftRef.current = onMemberLeft;
+    onMemberStatusChangedRef.current = onMemberStatusChanged;
   });
 
   useEffect(() => {
@@ -83,9 +108,39 @@ export function useServerEvents({
       }
     };
 
+    const handleMemberJoined = (event: MessageEvent<string>) => {
+      try {
+        const user = JSON.parse(event.data) as User;
+        onMemberJoinedRef.current?.(user);
+      } catch {
+        // Ignore malformed payloads
+      }
+    };
+
+    const handleMemberLeft = (event: MessageEvent<string>) => {
+      try {
+        const payload = JSON.parse(event.data) as { userId: string };
+        onMemberLeftRef.current?.(payload.userId);
+      } catch {
+        // Ignore malformed payloads
+      }
+    };
+
+    const handleMemberStatusChanged = (event: MessageEvent<string>) => {
+      try {
+        const payload = JSON.parse(event.data) as { id: string; status: string };
+        onMemberStatusChangedRef.current?.(payload);
+      } catch {
+        // Ignore malformed payloads
+      }
+    };
+
     es.addEventListener('channel:created', handleCreated);
     es.addEventListener('channel:updated', handleUpdated);
     es.addEventListener('channel:deleted', handleDeleted);
+    es.addEventListener('member:joined', handleMemberJoined);
+    es.addEventListener('member:left', handleMemberLeft);
+    es.addEventListener('member:statusChanged', handleMemberStatusChanged);
 
     let everOpened = false;
 
@@ -103,6 +158,9 @@ export function useServerEvents({
       es.removeEventListener('channel:created', handleCreated);
       es.removeEventListener('channel:updated', handleUpdated);
       es.removeEventListener('channel:deleted', handleDeleted);
+      es.removeEventListener('member:joined', handleMemberJoined);
+      es.removeEventListener('member:left', handleMemberLeft);
+      es.removeEventListener('member:statusChanged', handleMemberStatusChanged);
       es.close();
     };
   }, [serverId, enabled]);

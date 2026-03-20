@@ -26,6 +26,7 @@ import type {
   ChannelUpdatedPayload,
   ChannelDeletedPayload,
   ServerUpdatedPayload,
+  UserStatusChangedPayload,
 } from '../events/eventTypes';
 
 export const eventsRouter = Router();
@@ -334,6 +335,18 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     },
   );
 
+  // ── Subscribe to member status change events ──────────────────────────────
+  // Status reflects presence (ONLINE/IDLE/OFFLINE) not identity, so it is emitted
+  // regardless of the user's publicProfile setting — consistent with the rationale
+  // documented in PR #202 for member join/leave events.
+  const { unsubscribe: unsubStatusChanged } = eventBus.subscribe(
+    EventChannels.USER_STATUS_CHANGED,
+    (payload: UserStatusChangedPayload) => {
+      if (payload.serverId !== serverId) return;
+      sendEvent(res, 'member:statusChanged', { id: payload.userId, status: payload.status });
+    },
+  );
+
   // ── Heartbeat ────────────────────────────────────────────────────────────
   const heartbeat = setInterval(() => {
     res.write(':\n\n');
@@ -345,5 +358,6 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     unsubChannelCreated();
     unsubChannelUpdated();
     unsubChannelDeleted();
+    unsubStatusChanged();
   });
 });
