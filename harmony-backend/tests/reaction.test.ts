@@ -94,6 +94,7 @@ describe('reactionService.addReaction', () => {
   it('adds a reaction successfully', async () => {
     const reaction = await reactionService.addReaction({
       messageId,
+      channelId,
       userId: authorId,
       emoji: '👍',
       serverId,
@@ -109,6 +110,7 @@ describe('reactionService.addReaction', () => {
     await expect(
       reactionService.addReaction({
         messageId,
+        channelId,
         userId: authorId,
         emoji: '👍',
         serverId,
@@ -124,6 +126,7 @@ describe('reactionService.removeReaction', () => {
     // Ensure the other user has a reaction to remove
     await reactionService.addReaction({
       messageId,
+      channelId,
       userId: otherUserId,
       emoji: '❤️',
       serverId,
@@ -134,6 +137,7 @@ describe('reactionService.removeReaction', () => {
     await expect(
       reactionService.removeReaction({
         messageId,
+        channelId,
         userId: otherUserId,
         emoji: '❤️',
         serverId,
@@ -157,6 +161,7 @@ describe('reactionService.removeReaction', () => {
     await expect(
       reactionService.removeReaction({
         messageId,
+        channelId,
         userId: otherUserId, // does NOT own the 👍 reaction
         emoji: '👍',
         serverId,
@@ -173,12 +178,13 @@ describe('reactionService.getMessageReactions', () => {
     // Add a second unique reaction to verify grouping.
     await reactionService.addReaction({
       messageId,
+      channelId,
       userId: otherUserId,
       emoji: '👍',
       serverId,
     });
 
-    const groups = await reactionService.getMessageReactions({ messageId, serverId });
+    const groups = await reactionService.getMessageReactions({ messageId, channelId, serverId });
 
     expect(Array.isArray(groups)).toBe(true);
 

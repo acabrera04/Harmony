@@ -16,6 +16,7 @@ export const reactionRouter = router({
     .mutation(({ input, ctx }) =>
       reactionService.addReaction({
         messageId: input.messageId,
+        channelId: input.channelId,
         userId: ctx.userId,
         emoji: input.emoji,
         serverId: input.serverId,
@@ -35,6 +36,7 @@ export const reactionRouter = router({
     .mutation(({ input, ctx }) =>
       reactionService.removeReaction({
         messageId: input.messageId,
+        channelId: input.channelId,
         userId: ctx.userId,
         emoji: input.emoji,
         serverId: input.serverId,
@@ -53,6 +55,7 @@ export const reactionRouter = router({
     .query(({ input }) =>
       reactionService.getMessageReactions({
         messageId: input.messageId,
+        channelId: input.channelId,
         serverId: input.serverId,
       }),
     ),

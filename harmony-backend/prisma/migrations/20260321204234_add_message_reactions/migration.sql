@@ -1,15 +1,6 @@
 -- DropForeignKey
 ALTER TABLE "messages" DROP CONSTRAINT "messages_parent_message_id_fkey";
 
--- DropIndex
-DROP INDEX "idx_messages_channel_time";
-
--- DropIndex
-DROP INDEX "idx_audit_actor";
-
--- DropIndex
-DROP INDEX "idx_audit_channel_time";
-
 -- CreateTable
 CREATE TABLE "message_reactions" (
     "id" UUID NOT NULL,

@@ -7,6 +7,7 @@ import { eventBus, EventChannels } from '../events/eventBus';
 
 export interface AddReactionInput {
   messageId: string;
+  channelId: string;
   userId: string;
   emoji: string;
   serverId: string;
@@ -14,6 +15,7 @@ export interface AddReactionInput {
 
 export interface RemoveReactionInput {
   messageId: string;
+  channelId: string;
   userId: string;
   emoji: string;
   serverId: string;
@@ -21,6 +23,7 @@ export interface RemoveReactionInput {
 
 export interface GetMessageReactionsInput {
   messageId: string;
+  channelId: string;
   serverId: string;
 }
 
@@ -33,17 +36,22 @@ export interface ReactionGroup {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Resolve a message (non-deleted) and assert its channel belongs to `serverId`.
- * Throws NOT_FOUND when the message does not exist, is deleted, or belongs to
- * a different server — collapsed to a single error code to prevent probing.
+ * Resolve a message (non-deleted) and assert it belongs to both the given
+ * channel and server. Throws NOT_FOUND for any mismatch to prevent callers
+ * from probing channel or server IDs across boundaries.
  */
-async function requireMessageInServer(messageId: string, serverId: string) {
+async function requireMessageInChannel(messageId: string, channelId: string, serverId: string) {
   const message = await prisma.message.findUnique({
     where: { id: messageId },
     include: { channel: { select: { serverId: true, id: true } } },
   });
-  if (!message || message.isDeleted || message.channel.serverId !== serverId) {
-    throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found in this server' });
+  if (
+    !message ||
+    message.isDeleted ||
+    message.channelId !== channelId ||
+    message.channel.serverId !== serverId
+  ) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found in this channel' });
   }
   return message;
 }
@@ -62,9 +70,9 @@ export const reactionService = {
    * has already reacted with the same emoji.
    */
   async addReaction(input: AddReactionInput) {
-    const { messageId, userId, emoji, serverId } = input;
+    const { messageId, channelId, userId, emoji, serverId } = input;
 
-    const message = await requireMessageInServer(messageId, serverId);
+    const message = await requireMessageInChannel(messageId, channelId, serverId);
 
     try {
       const reaction = await prisma.messageReaction.create({
@@ -106,9 +114,9 @@ export const reactionService = {
    * Only the reaction owner may remove it; throws FORBIDDEN otherwise.
    */
   async removeReaction(input: RemoveReactionInput) {
-    const { messageId, userId, emoji, serverId } = input;
+    const { messageId, channelId, userId, emoji, serverId } = input;
 
-    const message = await requireMessageInServer(messageId, serverId);
+    const message = await requireMessageInChannel(messageId, channelId, serverId);
 
     // Look up the caller's own reaction
     const callerReaction = await prisma.messageReaction.findUnique({
@@ -152,9 +160,9 @@ export const reactionService = {
    * Shape: `{ emoji, count, userIds[] }[]`
    */
   async getMessageReactions(input: GetMessageReactionsInput): Promise<ReactionGroup[]> {
-    const { messageId, serverId } = input;
+    const { messageId, channelId, serverId } = input;
 
-    await requireMessageInServer(messageId, serverId);
+    await requireMessageInChannel(messageId, channelId, serverId);
 
     const reactions = await prisma.messageReaction.findMany({
       where: { messageId },
