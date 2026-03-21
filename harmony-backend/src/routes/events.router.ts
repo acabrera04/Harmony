@@ -26,6 +26,9 @@ import type {
   ChannelUpdatedPayload,
   ChannelDeletedPayload,
   ServerUpdatedPayload,
+  MemberJoinedPayload,
+  MemberLeftPayload,
+  VisibilityChangedPayload,
 } from '../events/eventTypes';
 
 export const eventsRouter = Router();
@@ -334,6 +337,74 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     },
   );
 
+  // ── Subscribe to member join/leave events ─────────────────────────────────
+  // When a member joins, look up their profile and push the full user object so
+  // clients can add the new member to the sidebar without a page reload.
+
+  const { unsubscribe: unsubMemberJoined } = eventBus.subscribe(
+    EventChannels.MEMBER_JOINED,
+    async (payload: MemberJoinedPayload) => {
+      if (payload.serverId !== serverId) return;
+
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: { id: true, username: true, displayName: true, avatarUrl: true },
+        });
+        if (!user) return;
+
+        sendEvent(res, 'member:joined', {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          avatar: user.avatarUrl ?? undefined,
+          // Cast backend RoleTypeValue (e.g. 'MEMBER') to frontend UserRole (e.g. 'member')
+          role: payload.role.toLowerCase(),
+          status: 'online',
+        });
+      } catch {
+        // Silently ignore DB errors — the client will re-fetch on next load
+      }
+    },
+  );
+
+  const { unsubscribe: unsubMemberLeft } = eventBus.subscribe(
+    EventChannels.MEMBER_LEFT,
+    (payload: MemberLeftPayload) => {
+      if (payload.serverId !== serverId) return;
+      sendEvent(res, 'member:left', { userId: payload.userId });
+    },
+  );
+
+  // ── Subscribe to visibility change events ─────────────────────────────────
+  // When a channel's visibility changes, push the updated channel object so
+  // connected clients can update the sidebar badge and handle access revocation
+  // (PRIVATE channels become inaccessible to non-members) without a page reload.
+
+  const { unsubscribe: unsubVisibilityChanged } = eventBus.subscribe(
+    EventChannels.VISIBILITY_CHANGED,
+    async (payload: VisibilityChangedPayload) => {
+      if (payload.serverId !== serverId) return;
+
+      try {
+        const channel = await prisma.channel.findUnique({
+          where: { id: payload.channelId },
+          select: CHANNEL_SSE_SELECT,
+        });
+        if (!channel) return;
+
+        sendEvent(res, 'channel:visibility-changed', {
+          ...channel,
+          // Include old visibility so clients can detect access revocation
+          // (e.g. current user is viewing a channel that just became PRIVATE).
+          oldVisibility: payload.oldVisibility,
+        });
+      } catch {
+        // Silently ignore DB errors — the client will re-fetch on next load
+      }
+    },
+  );
+
   // ── Heartbeat ────────────────────────────────────────────────────────────
   const heartbeat = setInterval(() => {
     res.write(':\n\n');
@@ -345,5 +416,8 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     unsubChannelCreated();
     unsubChannelUpdated();
     unsubChannelDeleted();
+    unsubMemberJoined();
+    unsubMemberLeft();
+    unsubVisibilityChanged();
   });
 });

@@ -21,7 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChannelEvents } from '@/hooks/useChannelEvents';
 import { useServerEvents } from '@/hooks/useServerEvents';
 import { useServerListSync } from '@/hooks/useServerListSync';
-import { ChannelType } from '@/types';
+import { ChannelType, ChannelVisibility } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
 import type { Server, Channel, Message, User } from '@/types';
@@ -116,6 +116,14 @@ export function HarmonyShell({
   if (prevChannelsProp !== channels) {
     setPrevChannelsProp(channels);
     setLocalChannels(channels);
+  }
+  // Local members state so join/leave events update the sidebar without reload.
+  const [localMembers, setLocalMembers] = useState<User[]>(members);
+  // Reset when the members prop changes (server navigation or SSR revalidation).
+  const [prevMembersProp, setPrevMembersProp] = useState(members);
+  if (prevMembersProp !== members) {
+    setPrevMembersProp(members);
+    setLocalMembers(members);
   }
   // Channel creation modal state.
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
@@ -227,11 +235,64 @@ export function HarmonyShell({
     [currentChannel.id, currentServer.slug, basePath, router],
   );
 
+  // ── Real-time member list updates ─────────────────────────────────────────
+
+  const handleMemberJoined = useCallback((user: User) => {
+    setLocalMembers(prev => {
+      // Dedup: ignore if the user is already in the list
+      if (prev.some(m => m.id === user.id)) return prev;
+      return [...prev, user];
+    });
+  }, []);
+
+  const handleMemberLeft = useCallback((userId: string) => {
+    setLocalMembers(prev => prev.filter(m => m.id !== userId));
+  }, []);
+
+  // ── Real-time visibility changes ──────────────────────────────────────────
+
+  const handleChannelVisibilityChanged = useCallback(
+    (channel: Channel, oldVisibility: ChannelVisibility) => {
+      // Update the channel's visibility in the sidebar immediately.
+      setLocalChannels(prev => prev.map(c => (c.id === channel.id ? channel : c)));
+
+      // If the current user is viewing this channel and it just became PRIVATE,
+      // redirect non-admin members to the server root so VisibilityGuard can
+      // gate access on re-render. Server owners and admins are not redirected
+      // because they retain access to PRIVATE channels.
+      // Note: useServerEvents is only enabled for authenticated users, so this
+      // callback only fires for authenticated sessions.
+      //
+      // checkIsAdmin(ownerId) covers the server owner and system admins.
+      // We look up the member record for the current user to check their
+      // server-scoped role ('owner'/'admin') because checkIsAdmin() with no arg
+      // checks AuthContext user.role, which is always 'member' for non-system-admin
+      // users (mapBackendUser sets role: 'member' for all non-system-admin users).
+      const memberRecord = localMembers.find(m => m.id === authUser?.id);
+      const userIsAdminOrOwner =
+        checkIsAdmin(currentServer.ownerId) ||
+        memberRecord?.role === 'owner' ||
+        memberRecord?.role === 'admin';
+      if (
+        channel.id === currentChannel.id &&
+        oldVisibility !== ChannelVisibility.PRIVATE &&
+        channel.visibility === ChannelVisibility.PRIVATE &&
+        !userIsAdminOrOwner
+      ) {
+        router.push(`${basePath}/${currentServer.slug}`);
+      }
+    },
+    [currentChannel.id, checkIsAdmin, currentServer.ownerId, basePath, currentServer.slug, router, localMembers, authUser?.id],
+  );
+
   useServerEvents({
     serverId: currentServer.id,
     onChannelCreated: handleChannelCreated,
     onChannelUpdated: handleChannelUpdated,
     onChannelDeleted: handleChannelDeleted,
+    onMemberJoined: handleMemberJoined,
+    onMemberLeft: handleMemberLeft,
+    onChannelVisibilityChanged: handleChannelVisibilityChanged,
     enabled: isAuthenticated,
   });
 
@@ -328,12 +389,12 @@ export function HarmonyShell({
             {!isAuthLoading && !isAuthenticated && (
               <GuestPromoBanner
                 serverName={currentServer.name}
-                memberCount={currentServer.memberCount ?? members.length}
+                memberCount={currentServer.memberCount ?? localMembers.length}
               />
             )}
           </div>
           <MembersSidebar
-            members={members}
+            members={localMembers}
             isOpen={isMembersOpen}
             onClose={() => setIsMembersOpen(false)}
           />
