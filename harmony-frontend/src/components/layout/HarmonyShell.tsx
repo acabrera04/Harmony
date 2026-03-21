@@ -21,7 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChannelEvents } from '@/hooks/useChannelEvents';
 import { useServerEvents } from '@/hooks/useServerEvents';
 import { useServerListSync } from '@/hooks/useServerListSync';
-import { ChannelType } from '@/types';
+import { ChannelType, ChannelVisibility } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
 import type { Server, Channel, Message, User } from '@/types';
@@ -253,6 +253,42 @@ export function HarmonyShell({
     setLocalMembers(prev => prev.map(m => (m.id === id ? { ...m, status } : m)));
   }, []);
 
+  // ── Real-time visibility changes ──────────────────────────────────────────
+
+  const handleChannelVisibilityChanged = useCallback(
+    (channel: Channel, oldVisibility: ChannelVisibility) => {
+      // Update the channel's visibility in the sidebar immediately.
+      setLocalChannels(prev => prev.map(c => (c.id === channel.id ? channel : c)));
+
+      // If the current user is viewing this channel and it just became PRIVATE,
+      // redirect non-admin members to the server root so VisibilityGuard can
+      // gate access on re-render. Server owners and admins are not redirected
+      // because they retain access to PRIVATE channels.
+      // Note: useServerEvents is only enabled for authenticated users, so this
+      // callback only fires for authenticated sessions.
+      //
+      // checkIsAdmin(ownerId) covers the server owner and system admins.
+      // We look up the member record for the current user to check their
+      // server-scoped role ('owner'/'admin') because checkIsAdmin() with no arg
+      // checks AuthContext user.role, which is always 'member' for non-system-admin
+      // users (mapBackendUser sets role: 'member' for all non-system-admin users).
+      const memberRecord = localMembers.find(m => m.id === authUser?.id);
+      const userIsAdminOrOwner =
+        checkIsAdmin(currentServer.ownerId) ||
+        memberRecord?.role === 'owner' ||
+        memberRecord?.role === 'admin';
+      if (
+        channel.id === currentChannel.id &&
+        oldVisibility !== ChannelVisibility.PRIVATE &&
+        channel.visibility === ChannelVisibility.PRIVATE &&
+        !userIsAdminOrOwner
+      ) {
+        router.push(`${basePath}/${currentServer.slug}`);
+      }
+    },
+    [currentChannel.id, checkIsAdmin, currentServer.ownerId, basePath, currentServer.slug, router, localMembers, authUser?.id],
+  );
+
   useServerEvents({
     serverId: currentServer.id,
     onChannelCreated: handleChannelCreated,
@@ -261,6 +297,7 @@ export function HarmonyShell({
     onMemberJoined: handleMemberJoined,
     onMemberLeft: handleMemberLeft,
     onMemberStatusChanged: handleMemberStatusChanged,
+    onChannelVisibilityChanged: handleChannelVisibilityChanged,
     enabled: isAuthenticated,
   });
 

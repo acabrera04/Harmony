@@ -1,8 +1,9 @@
 /**
- * useServerEvents.test.tsx — Issue #185 / #186 / #231
+ * useServerEvents.test.tsx — Issue #185 / #186 / #187 / #231
  *
  * Tests the useServerEvents hook that subscribes to real-time SSE events for
- * channel list updates, member list updates, and member status changes on a server.
+ * channel list updates, member list updates, member status changes, and
+ * visibility changes on a server.
  *
  * EventSource is mocked to avoid actual network connections.
  */
@@ -170,7 +171,7 @@ describe('useServerEvents — connection', () => {
     expect(mockEventSourceInstance?.close).toHaveBeenCalled();
   });
 
-  it('registers listeners for all six event types', () => {
+  it('registers listeners for all seven event types', () => {
     renderHook(() =>
       useServerEvents({
         serverId: SERVER_ID,
@@ -180,6 +181,7 @@ describe('useServerEvents — connection', () => {
         onMemberJoined: jest.fn(),
         onMemberLeft: jest.fn(),
         onMemberStatusChanged: jest.fn(),
+        onChannelVisibilityChanged: jest.fn(),
       }),
     );
 
@@ -193,6 +195,7 @@ describe('useServerEvents — connection', () => {
     expect(addedTypes).toContain('member:joined');
     expect(addedTypes).toContain('member:left');
     expect(addedTypes).toContain('member:statusChanged');
+    expect(addedTypes).toContain('channel:visibility-changed');
   });
 });
 
@@ -480,5 +483,123 @@ describe('useServerEvents — member status change events', () => {
     }).not.toThrow();
 
     expect(onMemberStatusChanged).not.toHaveBeenCalled();
+  });
+});
+
+// ─── Visibility change event handling ────────────────────────────────────────
+
+describe('useServerEvents — channel:visibility-changed events', () => {
+  it('registers a listener for channel:visibility-changed', () => {
+    renderHook(() =>
+      useServerEvents({
+        serverId: SERVER_ID,
+        onChannelCreated: jest.fn(),
+        onChannelUpdated: jest.fn(),
+        onChannelDeleted: jest.fn(),
+        onChannelVisibilityChanged: jest.fn(),
+      }),
+    );
+
+    const addedTypes = (
+      mockEventSourceInstance!.addEventListener.mock.calls as [string, unknown][]
+    ).map(([type]) => type);
+
+    expect(addedTypes).toContain('channel:visibility-changed');
+  });
+
+  it('calls onChannelVisibilityChanged with channel and oldVisibility on event', () => {
+    const onChannelVisibilityChanged = jest.fn();
+    const updatedChannel: Channel = { ...MOCK_CHANNEL, visibility: ChannelVisibility.PRIVATE };
+
+    renderHook(() =>
+      useServerEvents({
+        serverId: SERVER_ID,
+        onChannelCreated: jest.fn(),
+        onChannelUpdated: jest.fn(),
+        onChannelDeleted: jest.fn(),
+        onChannelVisibilityChanged,
+      }),
+    );
+
+    act(() => {
+      mockEventSourceInstance!.simulateEvent('channel:visibility-changed', {
+        ...updatedChannel,
+        oldVisibility: ChannelVisibility.PUBLIC_INDEXABLE,
+      });
+    });
+
+    expect(onChannelVisibilityChanged).toHaveBeenCalledTimes(1);
+    // First arg is the channel without oldVisibility; second arg is the old value.
+    expect(onChannelVisibilityChanged).toHaveBeenCalledWith(
+      updatedChannel,
+      ChannelVisibility.PUBLIC_INDEXABLE,
+    );
+  });
+
+  it('does not throw when onChannelVisibilityChanged is not provided', () => {
+    renderHook(() =>
+      useServerEvents({
+        serverId: SERVER_ID,
+        onChannelCreated: jest.fn(),
+        onChannelUpdated: jest.fn(),
+        onChannelDeleted: jest.fn(),
+        // onChannelVisibilityChanged intentionally omitted
+      }),
+    );
+
+    expect(() => {
+      act(() => {
+        mockEventSourceInstance!.simulateEvent('channel:visibility-changed', {
+          ...MOCK_CHANNEL,
+          visibility: ChannelVisibility.PRIVATE,
+          oldVisibility: ChannelVisibility.PUBLIC_INDEXABLE,
+        });
+      });
+    }).not.toThrow();
+  });
+
+  it('removes channel:visibility-changed listener on unmount', () => {
+    const { unmount } = renderHook(() =>
+      useServerEvents({
+        serverId: SERVER_ID,
+        onChannelCreated: jest.fn(),
+        onChannelUpdated: jest.fn(),
+        onChannelDeleted: jest.fn(),
+        onChannelVisibilityChanged: jest.fn(),
+      }),
+    );
+
+    unmount();
+
+    const removedTypes = (
+      mockEventSourceInstance!.removeEventListener.mock.calls as [string, unknown][]
+    ).map(([type]) => type);
+
+    expect(removedTypes).toContain('channel:visibility-changed');
+  });
+
+  it('does not call onChannelVisibilityChanged on malformed JSON', () => {
+    const onChannelVisibilityChanged = jest.fn();
+
+    renderHook(() =>
+      useServerEvents({
+        serverId: SERVER_ID,
+        onChannelCreated: jest.fn(),
+        onChannelUpdated: jest.fn(),
+        onChannelDeleted: jest.fn(),
+        onChannelVisibilityChanged,
+      }),
+    );
+
+    expect(() => {
+      act(() => {
+        const badEvent = new MessageEvent('channel:visibility-changed', { data: 'not-json{{{' });
+        (mockEventSourceInstance!.addEventListener.mock.calls as [string, EventSourceHandler][])
+          .filter(([type]) => type === 'channel:visibility-changed')
+          .forEach(([, handler]) => handler(badEvent));
+      });
+    }).not.toThrow();
+
+    expect(onChannelVisibilityChanged).not.toHaveBeenCalled();
   });
 });
