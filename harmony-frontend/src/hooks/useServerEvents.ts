@@ -27,7 +27,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { Channel, ChannelVisibility } from '@/types/channel';
-import type { User } from '@/types/user';
+import type { User, UserStatus } from '@/types/user';
 import { getAccessToken } from '@/lib/api-client';
 
 export interface UseServerEventsOptions {
@@ -40,7 +40,7 @@ export interface UseServerEventsOptions {
   /** Called with the userId when a member leaves or is kicked. Optional. */
   onMemberLeft?: (userId: string) => void;
   /** Called when a member's presence status changes (online/idle/offline). Optional. */
-  onMemberStatusChanged?: (data: { id: string; status: string }) => void;
+  onMemberStatusChanged?: (data: { id: string; status: UserStatus }) => void;
   /**
    * Called when a channel's visibility changes. The updated channel object is
    * provided along with the previous visibility so callers can detect access
@@ -138,7 +138,7 @@ export function useServerEvents({
 
     const handleMemberStatusChanged = (event: MessageEvent<string>) => {
       try {
-        const payload = JSON.parse(event.data) as { id: string; status: string };
+        const payload = JSON.parse(event.data) as { id: string; status: UserStatus };
         onMemberStatusChangedRef.current?.(payload);
       } catch {
         // Ignore malformed payloads
