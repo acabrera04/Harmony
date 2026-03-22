@@ -93,11 +93,12 @@ interface MemberRowProps {
   member: ServerMemberInfo;
   serverSlug: string;
   isCurrentUser: boolean;
+  canCurrentUserManage: boolean;
   onRoleChanged: (userId: string, newRole: ServerMemberInfo['role']) => void;
   onRemoved: (userId: string) => void;
 }
 
-function MemberRow({ member, serverSlug, isCurrentUser, onRoleChanged, onRemoved }: MemberRowProps) {
+function MemberRow({ member, serverSlug, isCurrentUser, canCurrentUserManage, onRoleChanged, onRemoved }: MemberRowProps) {
   const [state, setState] = useState<MemberRowState>({
     changingRole: false,
     kickConfirm: false,
@@ -107,7 +108,7 @@ function MemberRow({ member, serverSlug, isCurrentUser, onRoleChanged, onRemoved
   });
 
   const isOwner = member.role === 'owner';
-  const canManage = !isOwner && !isCurrentUser;
+  const canManage = !isOwner && !isCurrentUser && canCurrentUserManage;
 
   async function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newRole = e.target.value as RoleOption;
@@ -268,6 +269,10 @@ export function MembersSection({ serverId, serverSlug }: MembersSectionProps) {
     setMembers(prev => prev.filter(m => m.userId !== userId));
   }
 
+  const currentUserMember = members.find(m => m.userId === user?.id);
+  const canCurrentUserManage =
+    currentUserMember?.role === 'owner' || currentUserMember?.role === 'admin';
+
   if (loading) {
     return (
       <div className='flex items-center justify-center py-16' role='status' aria-live='polite'>
@@ -303,6 +308,7 @@ export function MembersSection({ serverId, serverSlug }: MembersSectionProps) {
               member={member}
               serverSlug={serverSlug}
               isCurrentUser={user?.id === member.userId}
+              canCurrentUserManage={canCurrentUserManage}
               onRoleChanged={handleRoleChanged}
               onRemoved={handleRemoved}
             />

@@ -289,6 +289,8 @@ export function ServerSettingsPage({ server, serverSlug }: ServerSettingsPagePro
 
   const backHref = `/channels/${serverSlug}`;
 
+  // Safe because useAuth keeps isLoading=true until role is fully resolved —
+  // shouldRedirect is never evaluated on partial auth state.
   const shouldRedirect = !isLoading && (!isAuthenticated || !isAdmin(server.ownerId));
 
   useEffect(() => {
