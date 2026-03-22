@@ -12,8 +12,18 @@ export interface Server {
   description?: string;
   bannerUrl?: string;
   memberCount?: number;
+  isPublic?: boolean;
   createdAt: Date | string;
   updatedAt?: Date | string;
+}
+
+export interface ServerMemberInfo {
+  userId: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  role: 'owner' | 'admin' | 'moderator' | 'member' | 'guest';
+  joinedAt: string;
 }
 
 export interface ServerDTO {
