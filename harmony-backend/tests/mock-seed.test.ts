@@ -56,8 +56,9 @@ describe('buildMockSeedData', () => {
     expect(data.users.every((user) => user.email === `${user.username}@mock.harmony.test`)).toBe(
       true,
     );
-    // alice_admin (user-001) has a real bcrypt hash so the account is loginable in dev/demo.
-    // All other mock users keep '!' (login intentionally disabled).
+    // alice_admin is user-001 in mock-seed-data.json — the only loginable mock account.
+    // Identified by username here because mapped users don't carry the raw JSON id.
+    // Keep in sync with the ALICE_ADMIN_HASH constant in mockSeed.ts.
     const alice = data.users.find((u) => u.username === 'alice_admin');
     const others = data.users.filter((u) => u.username !== 'alice_admin');
     expect(alice?.passwordHash).toMatch(/^\$2[ab]\$\d+\$/);

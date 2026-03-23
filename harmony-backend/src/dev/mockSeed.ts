@@ -75,6 +75,10 @@ const VALID_CHANNEL_TYPES = new Set<string>(Object.values(ChannelType));
 const VALID_CHANNEL_VISIBILITIES = new Set<string>(Object.values(ChannelVisibility));
 const MOCK_SEED_NAMESPACE = 'harmony:mock-seed';
 
+// user-001 (alice_admin) is the only loginable mock account — keep in sync with
+// the assertion in mock-seed.test.ts that looks up this user by username.
+const ALICE_ADMIN_HASH = '$2b$12$kypwUxiUZqWl6OO4n/jHxOY8pqzxJ9rcgOU7mUSLsTfDcKdArtwY.';
+
 export function legacyIdToUuid(legacyId: string): string {
   const hash = createHash('sha1').update(`${MOCK_SEED_NAMESPACE}:${legacyId}`).digest();
   const bytes = Buffer.from(hash.subarray(0, 16));
@@ -146,10 +150,8 @@ export function buildMockSeedData(raw: RawSnapshot = snapshot): BuiltMockSeedDat
       .map((channel) => channel.serverId),
   );
 
-  // alice_admin (user-001) gets a real password hash so the account is loginable.
+  // user-001 is alice_admin — the only loginable mock account (see ALICE_ADMIN_HASH above).
   // All other mock users keep '!' (invalid hash — login intentionally disabled).
-  const ALICE_ADMIN_HASH = '$2b$12$kypwUxiUZqWl6OO4n/jHxOY8pqzxJ9rcgOU7mUSLsTfDcKdArtwY.';
-
   const users = raw.users.map<Prisma.UserCreateManyInput>((user, index) => ({
     id: userIds.get(user.id)!,
     username: user.username,
