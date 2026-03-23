@@ -10,6 +10,9 @@
 
 import { API_CONFIG } from './constants';
 import { cookies } from 'next/headers';
+import { TrpcHttpError } from './trpc-errors';
+
+export { TrpcHttpError } from './trpc-errors';
 
 const BASE = API_CONFIG.BASE_URL;
 
@@ -86,7 +89,7 @@ export async function trpcQuery<T>(procedure: string, input?: unknown): Promise<
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`tRPC query error [${procedure}]: ${res.status} — ${body.slice(0, 200)}`);
+    throw new TrpcHttpError(procedure, res.status, body);
   }
 
   const json = await res.json();
@@ -124,7 +127,7 @@ export async function trpcMutate<T>(procedure: string, input?: unknown): Promise
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`tRPC mutation error [${procedure}]: ${res.status} — ${body.slice(0, 200)}`);
+    throw new TrpcHttpError(procedure, res.status, body);
   }
 
   const json = await res.json();

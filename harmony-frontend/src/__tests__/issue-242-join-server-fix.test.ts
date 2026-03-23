@@ -71,6 +71,7 @@ import 'next/navigation'; // ensure the mock is applied
 import { setSessionCookie } from '@/app/actions/session';
 // Side-effect import: triggers new ApiClient() → axios.create() → interceptor setup
 import '../lib/api-client';
+import { TrpcHttpError } from '../lib/trpc-errors';
 
 // ─── Fix 1: api-client interceptor calls setSessionCookie after refresh ───────
 
@@ -142,55 +143,59 @@ describe('Fix 1 — api-client: setSessionCookie is called after token refresh',
 
 // ─── Fix 2: GuestChannelView isMember check ───────────────────────────────────
 //
-// trpcQuery throws plain Error objects: "tRPC query error [proc]: STATUS — body"
-// The old check used isAxiosError which is always false for these, so isMember
-// was incorrectly true for all errors including 403 (confirmed non-member).
-// New check: err instanceof Error && err.message.includes(': 403 ')
+// trpcQuery now throws TrpcHttpError (a typed subclass with a .status field).
+// GuestChannelView checks `err instanceof TrpcHttpError && err.status === 403`,
+// which is immune to message-format drift in trpc-client.ts.
 
-describe('Fix 2 — GuestChannelView: isMember check handles plain Error objects', () => {
-  // Replicate the exact expression from GuestChannelView.tsx line ~118
+describe('Fix 2 — GuestChannelView: isMember check uses TrpcHttpError.status', () => {
+  // Mirror the exact expression from GuestChannelView.tsx so these tests FAIL if
+  // the production code reverts to a string-match or other fragile pattern.
   function isMemberAfterError(err: unknown): boolean {
-    return !(err instanceof Error && err.message.includes(': 403 '));
+    return !(err instanceof TrpcHttpError && err.status === 403);
   }
 
-  it('returns false for a 403 tRPC plain Error — confirmed non-member', () => {
-    const err = new Error(
-      'tRPC query error [server.getChannels]: 403 — {"error":{"message":"FORBIDDEN"}}',
-    );
+  it('TrpcHttpError carries procedure and status as typed fields', () => {
+    const err = new TrpcHttpError('server.getChannels', 403, '{"error":"FORBIDDEN"}');
+    expect(err.status).toBe(403);
+    expect(err.procedure).toBe('server.getChannels');
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(TrpcHttpError);
+    expect(err.name).toBe('TrpcHttpError');
+  });
+
+  it('returns false for TrpcHttpError status 403 — confirmed non-member', () => {
+    const err = new TrpcHttpError('server.getChannels', 403, '{"error":"FORBIDDEN"}');
     expect(isMemberAfterError(err)).toBe(false);
   });
 
-  it('returns true for a 401 tRPC plain Error — expired token, membership unknown', () => {
-    const err = new Error(
-      'tRPC query error [server.getChannels]: 401 — {"error":{"message":"UNAUTHORIZED"}}',
-    );
+  it('returns true for TrpcHttpError status 401 — expired token, membership unknown', () => {
+    const err = new TrpcHttpError('server.getChannels', 401, '{"error":"UNAUTHORIZED"}');
     expect(isMemberAfterError(err)).toBe(true);
   });
 
-  it('returns true for a 500 tRPC plain Error — server error, membership unknown', () => {
-    const err = new Error('tRPC query error [server.getChannels]: 500 — Internal server error');
+  it('returns true for TrpcHttpError status 500 — server error, membership unknown', () => {
+    const err = new TrpcHttpError('server.getChannels', 500, 'Internal Server Error');
     expect(isMemberAfterError(err)).toBe(true);
   });
 
-  it('returns true for non-Error thrown values', () => {
+  it('returns true for non-TrpcHttpError thrown values', () => {
+    expect(isMemberAfterError(new Error('plain error'))).toBe(true);
     expect(isMemberAfterError('string error')).toBe(true);
     expect(isMemberAfterError({ status: 403 })).toBe(true);
     expect(isMemberAfterError(null)).toBe(true);
   });
 
-  it('demonstrates the regression: OLD isAxiosError check was always false for trpcQuery errors', () => {
+  it('demonstrates the regression: OLD isAxiosError check was always false for TrpcHttpError', () => {
     const { isAxiosError } = jest.requireActual<typeof import('axios')>('axios');
-    const err = new Error(
-      'tRPC query error [server.getChannels]: 403 — {"error":{"message":"FORBIDDEN"}}',
-    );
-    // BUG (pre-fix): isAxiosError(err) is false → isMember ends up true (incorrect)
-    const oldIsMember = !(
-      isAxiosError(err) &&
-      (err as { response?: { status: number } }).response?.status === 403
-    );
-    expect(oldIsMember).toBe(true); // wrong — treats non-member as member
+    const err = new TrpcHttpError('server.getChannels', 403, '{"error":"FORBIDDEN"}');
 
-    // FIX: plain Error message check correctly identifies 403
+    // BUG (pre-fix): isAxiosError(err) is always false for TrpcHttpError → isMember=true (wrong)
+    const oldIsMember = !(
+      isAxiosError(err) && (err as { response?: { status: number } }).response?.status === 403
+    );
+    expect(oldIsMember).toBe(true); // wrong — treated non-member as member
+
+    // FIX: instanceof + status check correctly identifies 403
     expect(isMemberAfterError(err)).toBe(false); // correctly identifies non-member
   });
 });

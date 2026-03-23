@@ -12,6 +12,7 @@ import {
   fetchPublicMessages,
 } from '@/services/publicApiService';
 import { getChannels } from '@/services/channelService';
+import { TrpcHttpError } from '@/lib/trpc-errors';
 import { AuthRedirect } from '@/components/channel/AuthRedirect';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 import { MessageList } from '@/components/channel/MessageList';
@@ -112,10 +113,9 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
     await getChannels(server.id);
     isMember = true;
   } catch (err: unknown) {
-    // trpcQuery throws plain Error objects with the message format:
-    //   "tRPC query error [procedure]: STATUS — body"
-    // isAxiosError is always false here, so we check the message for ": 403".
-    isMember = !(err instanceof Error && err.message.includes(': 403 '));
+    // trpcQuery throws TrpcHttpError — check status directly rather than parsing
+    // the message string, which would couple us to the error format in trpc-client.
+    isMember = !(err instanceof TrpcHttpError && err.status === 403);
   }
 
   if (channelResult.isPrivate) {
