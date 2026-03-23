@@ -146,6 +146,10 @@ export function buildMockSeedData(raw: RawSnapshot = snapshot): BuiltMockSeedDat
       .map((channel) => channel.serverId),
   );
 
+  // alice_admin (user-001) gets a real password hash so the account is loginable.
+  // All other mock users keep '!' (invalid hash — login intentionally disabled).
+  const ALICE_ADMIN_HASH = '$2b$12$kypwUxiUZqWl6OO4n/jHxOY8pqzxJ9rcgOU7mUSLsTfDcKdArtwY.';
+
   const users = raw.users.map<Prisma.UserCreateManyInput>((user, index) => ({
     id: userIds.get(user.id)!,
     username: user.username,
@@ -153,7 +157,7 @@ export function buildMockSeedData(raw: RawSnapshot = snapshot): BuiltMockSeedDat
     avatarUrl: user.avatar,
     publicProfile: true,
     email: `${user.username}@mock.harmony.test`,
-    passwordHash: '!',
+    passwordHash: user.id === 'user-001' ? ALICE_ADMIN_HASH : '!',
     createdAt: new Date(Date.UTC(2024, 0, 1, 0, index, 0)),
   }));
 
@@ -381,6 +385,7 @@ export async function seedMockData(db?: PrismaClient, allowMockSeed = false): Pr
             displayName: user.displayName,
             avatarUrl: user.avatarUrl,
             publicProfile: user.publicProfile,
+            passwordHash: user.passwordHash,
             createdAt: user.createdAt,
           },
           create: user,
