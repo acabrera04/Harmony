@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.5.0",
+  "checkpoint_id": "a1acf48a99d9",
+  "session_id": "6af5816f-bb40-4a95-87b1-242bb63bd44f",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-23T03:59:10.223827Z",
+  "branch": "docs/fix-module-naming-mismatch",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/unified-backend-architecture.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-4-6",
+  "turn_id": "a34cf7db01c7",
+  "checkpoint_transcript_start": 267,
+  "transcript_lines_at_start": 267,
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 9587,
+    "cache_read_tokens": 921182,
+    "output_tokens": 3270,
+    "api_call_count": 10
+  },
+  "session_metrics": {
+    "turn_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-23T03:59:09.930918Z",
+    "agent_lines": 5,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 5,
+    "agent_percentage": 100
+  }
+}
