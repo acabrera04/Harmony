@@ -112,34 +112,44 @@ export const reactionService = {
   /**
    * Remove an emoji reaction from a message.
    * Only the reaction owner may remove it; throws FORBIDDEN otherwise.
+   *
+   * Uses an atomic delete-first pattern to avoid the TOCTOU race between a
+   * findUnique check and the subsequent delete. If Prisma returns P2025
+   * (record not found), we do a single findFirst to decide FORBIDDEN vs
+   * NOT_FOUND.
    */
   async removeReaction(input: RemoveReactionInput) {
     const { messageId, channelId, userId, emoji, serverId } = input;
 
     const message = await requireMessageInChannel(messageId, channelId, serverId);
 
-    // Look up the caller's own reaction
-    const callerReaction = await prisma.messageReaction.findUnique({
-      where: { messageId_userId_emoji: { messageId, userId, emoji } },
-    });
-
-    if (!callerReaction) {
-      // Distinguish: does the reaction exist but belong to someone else?
-      const anyReaction = await prisma.messageReaction.findFirst({
-        where: { messageId, emoji },
+    try {
+      // Attempt delete atomically — no separate pre-check needed
+      await prisma.messageReaction.delete({
+        where: { messageId_userId_emoji: { messageId, userId, emoji } },
       });
-      if (anyReaction) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You can only remove your own reactions',
+    } catch (err: unknown) {
+      // P2025: the caller's reaction did not exist
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        (err as { code: string }).code === 'P2025'
+      ) {
+        // Distinguish: does this emoji exist on the message for someone else?
+        const anyReaction = await prisma.messageReaction.findFirst({
+          where: { messageId, emoji },
         });
+        if (anyReaction) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only remove your own reactions',
+          });
+        }
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Reaction not found' });
       }
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Reaction not found' });
+      throw err;
     }
-
-    await prisma.messageReaction.delete({
-      where: { messageId_userId_emoji: { messageId, userId, emoji } },
-    });
 
     cacheService.invalidatePattern(reactionCacheKey(serverId, messageId)).catch(() => {});
 
