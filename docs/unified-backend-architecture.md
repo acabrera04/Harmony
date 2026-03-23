@@ -114,22 +114,24 @@ graph TB
 
 The unified backend organizes into **shared backend modules** (prefixed `M-B`) and **data layer modules** (prefixed `M-D`). Client-layer modules are listed for reference only; they are specified in their respective feature dev specs.
 
-| Module ID | Name | Layer | Feature Owner | Purpose |
-|-----------|------|-------|---------------|---------|
-| *M-CV1* | *Admin Dashboard* | *Client* | *Channel Visibility Toggle* | *Specified in [channel visibility spec](./dev-spec-channel-visibility-toggle.md)* |
-| *M-CV2* | *Public Channel Viewer* | *Client* | *Channel Visibility Toggle* | *Specified in [channel visibility spec](./dev-spec-channel-visibility-toggle.md)* |
-| *M-GV1* | *Public View (SSR)* | *Client* | *Guest Public Channel View* | *Specified in [guest public channel spec](./dev-spec-guest-public-channel-view.md)* |
-| *M-GV2* | *Client Interaction* | *Client* | *Guest Public Channel View* | *Specified in [guest public channel spec](./dev-spec-guest-public-channel-view.md)* |
-| M-B1 | API Gateway | Server | Shared | tRPC router (authenticated) + REST controllers (public) |
-| M-B2 | Access Control | Server | Shared | Visibility guard, content filter, rate limiter, anonymous sessions |
-| M-B3 | Visibility Management | Server | Channel Visibility Toggle | Visibility state machine, permission checks, audit logging |
-| M-B4 | Content Delivery | Server | Guest Public Channel View | Message retrieval, author privacy, attachment processing |
-| M-B5 | Meta Tag Engine | Server | SEO Meta Tag Generation | Meta tag generation, content analysis, OpenGraph, structured data |
-| M-B6 | SEO & Indexing | Server | Shared | Sitemap generation, search engine notifications, canonical URLs, robots directives |
-| M-B7 | Background Workers | Server | Shared | Async workers for meta-tag regeneration, sitemap rebuilds, search engine pings (Redis Pub/Sub driven) |
-| M-D1 | Data Access | Data | Shared | Repositories (Channel, Message, Server, User, Attachment, AuditLog, MetaTag) |
-| M-D2 | Persistence | Data | Shared | PostgreSQL schemas (all tables) |
-| M-D3 | Cache | Data | Shared | Redis cache schemas and Pub/Sub event channels |
+The `M-B`/`M-D` IDs are architectural groupings (by technical role). The detailed per-module specs in [`p4-backend-modules.md`](./p4-backend-modules.md) use a separate domain-oriented numbering (1–12). The **Domain Module(s)** column below maps the two schemes.
+
+| Module ID | Name | Layer | Feature Owner | Purpose | Domain Module(s) |
+|-----------|------|-------|---------------|---------|-----------------|
+| *M-CV1* | *Admin Dashboard* | *Client* | *Channel Visibility Toggle* | *Specified in [channel visibility spec](./dev-spec-channel-visibility-toggle.md)* | *—* |
+| *M-CV2* | *Public Channel Viewer* | *Client* | *Channel Visibility Toggle* | *Specified in [channel visibility spec](./dev-spec-channel-visibility-toggle.md)* | *—* |
+| *M-GV1* | *Public View (SSR)* | *Client* | *Guest Public Channel View* | *Specified in [guest public channel spec](./dev-spec-guest-public-channel-view.md)* | *—* |
+| *M-GV2* | *Client Interaction* | *Client* | *Guest Public Channel View* | *Specified in [guest public channel spec](./dev-spec-guest-public-channel-view.md)* | *—* |
+| M-B1 | API Gateway | Server | Shared | tRPC router (authenticated) + REST controllers (public) | Cross-cutting infrastructure (all modules) |
+| M-B2 | Access Control | Server | Shared | Visibility guard, content filter, rate limiter, anonymous sessions | Module 1 (Auth middleware), Module 11 (Permission System) |
+| M-B3 | Visibility Management | Server | Channel Visibility Toggle | Visibility state machine, permission checks, audit logging | Module 3 (Channel Management — visibility ops) |
+| M-B4 | Content Delivery | Server | Guest Public Channel View | Message retrieval, author privacy, attachment processing | Module 9 (Public API & SEO — public delivery) |
+| M-B5 | Meta Tag Engine | Server | SEO Meta Tag Generation | Meta tag generation, content analysis, OpenGraph, structured data | Module 9 (Public API & SEO — meta tag generation) |
+| M-B6 | SEO & Indexing | Server | Shared | Sitemap generation, canonical URLs, robots directives (search engine notifications deferred with M-B7) | Module 9 (Public API & SEO — sitemap/indexing) |
+| M-B7 | Background Workers | Server | Shared | *(Not built in P4 — deferred to P5/P6; includes search engine pings and async regeneration jobs)* | — |
+| M-D1 | Data Access | Data | Shared | Repositories (Channel, Message, Server, User, Attachment, AuditLog, MetaTag) | Repository classes in § 4 of each domain module |
+| M-D2 | Persistence | Data | Shared | PostgreSQL schemas (all tables) | Schema definitions in § 4 of each domain module |
+| M-D3 | Cache | Data | Shared | Redis cache schemas and Pub/Sub event channels | Module 9 (cache.service, cacheInvalidator.service) |
 
 ---
 

@@ -4,6 +4,8 @@ This document provides the P4 specification for every backend module in the Harm
 
 > **Path shorthand:** All `backend/src/...` paths in the Code Generation sections refer to `harmony-backend/src/...` in the actual repository.
 
+> **Architecture ID mapping:** The unified architecture document ([`unified-backend-architecture.md`](./unified-backend-architecture.md)) groups modules by technical role using `M-B`/`M-D` IDs. This document groups by domain. See the **Domain Module(s)** column in [§ 2.2 Module Map](./unified-backend-architecture.md#22-module-map) for the mapping between the two schemes.
+
 ---
 
 ## Module 1: Authentication
