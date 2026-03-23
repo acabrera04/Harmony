@@ -68,6 +68,7 @@ model User {
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
 
   messages           Message[]
+  reactions          MessageReaction[]
   visibilityAuditLog VisibilityAuditLog[] @relation("AuditActor")
   refreshTokens      RefreshToken[]
   ownedServers       Server[]             @relation("ServerOwner")
@@ -167,18 +168,36 @@ model Message {
   /// Denormalised count of non-deleted replies. Incremented on createReply; decremented when a reply is soft-deleted.
   replyCount      Int       @default(0) @map("reply_count")
 
-  channel     Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  author      User        @relation(fields: [authorId], references: [id])
+  channel     Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author      User             @relation(fields: [authorId], references: [id])
   attachments Attachment[]
+  reactions   MessageReaction[]
   /// The message this is a reply to (null for top-level messages).
-  parent      Message?    @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  parent      Message?         @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   /// Direct replies to this message.
-  replies     Message[]   @relation("MessageReplies")
+  replies     Message[]        @relation("MessageReplies")
 
   // idx_messages_channel_time (non-partial) and
   // idx_messages_channel_not_deleted (partial WHERE is_deleted = FALSE)
   // are both added as raw SQL in the migration.
   @@map("messages")
+}
+
+/// Emoji reaction a user placed on a message.
+/// The unique constraint prevents a user reacting with the same emoji twice.
+model MessageReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji], map: "idx_message_reactions_unique")
+  @@index([messageId], map: "idx_message_reactions_message")
+  @@map("message_reactions")
 }
 
 model Attachment {

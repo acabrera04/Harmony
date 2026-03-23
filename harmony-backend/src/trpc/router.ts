@@ -6,6 +6,7 @@ import { messageRouter } from './routers/message.router';
 import { userRouter } from './routers/user.router';
 import { attachmentRouter } from './routers/attachment.router';
 import { voiceRouter } from './routers/voice.router';
+import { reactionRouter } from './routers/reaction.router';
 
 export const appRouter = router({
   health: publicProcedure.query(() => {
@@ -18,6 +19,7 @@ export const appRouter = router({
   user: userRouter,
   attachment: attachmentRouter,
   voice: voiceRouter,
+  reaction: reactionRouter,
 });
 
 export type AppRouter = typeof appRouter;

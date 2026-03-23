@@ -22,6 +22,8 @@ export type {
   MessageDeletedPayload,
   MetaTagsUpdatedPayload,
   ServerUpdatedPayload,
+  ReactionAddedPayload,
+  ReactionRemovedPayload,
 } from './eventTypes';
 
 let subscriberClient: Redis | null = null;

@@ -541,7 +541,7 @@ Implementation code is located in:
 | Reply (threading) | Creates a reply linked to a parent message. Increments parent's `replyCount`. |
 | Get thread | Cursor-based pagination of replies to a specific message. |
 
-**What it does not do:** Does not support reactions/emoji, message search, rich embeds, or message scheduling.
+**What it does not do:** Does not support message search, rich embeds, or message scheduling. Emoji reactions are handled by the **Reaction** module.
 
 ### 2. Internal Architecture
 
@@ -577,11 +577,23 @@ model Message {
   pinnedAt        DateTime?
   parentMessageId String?
   replyCount      Int       @default(0)
-  channel         Channel   @relation(fields: [channelId], references: [id])
-  author          User      @relation(fields: [authorId], references: [id])
+  channel         Channel          @relation(fields: [channelId], references: [id])
+  author          User             @relation(fields: [authorId], references: [id])
   attachments     Attachment[]
-  parent          Message?  @relation("MessageReplies", fields: [parentMessageId], references: [id])
-  replies         Message[] @relation("MessageReplies")
+  reactions       MessageReaction[]
+  parent          Message?         @relation("MessageReplies", fields: [parentMessageId], references: [id])
+  replies         Message[]        @relation("MessageReplies")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([messageId, userId, emoji])
 }
 
 model Attachment {
@@ -1575,7 +1587,7 @@ flowchart TD
 **Actions** are string literals grouped by domain:
 - Server: `server:read`, `server:update`, `server:delete`, `server:manage_members`
 - Channel: `channel:read`, `channel:create`, `channel:update`, `channel:delete`, `channel:manage_visibility`
-- Message: `message:read`, `message:create`, `message:update_own`, `message:delete_own`, `message:delete_any`, `message:pin`
+- Message: `message:read`, `message:create`, `message:update_own`, `message:delete_own`, `message:delete_any`, `message:pin`, `message:react`
 - Settings: `settings:read`, `settings:update`
 
 Each role has a static `Set<Action>` that defines what it can do.
@@ -1595,7 +1607,7 @@ This module has no direct external API. It is consumed internally by tRPC router
 
 export type ServerAction = 'server:read' | 'server:update' | 'server:delete' | 'server:manage_members';
 export type ChannelAction = 'channel:read' | 'channel:create' | 'channel:update' | 'channel:delete' | 'channel:manage_visibility';
-export type MessageAction = 'message:read' | 'message:create' | 'message:update_own' | 'message:delete_own' | 'message:delete_any' | 'message:pin';
+export type MessageAction = 'message:read' | 'message:create' | 'message:update_own' | 'message:delete_own' | 'message:delete_any' | 'message:pin' | 'message:react';
 export type SettingsAction = 'settings:read' | 'settings:update';
 export type Action = ServerAction | ChannelAction | MessageAction | SettingsAction;
 
@@ -1647,3 +1659,85 @@ classDiagram
 Implementation code is located in:
 - `backend/src/services/permission.service.ts`
 - `backend/src/lib/admin.utils.ts`
+
+---
+
+## Module 12: Message Reactions
+
+### 1. Features
+
+| Capability | Description |
+|---|---|
+| Add reaction | A member adds an emoji reaction to a message. Unique per `(messageId, userId, emoji)` — duplicate throws CONFLICT. Publishes `REACTION_ADDED` event. |
+| Remove reaction | The reaction owner removes their emoji reaction. Throws FORBIDDEN if the emoji exists but belongs to another user; NOT_FOUND if no such emoji exists. Publishes `REACTION_REMOVED` event. |
+| Get reactions | Returns all reactions for a message grouped by emoji: `{ emoji, count, userIds[] }[]`. |
+
+**What it does not do:** Does not support animated emoji or custom server emoji. Does not cap the number of distinct emoji per message.
+
+### 2. Internal Architecture
+
+```mermaid
+flowchart TD
+    Client -->|tRPC call| ReactionRouter
+    ReactionRouter -->|permission check| PermissionService
+    ReactionRouter -->|business logic| ReactionService
+    ReactionService -->|CRUD| Prisma[(PostgreSQL)]
+    ReactionService -->|publish events| EventBus
+    ReactionService -->|cache invalidation| CacheService[Redis]
+    ReactionService -->|validate message ownership| requireMessageInServer
+```
+
+**Design justification:** The unique constraint `(messageId, userId, emoji)` is enforced at the database level so concurrent add attempts are safe without application-level locking. The FORBIDDEN vs NOT_FOUND distinction in `removeReaction` gives the caller meaningful feedback without requiring a separate "does this reaction exist?" query in the common path.
+
+### 3. Data Abstraction
+
+A **MessageReaction** records that a user placed a specific emoji on a message. Multiple users may react with the same emoji (each creating a separate row), but a given user may not react with the same emoji twice on the same message.
+
+### 4. Stable Storage
+
+```prisma
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
+}
+```
+
+### 5. External API
+
+| Procedure | Type | Input | Permission |
+|---|---|---|---|
+| `reaction.addReaction` | mutation | `{ serverId, channelId, messageId, emoji }` | `message:react` |
+| `reaction.removeReaction` | mutation | `{ serverId, channelId, messageId, emoji }` | `message:react` |
+| `reaction.getReactions` | query | `{ serverId, channelId, messageId }` | `message:read` |
+
+### 6. Class/Method/Field Declarations
+
+```typescript
+// ── Public ──────────────────────────────────────────────
+
+export interface ReactionGroup {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
+export const reactionService = {
+  addReaction(input: AddReactionInput): Promise<MessageReaction>;
+  removeReaction(input: RemoveReactionInput): Promise<void>;
+  getMessageReactions(input: GetMessageReactionsInput): Promise<ReactionGroup[]>;
+};
+```
+
+### 7. Code Generation
+
+Implementation code is located in:
+- `harmony-backend/src/services/reaction.service.ts`
+- `harmony-backend/src/trpc/routers/reaction.router.ts`

@@ -21,6 +21,8 @@ export const EventChannels = {
   CHANNEL_DELETED: 'harmony:CHANNEL_DELETED',
   SERVER_UPDATED: 'harmony:SERVER_UPDATED',
   USER_STATUS_CHANGED: 'harmony:USER_STATUS_CHANGED',
+  REACTION_ADDED: 'harmony:REACTION_ADDED',
+  REACTION_REMOVED: 'harmony:REACTION_REMOVED',
 } as const;
 
 export type EventChannelName = (typeof EventChannels)[keyof typeof EventChannels];
@@ -130,6 +132,22 @@ export interface UserStatusChangedPayload {
   status: 'ONLINE' | 'IDLE' | 'DND' | 'OFFLINE';
 }
 
+export interface ReactionAddedPayload {
+  messageId: string;
+  channelId: string;
+  userId: string;
+  emoji: string;
+  timestamp: string;
+}
+
+export interface ReactionRemovedPayload {
+  messageId: string;
+  channelId: string;
+  userId: string;
+  emoji: string;
+  timestamp: string;
+}
+
 // Map each channel to its payload type for type-safe subscribe/publish
 export interface EventPayloadMap {
   [EventChannels.VISIBILITY_CHANGED]: VisibilityChangedPayload;
@@ -147,6 +165,8 @@ export interface EventPayloadMap {
   [EventChannels.CHANNEL_DELETED]: ChannelDeletedPayload;
   [EventChannels.SERVER_UPDATED]: ServerUpdatedPayload;
   [EventChannels.USER_STATUS_CHANGED]: UserStatusChangedPayload;
+  [EventChannels.REACTION_ADDED]: ReactionAddedPayload;
+  [EventChannels.REACTION_REMOVED]: ReactionRemovedPayload;
 }
 
 export type EventHandler<C extends EventChannelName> = (payload: EventPayloadMap[C]) => void;

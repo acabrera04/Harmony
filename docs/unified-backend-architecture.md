@@ -242,6 +242,8 @@ classDiagram
     Channel "1" --> "*" Message
     Message "*" --> "1" User
     Message "1" --> "*" Attachment
+    Message "1" --> "*" MessageReaction
+    MessageReaction "*" --> "1" User
     Channel "1" --> "*" AuditLogEntry
     Channel "1" --> "0..1" GeneratedMetaTags
     Server "1" --> "*" ServerMember

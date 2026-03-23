@@ -24,7 +24,8 @@ export type MessageAction =
   | 'message:update_own'
   | 'message:delete_own'
   | 'message:delete_any'
-  | 'message:pin';
+  | 'message:pin'
+  | 'message:react';
 
 export type SettingsAction = 'settings:read' | 'settings:update';
 
@@ -42,6 +43,7 @@ const MEMBER_PERMISSIONS = new Set<Action>([
   'message:create',
   'message:update_own',
   'message:delete_own',
+  'message:react',
 ]);
 
 const MODERATOR_PERMISSIONS = new Set<Action>([
