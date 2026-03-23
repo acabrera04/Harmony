@@ -6,7 +6,6 @@
  */
 
 import { notFound } from 'next/navigation';
-import { isAxiosError } from 'axios';
 import {
   fetchPublicServer,
   fetchPublicChannel,
@@ -113,7 +112,10 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
     await getChannels(server.id);
     isMember = true;
   } catch (err: unknown) {
-    isMember = !(isAxiosError(err) && err.response?.status === 403);
+    // trpcQuery throws plain Error objects with the message format:
+    //   "tRPC query error [procedure]: STATUS — body"
+    // isAxiosError is always false here, so we check the message for ": 403".
+    isMember = !(err instanceof Error && err.message.includes(': 403 '));
   }
 
   if (channelResult.isPrivate) {

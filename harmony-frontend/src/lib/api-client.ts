@@ -1,5 +1,10 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 import { API_CONFIG } from './constants';
+import { setSessionCookie } from '@/app/actions/session';
 
 // ─── Token storage ────────────────────────────────────────────────────────────
 // Access token is kept only in module-level memory (never persisted) so it is
@@ -121,6 +126,16 @@ class ApiClient {
             );
             const { accessToken: newAt, refreshToken: newRt } = res.data;
             setTokens(newAt, newRt);
+            // Sync the httpOnly cookie so server-side code (Server Components, Server Actions,
+            // tRPC routes) reads the fresh token. Without this, the cookie stays stale after
+            // the in-memory token is refreshed and all server-side calls return 401.
+            try {
+              await setSessionCookie(newAt);
+            } catch {
+              // Best-effort — if the Server Action fails, keep going. The in-memory token
+              // is still valid for client-side calls; the user may see a 401 on the next
+              // server-side render but a page refresh will recover.
+            }
             notifyRefreshQueue(newAt);
 
             originalRequest.headers = originalRequest.headers ?? {};
@@ -175,13 +190,9 @@ class ApiClient {
 
   /** Call a tRPC mutation procedure (POST). Returns the unwrapped data. */
   async trpcMutation<T>(procedure: string, input?: unknown): Promise<T> {
-    const res = await this.client.post<TrpcResponse<T>>(
-      `/trpc/${procedure}`,
-      input ?? null,
-    );
+    const res = await this.client.post<TrpcResponse<T>>(`/trpc/${procedure}`, input ?? null);
     return res.data.result.data;
   }
 }
 
 export const apiClient = new ApiClient();
-

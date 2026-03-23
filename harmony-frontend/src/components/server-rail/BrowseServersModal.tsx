@@ -39,6 +39,8 @@ export interface BrowseServersModalProps {
   defaultChannelByServerId: Map<string, string>;
   /** URL base path for channel navigation — matches HarmonyShell basePath. */
   basePath?: string;
+  /** Called after a server is successfully joined, with the joined server's ID. */
+  onJoined?: (serverId: string) => void;
 }
 
 // ─── Server card ──────────────────────────────────────────────────────────────
@@ -131,6 +133,7 @@ export function BrowseServersModal({
   joinedServerIds,
   defaultChannelByServerId,
   basePath = '/channels',
+  onJoined,
 }: BrowseServersModalProps) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -177,9 +180,15 @@ export function BrowseServersModal({
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     if (e.shiftKey) {
-      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
     } else {
-      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }, []);
 
@@ -187,6 +196,7 @@ export function BrowseServersModal({
     setJoiningId(server.id);
     try {
       const { channelSlug } = await joinServerAction(server.id);
+      onJoined?.(server.id);
       showToast({ message: `Joined ${server.name}!`, type: 'success' });
       onClose();
       router.push(`${basePath}/${server.slug}/${channelSlug}`);
@@ -226,9 +236,7 @@ export function BrowseServersModal({
             <h2 id='browse-servers-title' className='text-xl font-bold text-white'>
               Browse Public Servers
             </h2>
-            <p className='mt-0.5 text-sm text-gray-400'>
-              Discover communities open to everyone.
-            </p>
+            <p className='mt-0.5 text-sm text-gray-400'>Discover communities open to everyone.</p>
           </div>
           <button
             type='button'
@@ -237,7 +245,14 @@ export function BrowseServersModal({
             aria-label='Close'
             className='rounded p-1 text-gray-400 hover:text-white disabled:opacity-50'
           >
-            <svg className='h-5 w-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round'>
+            <svg
+              className='h-5 w-5'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth={2}
+              strokeLinecap='round'
+            >
               <path d='M18 6 6 18M6 6l12 12' />
             </svg>
           </button>
@@ -248,7 +263,14 @@ export function BrowseServersModal({
           {loading && (
             <div className='flex items-center justify-center py-16 text-gray-400'>
               <svg className='mr-2 h-5 w-5 animate-spin' viewBox='0 0 24 24' fill='none'>
-                <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4' />
+                <circle
+                  className='opacity-25'
+                  cx='12'
+                  cy='12'
+                  r='10'
+                  stroke='currentColor'
+                  strokeWidth='4'
+                />
                 <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8v8H4z' />
               </svg>
               Loading servers…
