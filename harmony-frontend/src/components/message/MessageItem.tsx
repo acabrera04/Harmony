@@ -51,7 +51,7 @@ function PinMenuIcon() {
 
 // ─── Hover action bar ─────────────────────────────────────────────────────────
 
-type PinState = 'idle' | 'loading' | 'success' | 'error';
+type PinState = 'idle' | 'loading' | 'success' | 'error' | 'forbidden';
 
 /**
  * Hover/focus-within action bar for a message.
@@ -100,8 +100,10 @@ function ActionBar({
       setIsPinned(prev => !prev);
       setPinState('success');
       setTimeout(() => setPinState('idle'), 2000);
-    } catch {
-      setPinState('error');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      const isForbidden = msg.includes('FORBIDDEN') || msg.includes('403');
+      setPinState(isForbidden ? 'forbidden' : 'error');
       setTimeout(() => setPinState('idle'), 3000);
     }
   }, [isPinned, messageId, serverId]);
@@ -112,8 +114,11 @@ function ActionBar({
       {pinState === 'success' && (
         <span className='px-2 text-xs text-green-400'>{isPinned ? '📌 Pinned' : 'Unpinned'}</span>
       )}
+      {pinState === 'forbidden' && (
+        <span className='px-2 text-xs text-red-400'>You don&apos;t have permission to pin messages.</span>
+      )}
       {pinState === 'error' && (
-        <span className='px-2 text-xs text-red-400'>Failed</span>
+        <span className='px-2 text-xs text-red-400'>Failed to pin message. Please try again.</span>
       )}
 
       {/* Reply (stub) */}
