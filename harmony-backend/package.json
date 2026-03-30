@@ -8,6 +8,7 @@
     "start": "node dist/index.js",
     "lint": "eslint src tests",
     "test": "jest",
+    "test:mutation": "stryker run",
     "db:seed:mock": "prisma db seed",
     "db:seed:demo": "tsx src/dev/demoSeed.ts"
   },
@@ -31,6 +32,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.0",
+    "@stryker-mutator/jest-runner": "^9.6.0",
+    "@stryker-mutator/typescript-checker": "^9.6.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",

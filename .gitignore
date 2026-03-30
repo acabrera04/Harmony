@@ -4,4 +4,5 @@ tasks/todo.md
 *.local*
 .idea/*
 .playwright-cli/*
-
+**/.stryker-tmp/*
+**/reports/mutation/*
