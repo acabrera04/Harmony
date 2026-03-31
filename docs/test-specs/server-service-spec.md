@@ -97,9 +97,11 @@ Program paths:
 
 - Server is created successfully; a default channel is created; the creator is added as owner; the new server is returned.
 - Name that produces an empty slug (e.g. all special characters) throws `TRPCError` with code `BAD_REQUEST` from `generateUniqueSlug`.
-- Slug collision is resolved automatically by appending a numeric suffix and retrying, up to 10 attempts; if all 10 slugs collide, throws `TRPCError` with code `CONFLICT`.
-- A transient Prisma `P2002` unique-violation on `server.create` triggers `withSlugRetry` to regenerate the slug and retry up to 3 times before throwing `CONFLICT`.
-- An unexpected non-`P2002` Prisma error from `server.create` is rethrown as-is.
+- Slug collision is resolved automatically by appending a numeric suffix and retrying; `generateUniqueSlug` probes 10 total candidates (`base`, `base-1` through `base-9`); if all 10 are already taken, throws `TRPCError` with code `CONFLICT`.
+- A transient Prisma `P2002` unique-violation on `server.create` triggers `withSlugRetry` to regenerate the slug and retry; `withSlugRetry` makes up to 3 total attempts (attempts 0, 1, 2) and retries only while `attempt < maxRetries - 1` (i.e. attempts 0 and 1); if a P2002 occurs on the final attempt (attempt 2), the raw Prisma error is rethrown directly — it is not mapped to `TRPCError`.
+- An unexpected non-`P2002` Prisma error from `server.create` is rethrown as-is on the first attempt, without any retry.
+- `channelService.createDefaultChannel` is called after the server is created; if it rejects, `createServer` rejects with the same error.
+- `serverMemberService.addOwner` is called after the default channel is created; if it rejects, `createServer` rejects with the same error.
 
 ### 3.7 `updateServer`
 
@@ -112,7 +114,8 @@ Program paths:
 - Actor is the owner: update succeeds without renaming.
 - Actor is the owner: update with a new name regenerates the slug and persists both changes.
 - Actor is not the owner but is a system admin: update succeeds.
-- Name change that exhausts all slug attempts throws `TRPCError` with code `CONFLICT`.
+- Name change where all 10 `generateUniqueSlug` candidates are already occupied throws `TRPCError` with code `CONFLICT`.
+- Name change where `withSlugRetry` exhausts all 3 attempts with consecutive P2002 violations rethrows the raw Prisma error on the final attempt (not mapped to `TRPCError`).
 - `SERVER_UPDATED` event is published after any successful update.
 - Return value is the updated server record.
 
@@ -226,9 +229,12 @@ Description: creates a server, seeds a default channel, and registers the creato
 | Create server with all optional fields provided                | Valid `name`, `description`, `iconUrl`, `isPublic = true`, `ownerId`                                  | Returns created server; `channelService.createDefaultChannel` called with new server id; `serverMemberService.addOwner` called with `ownerId` and server id    |
 | Create server with only required fields                        | Valid `name` and `ownerId`; no optional fields                                                        | Returns created server; default channel and owner membership are created                                                                                      |
 | Throw BAD_REQUEST when name produces empty slug                | `name` composed entirely of special characters (e.g. `"!!!"`)                                         | Throws `TRPCError` with code `BAD_REQUEST` and message `Cannot generate slug from name`                                                                       |
-| Throw CONFLICT when all slug attempts are taken                | Valid `name`; `prisma.server.count` mocked to always return `1` for the base slug and all 10 suffixes | Throws `TRPCError` with code `CONFLICT` and message `Unable to generate a unique slug`                                                                        |
-| Retry on transient P2002 during server create                  | Valid `name`; `prisma.server.create` throws `P2002` on first attempt then succeeds on second         | Returns successfully created server; retried without further error                                                                                            |
-| Throw on non-P2002 Prisma error during server create           | Valid `name`; `prisma.server.create` throws a non-`P2002` Prisma error                               | Throws the original Prisma error unchanged                                                                                                                    |
+| Throw CONFLICT when all generateUniqueSlug candidates are taken | Valid `name`; `prisma.server.count` mocked to return non-zero for all 10 candidates (`base` through `base-9`) | Throws `TRPCError` with code `CONFLICT` and message `Unable to generate a unique slug`                                                                 |
+| Retry on transient P2002 during server create (attempt 0)      | Valid `name`; `prisma.server.create` throws `P2002` on first attempt (attempt 0) then succeeds on second (attempt 1) | Returns successfully created server; `withSlugRetry` retried once without further error                                                         |
+| Rethrow raw P2002 when withSlugRetry exhausts all 3 attempts   | Valid `name`; `prisma.server.create` throws `P2002` on all 3 attempts (attempts 0, 1, 2)            | Throws the original `PrismaClientKnownRequestError` with code `P2002`; does NOT throw `TRPCError`                                                             |
+| Throw on non-P2002 Prisma error during server create           | Valid `name`; `prisma.server.create` throws a non-`P2002` Prisma error on attempt 0                  | Throws the original Prisma error unchanged; no retry is attempted                                                                                             |
+| Propagate createDefaultChannel failure                         | Server created successfully; `channelService.createDefaultChannel` mocked to reject with an error    | `createServer` rejects with the same error; the rejection is not swallowed                                                                                    |
+| Propagate addOwner failure                                     | Server and default channel created successfully; `serverMemberService.addOwner` mocked to reject     | `createServer` rejects with the same error; the rejection is not swallowed                                                                                    |
 
 ### 4.7 `updateServer`
 
@@ -243,7 +249,8 @@ Description: updates server metadata, handles name changes with slug regeneratio
 | Skip slug regeneration when name is unchanged                | Existing server; `actorId === server.ownerId`; `data.name === server.name`                     | Update is applied with the existing slug; `generateUniqueSlug` is not called; `SERVER_UPDATED` event is published                            |
 | Allow system admin to update a server they do not own        | Existing server; `actorId !== server.ownerId`; `isSystemAdmin` mocked to return `true`         | Returns updated server; `SERVER_UPDATED` event is published                                                                                  |
 | Publish SERVER_UPDATED event after successful update         | Any successful update scenario                                                                  | `eventBus.publish` is called with `EventChannels.SERVER_UPDATED` and a payload containing `serverId`, `name`, `iconUrl`, `description`, and `timestamp` |
-| Throw CONFLICT when all slug attempts are taken on rename    | Valid `actorId`; name change; all slug candidates mocked as occupied                           | Throws `TRPCError` with code `CONFLICT` and message `Unable to generate a unique slug`                                                       |
+| Throw CONFLICT when all generateUniqueSlug candidates are taken on rename | Valid `actorId`; name change; `prisma.server.count` returns non-zero for all 10 candidates (`base` through `base-9`) | Throws `TRPCError` with code `CONFLICT` and message `Unable to generate a unique slug`              |
+| Rethrow raw P2002 when withSlugRetry exhausts all 3 attempts on rename   | Valid `actorId`; name change; `prisma.server.update` throws `P2002` on all 3 attempts         | Throws the original `PrismaClientKnownRequestError` with code `P2002`; does NOT throw `TRPCError`                                             |
 
 ### 4.8 `deleteServer`
 
@@ -295,7 +302,9 @@ Description: loads all members with user profile fields and sorts by role rank t
 - `updateServer` and `deleteServer` must independently check `isSystemAdmin`; a system admin who is not the owner must be permitted in both functions.
 - `SERVER_UPDATED` must be published after every successful update, including updates that do not change the name.
 - `createServer` must call `channelService.createDefaultChannel` and `serverMemberService.addOwner` in that order and with the correct server id, not the input id.
-- The `withSlugRetry` P2002 path only retries on a known `P2002` constraint error; any other Prisma error must pass through immediately without retry.
+- `withSlugRetry` retries only while `attempt < maxRetries - 1` (with `maxRetries = 3`, that means attempts 0 and 1 are retried; attempt 2 rethrows the raw P2002 directly). The `TRPCError(CONFLICT)` after the loop is unreachable code.
+- Non-`P2002` Prisma errors from `withSlugRetry` must pass through immediately on the first attempt without any retry.
+- `generateUniqueSlug` exhaustion (all 10 DB candidates occupied) maps to `TRPCError(CONFLICT)`; this is distinct from `withSlugRetry` P2002 exhaustion which rethrows the raw Prisma error.
 
 ## 6. Coverage Expectation
 
@@ -305,7 +314,8 @@ The cases above are intended to cover:
 - every explicit `TRPCError` branch in the service and its private helpers,
 - successful transaction paths with correct return values,
 - event publication side effects via `eventBus.publish`,
-- the slug-generation retry logic under collision and exhaustion scenarios,
+- the slug-generation retry logic under collision and exhaustion scenarios, distinguishing `generateUniqueSlug` CONFLICT from `withSlugRetry` raw-P2002 rethrow,
+- `createServer` post-insert failure paths (`createDefaultChannel` and `addOwner` rejections),
 - authorization guards for both owner and system-admin paths, and
 - representative unexpected database failure paths.
 
