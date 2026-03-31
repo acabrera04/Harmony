@@ -44,7 +44,9 @@ Purpose: return a single channel by server slug and channel slug, or `null` if n
 Program paths:
 
 - `publicGet` for the server resolves with `null`; function returns `null` immediately.
+- `publicGet` for the server rejects; the rejection propagates uncaught to the caller (this call sits outside both `try` blocks).
 - Server resolves; public channel list resolves and contains a matching slug; channel is returned with `visibility` hardcoded to `PUBLIC_INDEXABLE`.
+- Server resolves; public channel list resolves with `null`; falls through to tRPC fallback.
 - Server resolves; public channel list resolves but contains no matching slug; falls through to tRPC fallback.
 - Server resolves; public channel list `publicGet` call throws; falls through to tRPC fallback.
 - tRPC fallback resolves with channel data; channel is returned.
@@ -123,8 +125,10 @@ Description: fetches a single channel by slug pair, attempting the public REST e
 | Test Purpose | Inputs | Expected Output |
 | --- | --- | --- |
 | Return null when server lookup fails | `serverSlug = "my-server"`; `publicGet` for server resolves with `null` | Returns `null`; no further network calls are made |
+| Propagate rejection when server lookup rejects | `serverSlug = "my-server"`; `publicGet` for server rejects with a network error | Promise rejects with the same error; rejection is not caught |
 | Return channel from public endpoint on slug match | Server resolves; public channel list contains a record with matching `channelSlug` | Returns `Channel` with `visibility = PUBLIC_INDEXABLE`; `serverId` filled from server lookup |
 | Supplement missing public fields with defaults | Public channel record omits `position` and `createdAt` | Returned channel has `position = 0` and `createdAt` equal to epoch ISO string |
+| Fall through to tRPC when public channel list returns null | Server resolves; `publicGet` for channels resolves with `null`; tRPC resolves with channel data | Returns the tRPC-adapted `Channel`; does not log an error |
 | Fall through to tRPC when slug not in public list | Server resolves; public channel list has no matching slug; tRPC resolves with channel data | Returns the tRPC-adapted `Channel` |
 | Fall through to tRPC when public endpoint throws | Server resolves; public channels `publicGet` throws; tRPC resolves with channel data | Returns the tRPC-adapted `Channel`; thrown error is swallowed silently |
 | Return null when tRPC resolves with falsy value | Server resolves; public endpoint miss; tRPC resolves with `null` | Returns `null` |
@@ -160,8 +164,8 @@ Description: creates a new channel and returns the backend-confirmed record.
 
 | Test Purpose | Inputs | Expected Output |
 | --- | --- | --- |
-| Create channel with all fields | Full `Channel` object minus `id`, `createdAt`, `updatedAt`; `trpcMutate` resolves with full record | Returns adapted `Channel`; mutation called with all provided fields |
-| Create channel with optional fields absent | `topic` and `description` omitted; `trpcMutate` resolves | Returns adapted `Channel`; `topic` passed as `undefined` in mutation args |
+| Create channel with all fields | Full `Channel` object minus `id`, `createdAt`, `updatedAt`; `trpcMutate` resolves with full record | Returns adapted `Channel`; mutation called with `serverId`, `name`, `slug`, `type`, `visibility`, `topic`, and `position`; `description` is not forwarded |
+| Create channel with optional fields absent | `topic` omitted; `description` is accepted in the input type but not forwarded to the mutation; `trpcMutate` resolves | Returns adapted `Channel`; `topic` passed as `undefined` in mutation args; `description` not present in mutation payload |
 | Create channel with each visibility value | `visibility = PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, or `PRIVATE`; `trpcMutate` resolves | Returns adapted `Channel` with the correct `visibility` field |
 | Propagate rejection to caller | Valid input; `trpcMutate` rejects | Promise rejects with the underlying error |
 
@@ -177,9 +181,10 @@ Description: fetches a paginated audit log, adapting each entry and validating f
 | Forward offset option | `options = { offset: 5 }`; `trpcQuery` resolves | `trpcQuery` called with `{ serverId, channelId, offset: 5 }` |
 | Forward startDate option | `options = { startDate: "2026-01-01T00:00:00.000Z" }`; `trpcQuery` resolves | `trpcQuery` called with `{ serverId, channelId, startDate: "2026-01-01T00:00:00.000Z" }` |
 | Omit options when none provided | `options` not passed; `trpcQuery` resolves | `trpcQuery` called with only `serverId` and `channelId` |
+| Fall back to epoch string for non-string timestamp | Entry has `timestamp = 42` (a number); `trpcQuery` resolves | `AuditLogEntry.timestamp` equals epoch ISO; `console.warn` emitted |
 | Fall back to epoch string for invalid timestamp | Entry has `timestamp = "not-a-date"`; `trpcQuery` resolves | `AuditLogEntry.timestamp` equals epoch ISO; `console.warn` emitted |
 | Fall back to epoch string for missing timestamp | Entry has no `timestamp` field; `trpcQuery` resolves | `AuditLogEntry.timestamp` equals epoch ISO; `console.warn` emitted |
-| Emit warn for missing required string fields | Entry missing `id`, `channelId`, `actorId`, or `action`; `trpcQuery` resolves | Each missing field emits a `console.warn`; function still returns an entry |
+| Warn only on missing/non-string core fields | Entry has missing or non-string `id`, `channelId`, `actorId`, or `action`; `trpcQuery` resolves | Each problematic core field emits a `console.warn`; function still returns an entry; no warnings expected for `oldValue`, `newValue`, `ipAddress`, or `userAgent` |
 | Propagate rejection to caller | Valid args; `trpcQuery` rejects | Promise rejects with the underlying error |
 
 ### 4.7 `deleteChannel`
@@ -198,8 +203,8 @@ Description: deletes a channel and signals success via a boolean return value.
 - The public REST hit in `getChannel` always overrides the raw `visibility` field with `PUBLIC_INDEXABLE`; the test must confirm this even when the raw record contains a different value.
 - Missing `position` and `createdAt` from public channel records are filled with defaults (`0` and epoch ISO); tests should assert these exact defaults.
 - `updateChannel` must only forward `name` and `topic` when those keys are explicitly present in `patch`; the absence of a key must not result in the key being sent as `undefined` to the mutation.
-- `toFrontendChannel` and `toAuditLogEntry` emit `console.warn` for every missing required field; each warning path should be exercised at least once.
-- `toAuditLogEntry` falls back to an epoch ISO timestamp for any non-string or unparseable `timestamp` value; both non-string and invalid-string cases must be tested.
+- `toFrontendChannel` emits `console.warn` when any of its guarded fields (`id`, `serverId`, `slug`, `createdAt`) are missing or non-string; tests should cover at least one warning for each. `toAuditLogEntry` emits `console.warn` when any of its guarded fields (`id`, `channelId`, `actorId`, `action`) are missing or non-string; tests should likewise exercise each warning condition at least once. No warnings are emitted for `oldValue`, `newValue`, `ipAddress`, or `userAgent`.
+- `toAuditLogEntry` falls back to an epoch ISO timestamp for any non-string or unparseable `timestamp` value; all three cases (non-string, invalid-string, missing) must be tested, and corresponding `console.warn` calls should be asserted.
 - All three `ChannelVisibility` values (`PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE`) must appear in at least one test for `updateVisibility` and `createChannel`.
 
 ## 6. Mock Strategy
@@ -232,6 +237,6 @@ The cases above are intended to cover:
 - public-REST-to-tRPC fallback logic in `getChannel`,
 - all three `ChannelVisibility` enum values,
 - field-level validation warnings in `toFrontendChannel` and `toAuditLogEntry`, and
-- optional field defaults (missing `position`, `createdAt`, `topic`, `description`).
+- optional field defaults (missing `position`, `createdAt`, `topic`).
 
 Executing this specification should yield at least 80% coverage of the service's reachable execution paths, with the remaining uncovered paths limited to low-level infrastructure failures (e.g., React `cache` internals) outside the service's direct branching logic.
