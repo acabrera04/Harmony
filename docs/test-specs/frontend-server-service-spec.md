@@ -40,7 +40,7 @@ Purpose: fetch all public servers from the backend via the authenticated tRPC `s
 Program paths:
 
 - `trpcQuery` resolves with a non-empty array; each raw record is adapted through `toFrontendServer` and returned.
-- `trpcQuery` resolves with `null` or `undefined`; the null-guard (`data ?? []`) causes the function to return `[]`.
+- `trpcQuery` resolves with `null` (backend procedure returns null); the null-guard (`data ?? []`) causes the function to return `[]`.
 - `trpcQuery` rejects; the error propagates to the caller uncaught.
 
 ### 3.2 `getServer`
@@ -70,7 +70,7 @@ Purpose: return all members of a server as `User[]` via the authenticated tRPC `
 Program paths:
 
 - `trpcQuery` resolves with a non-empty array; each record is adapted through `toFrontendMember` and returned.
-- `trpcQuery` resolves with `null` or `undefined`; the null-guard (`data ?? []`) causes the function to return `[]`.
+- `trpcQuery` resolves with `null` (backend procedure returns null); the null-guard (`data ?? []`) causes the function to return `[]`.
 - `trpcQuery` rejects; the `catch` block logs via `console.warn` and returns `[]`.
 
 ### 3.5 `updateServer`
@@ -119,7 +119,7 @@ Purpose: return all members of a server as `ServerMemberInfo[]` via the authenti
 Program paths:
 
 - `trpcQuery` resolves with a non-empty array; each record is mapped to `ServerMemberInfo` with all fields correctly set.
-- `trpcQuery` resolves with `null` or `undefined`; the null-guard (`data ?? []`) causes the function to return `[]`.
+- `trpcQuery` resolves with `null` (backend procedure returns null); the null-guard (`data ?? []`) causes the function to return `[]`.
 - An entry has an unrecognised `role` string; `BACKEND_ROLE_MAP` lookup returns `undefined` and the fallback `'member'` is used.
 - `trpcQuery` rejects; the error propagates to the caller uncaught.
 
@@ -150,8 +150,7 @@ Description: fetches the full list of public servers, adapting each record from 
 | Test Purpose | Inputs | Expected Output |
 | --- | --- | --- |
 | Return adapted servers for valid API response | `trpcQuery` resolves with two valid raw server records | Returns an array of two `Server` objects with all fields correctly mapped |
-| Return empty array when API returns null | `trpcQuery` resolves with `null` | Returns `[]` |
-| Return empty array when API returns undefined | `trpcQuery` resolves with `undefined` | Returns `[]` |
+| Return empty array when API returns null | `trpcQuery` resolves with `null` (backend returns null for empty result) | Returns `[]` |
 | Propagate rejection to caller | `trpcQuery` rejects with a network error | The promise rejects with the same error; caller receives it without masking |
 | Propagate 401 unauthorized rejection | `trpcQuery` rejects with a 401 error (unauthenticated caller) | The promise rejects with the 401 error; caller is responsible for redirecting to login |
 | Map iconUrl to icon field | Raw record has `iconUrl: "https://example.com/icon.png"` and no `icon` field | Returned `Server.icon` equals `"https://example.com/icon.png"` |
@@ -192,8 +191,7 @@ Description: fetches all members of a server; silently returns `[]` on any failu
 | Test Purpose | Inputs | Expected Output |
 | --- | --- | --- |
 | Return adapted members for valid API response | `serverId = "s1"`; `trpcQuery` resolves with two valid raw member records | Returns an array of two `User` objects with correctly mapped fields |
-| Return empty array when API returns null | `serverId = "s1"`; `trpcQuery` resolves with `null` | Returns `[]` |
-| Return empty array when API returns undefined | `serverId = "s1"`; `trpcQuery` resolves with `undefined` | Returns `[]` |
+| Return empty array when API returns null | `serverId = "s1"`; `trpcQuery` resolves with `null` (backend returns null for empty result) | Returns `[]` |
 | Return empty array when API rejects with network error | `serverId = "s1"`; `trpcQuery` rejects with a network error | Returns `[]`; error is logged via `console.warn`; promise does not reject |
 | Return empty array when API rejects with 401 | `serverId = "s1"`; `trpcQuery` rejects with a 401 error (unauthenticated caller, e.g. guest view) | Returns `[]`; error is logged via `console.warn`; promise does not reject |
 | Map OWNER role to owner | Raw member has `role: "OWNER"` | Returned `User.role` equals `"owner"` |
@@ -259,8 +257,7 @@ Description: fetches all server members with their role and join date as `Server
 | Test Purpose | Inputs | Expected Output |
 | --- | --- | --- |
 | Return adapted member info for valid response | `serverId = "s1"`; `trpcQuery` resolves with two valid raw member records | Returns an array of two `ServerMemberInfo` objects with all fields correctly mapped |
-| Return empty array when API returns null | `serverId = "s1"`; `trpcQuery` resolves with `null` | Returns `[]` |
-| Return empty array when API returns undefined | `serverId = "s1"`; `trpcQuery` resolves with `undefined` | Returns `[]` |
+| Return empty array when API returns null | `serverId = "s1"`; `trpcQuery` resolves with `null` (backend returns null for empty result) | Returns `[]` |
 | Map OWNER role to owner | Raw entry has `role: "OWNER"` | Returned `ServerMemberInfo.role` equals `"owner"` |
 | Map MODERATOR role to moderator | Raw entry has `role: "MODERATOR"` | Returned `ServerMemberInfo.role` equals `"moderator"` |
 | Map unknown role to member fallback | Raw entry has `role: "SUPERUSER"` | Returned `ServerMemberInfo.role` equals `"member"` |
@@ -324,7 +321,7 @@ jest.mock('@/lib/trpc-client', () => ({
 
 Reset all mocks in `beforeEach` with `jest.resetAllMocks()` to prevent cross-test contamination.
 
-- **`trpcQuery`** — resolve with well-formed raw objects to test happy paths; reject with an `Error` (or a typed error with a `status` code) to test propagation; resolve with `null` or `undefined` to test null-guard branches in `getServers`, `getServerAuthenticated`, `getServerMembers`, and `getServerMembersWithRole`.
+- **`trpcQuery`** — resolve with well-formed raw objects to test happy paths; reject with an `Error` (or a typed error with a `status` code for 401/403/404) to test propagation; resolve with `null` to test null-guard branches in `getServers`, `getServerAuthenticated`, `getServerMembers`, and `getServerMembersWithRole`. Note: `trpcQuery` throws rather than resolving `undefined` (see implementation in `@/lib/trpc-client.ts`), so `undefined` is not a valid mock return value.
 - **`trpcMutate`** — resolve to test `updateServer`, `deleteServer`, `joinServer`, `createServer`, `changeMemberRole`, and `removeMember` happy paths; reject with an `Error` carrying a `401`, `403`, or `404` status code to test error propagation in each.
 - **`publicGet`** — resolves with `T | null` only (never `undefined`); resolve with a public server record to test the `getServer` happy path; resolve with `null` to test the 404 early-return path; reject with an `Error` to test the `catch` branch.
 - **`console.warn` / `console.error`** — use `jest.spyOn(console, 'warn')` and `jest.spyOn(console, 'error')` in tests that exercise validation warnings or error logging; restore spies in `afterEach` or use `mockImplementation(() => {})` to suppress test output noise.
