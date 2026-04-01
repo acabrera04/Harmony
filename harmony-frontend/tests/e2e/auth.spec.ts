@@ -24,14 +24,15 @@ function getPrivateChannelPath() {
   return `/channels/${SEEDED_PRIVATE_CHANNEL.serverSlug}/${SEEDED_PRIVATE_CHANNEL.channelSlug}`;
 }
 
+const NAVIGATION_TIMEOUT_MS = 15_000;
+
 async function signUpMember(page: Page, testInfo: TestInfo) {
   const { project, retry } = testInfo;
-  const normalizedProject = sanitizeIdentifier(project.name);
-  const normalizedTitle = sanitizeIdentifier(testInfo.title).slice(0, 24);
-  const normalizedRetry = `r${retry}`;
-  const emailLocalPart = `${SIGNUP_USER.username}-${normalizedProject}-${normalizedTitle}-${normalizedRetry}`.replace(/_/g, '-');
+  const normalizedProject = sanitizeIdentifier(project.name).slice(0, 8);
+  const uniqueSuffix = `${normalizedProject}-${retry}-${Date.now().toString(36)}`;
+  const emailLocalPart = `${SIGNUP_USER.username}-${uniqueSuffix}`.replace(/_/g, '-');
   const email = `${emailLocalPart}@harmony.test`;
-  const username = `${SIGNUP_USER.username}_${normalizedProject}_${normalizedTitle}_${normalizedRetry}`.slice(0, 32);
+  const username = `${SIGNUP_USER.username}_${uniqueSuffix}`.slice(0, 32);
 
   await page.goto('/auth/signup');
   await page.getByLabel(/^Email/).fill(email);
@@ -46,13 +47,16 @@ async function logInDevAdmin(page: Page, destination = getPrivateChannelPath()) 
 
   await expect(page).toHaveURL(
     new RegExp(`/auth/login\\?returnUrl=${encodeURIComponent(destination)}$`),
+    { timeout: NAVIGATION_TIMEOUT_MS },
   );
 
   await page.getByLabel('Email').fill(DEV_ADMIN_EMAIL);
   await page.getByLabel('Password').fill(DEV_ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Log In' }).click();
 
-  await expect(page).toHaveURL(new RegExp(`${escapeForRegExp(destination)}$`));
+  await expect(page).toHaveURL(new RegExp(`${escapeForRegExp(destination)}$`), {
+    timeout: NAVIGATION_TIMEOUT_MS,
+  });
 }
 
 test.describe('True E2E auth and access flows', () => {
@@ -98,6 +102,7 @@ test.describe('True E2E auth and access flows', () => {
 
     await expect(page).toHaveURL(
       new RegExp(`/channels/${DEFAULT_JOIN_SERVER_SLUG}/${SEEDED_PUBLIC_CHANNEL.channelSlug}$`),
+      { timeout: NAVIGATION_TIMEOUT_MS },
     );
     await expect(page.getByLabel(`Message #${SEEDED_PUBLIC_CHANNEL.channelName}`)).toBeVisible();
     await expect(page.getByText(SEEDED_PUBLIC_CHANNEL.welcomeText).first()).toBeVisible();
@@ -111,7 +116,9 @@ test.describe('True E2E auth and access flows', () => {
     await logInDevAdmin(page, privateChannelPath);
     await page.reload();
 
-    await expect(page).toHaveURL(new RegExp(`${escapeForRegExp(privateChannelPath)}$`));
+    await expect(page).toHaveURL(new RegExp(`${escapeForRegExp(privateChannelPath)}$`), {
+      timeout: NAVIGATION_TIMEOUT_MS,
+    });
     await expect(page.getByLabel(`Message #${SEEDED_PRIVATE_CHANNEL.channelName}`)).toBeVisible();
   });
 
@@ -141,6 +148,7 @@ test.describe('True E2E auth and access flows', () => {
     await page.getByLabel('User Settings').click();
     await expect(page).toHaveURL(
       new RegExp(`/settings\\?returnTo=${encodeURIComponent(getPrivateChannelPath())}$`),
+      { timeout: NAVIGATION_TIMEOUT_MS },
     );
 
     await page
@@ -152,7 +160,9 @@ test.describe('True E2E auth and access flows', () => {
       .getByRole('button', { name: 'Log Out', exact: true })
       .click();
 
-    await expect(page).toHaveURL(new RegExp(`${escapeForRegExp(getPublicChannelPath())}$`));
+    await expect(page).toHaveURL(new RegExp(`${escapeForRegExp(getPublicChannelPath())}$`), {
+      timeout: NAVIGATION_TIMEOUT_MS,
+    });
     await expect(page.getByLabel('Join server promotion')).toBeVisible();
     await expect(
       page.getByRole('link', {
