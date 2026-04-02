@@ -24,13 +24,13 @@ The goal is to cover the main success cases, all explicit error branches, and th
 - Example cleanup: `await db.user.deleteMany({ where: { email: { contains: 'test' } } })`
 
 ### Environment Variables & Module Initialization
-- **CRITICAL**: JWT secrets are read at module import time (lines 14–28 of auth.service.ts), NOT at function call time.
-- **DO NOT** mock `process.env` after importing the service; env var changes will have no effect.
-- **MUST** use one of these patterns:
-  - `jest.resetModules()` before each test, then re-import auth.service with new env vars set
-  - OR test with the default secrets and mock `jwt.sign()` / `jwt.verify()` at the function level
+- **CRITICAL**: JWT-related env vars (secrets and expiry settings) are read at module import time (lines 14–28 of `auth.service.ts`), NOT at function call time. This includes `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES_IN`, and `JWT_REFRESH_EXPIRES_DAYS`.
+- **DO NOT** mock `process.env` after importing the service; env var changes will have no effect on any of these values.
+- **MUST** use one of these patterns whenever a test needs different values for any of the above env vars:
+  - `jest.resetModules()` before each test, then re-import `auth.service` with new env vars set
+  - OR test with the default env vars and mock `jwt.sign()` / `jwt.verify()` at the function level
   - OR use `jest.isolateModulesAsync()` to isolate imports with different env vars
-- Example:
+- Example (note that both secrets and expiry env vars are set *before* importing the service module):
   ```javascript
   beforeEach(() => {
     delete require.cache[require.resolve('../services/auth.service')];
@@ -50,11 +50,11 @@ The goal is to cover the main success cases, all explicit error branches, and th
 
 ### Token Expiry & Time Mocking
 - When testing JWT expiry:
-  - Use `sinon.useFakeTimers()` to control JS Date/time
-  - Restore timers in `afterEach()` to prevent test pollution
+  - Use Jest fake timers (e.g., `jest.useFakeTimers()` and `jest.setSystemTime()` as in `tests/rate-limit.middleware.test.ts`) to control JS Date/time
+  - Restore timers in `afterEach()` with `jest.useRealTimers()` to prevent test pollution
   - Be aware: JWT `exp` is in seconds, Prisma `expiresAt` is in milliseconds; test both boundaries
 - Example boundary test:
-  - Token with JWT `exp = now_seconds` should still be valid (expiry uses `exp < now`, not `<=`)
+  - Token with JWT `exp = now_seconds` should be REJECTED/EXPIRED (`jsonwebtoken` treats tokens as expired when `now_seconds >= exp`, i.e., `exp <= now_seconds`)
   - Token with DB `expiresAt = now_ms` should be REVOKED (Prisma uses `expiresAt > now`, so `==` fails)
 
 ## 3. Function Purposes and Program Paths
@@ -139,12 +139,12 @@ Description: creates a new user, persists the account, auto-joins default server
 | Continue on joinServer failure | Valid inputs; `serverMemberService.joinServer` throws an error | Registration succeeds and tokens are returned; error is caught and not propagated |
 | Hash password with 12 bcrypt rounds | Valid inputs | Stored password hash is a bcrypt hash; plaintext password is never stored |
 | displayName defaults to username | Valid inputs; no explicit `displayName` parameter | User record has `displayName === username` |
-| Reject empty email | email: `""`, username: `"user"`, password: `"pass"` | Throws `TRPCError` with code `BAD_REQUEST` or similar; user is not created |
-| Reject malformed email | email: `"notanemail"`, username: `"user"`, password: `"pass"` | Throws `TRPCError` with code `BAD_REQUEST`; email format validation fails |
-| Reject email > 254 characters | email: (255-char string), username: `"user"`, password: `"pass"` | Throws `TRPCError` with code `BAD_REQUEST`; email exceeds max length |
-| Reject username > max length | username: (33+ char string), email: `"user@ex.com"`, password: `"pass"` | Throws `TRPCError` with code `BAD_REQUEST`; username exceeds schema constraint |
-| Reject null/undefined email | email: `null`, username: `"user"`, password: `"pass"` | Throws `TRPCError` or TypeError; parameter validation fails |
-| Reject whitespace-only password | password: `"   "`, email: `"user@ex.com"`, username: `"user"` | Throws `TRPCError` with code `BAD_REQUEST`; password is empty after trim |
+| Empty email input (router-level validation) | email: `""`, username: `"user"`, password: `"pass"` | `authService.register` does not perform this validation; this case is validated by Zod in `auth.router.ts` and should be covered in auth-router tests |
+| Malformed email input (router-level validation) | email: `"notanemail"`, username: `"user"`, password: `"pass"` | `authService.register` does not enforce email format; malformed emails are rejected in the router via Zod schema, not at the service layer |
+| Overlong email input (router-level validation) | email: (255-char string), username: `"user"`, password: `"pass"` | Length constraints are enforced by router-level/Zod validation and/or the database schema; `authService.register` itself does not raise `TRPCError(BAD_REQUEST)` here |
+| Overlong username input (router-level validation) | username: (33+ char string), email: `"user@ex.com"`, password: `"pass"` | Username length is validated in the auth router; service-level tests should not expect `TRPCError(BAD_REQUEST)` from `authService.register` for this case |
+| Null/undefined email input (router-level validation) | email: `null`, username: `"user"`, password: `"pass"` | Parameter presence/type checks are handled before calling `authService.register`; this scenario belongs in auth-router or integration tests, not service tests |
+| Whitespace-only password input (router-level validation) | password: `"   "`, email: `"user@ex.com"`, username: `"user"` | `authService.register` treats the password as a string without trimming; rejection of whitespace-only passwords is done via Zod in `auth.router.ts` and should be specified in router tests |
 
 ### 4.2 `login`
 
@@ -161,7 +161,7 @@ Description: authenticates user by email and password, with dev-only admin overr
 | Admin override creates user if not exists | `NODE_ENV = 'development'`, admin email provided | User is created with `email = ADMIN_EMAIL`, `username = 'admin'`, `displayName = 'System Admin'` |
 | Admin override makes admin OWNER of all servers | `NODE_ENV = 'development'`, admin login, 3+ servers exist | For each server in the database, a serverMember record is created or updated with role `OWNER` |
 | Admin user creation fails on DB error | `NODE_ENV = 'development'`, `admin@harmony.dev`/`admin`, but `prisma.user.upsert()` throws error | Throws error (does not silently fail); login fails |
-| Admin serverMember creation fails on loop | `NODE_ENV = 'development'`, admin login succeeds, but `prisma.serverMember.upsert()` fails on 3rd iteration | Error is propagated to login caller (behavior TBD: soft-fail like register's joinServer, or hard-fail?) |
+| Admin serverMember creation fails on loop | `NODE_ENV = 'development'`, admin login succeeds, but `prisma.serverMember.upsert()` fails on 3rd iteration | Error is propagated to the login caller; login fails (no soft-fail/partial success) |
 
 ### 4.3 `logout`
 
@@ -182,11 +182,11 @@ Description: validates a refresh token, revokes the old one, and issues new acce
 |---|---|---|
 | Refresh with valid, non-revoked, non-expired token | rawRefreshToken: a valid token stored in DB with `revokedAt === null` and `expiresAt > now` | Returns `{ accessToken, refreshToken }`; old token is marked as revoked; new tokens are issued and new refresh token is stored in DB |
 | Reject token with invalid signature | rawRefreshToken: a token with tampered payload or signature | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid refresh token"` |
-| Reject token signed with wrong algorithm | rawRefreshToken: a token signed with 'HS512' instead of expected algorithm | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid refresh token"` |
+| Reject token signed with wrong key/secret | rawRefreshToken: a token signed with a different secret than the one used by `auth.service` | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid refresh token"` |
 | Reject expired token | rawRefreshToken: a valid token whose JWT `exp` claim is in the past | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid refresh token"` |
 | Reject revoked token | rawRefreshToken: a token with `revokedAt !== null` in DB | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Refresh token revoked or expired"` |
 | Reject token past database expiry | rawRefreshToken: a valid JWT but DB record has `expiresAt < now` | Atomic `updateMany` returns `count === 0`; throws `TRPCError` with code `UNAUTHORIZED` and message `"Refresh token revoked or expired"` |
-| Reject token at exact expiry boundary | JWT `exp = now_seconds`, DB `expiresAt = now_ms`, both equal | JWT verification may succeed (uses `exp < now`), but Prisma `expiresAt > now` fails; throws "Refresh token revoked or expired" |
+| Reject token at exact expiry boundary | JWT `exp = now_seconds`, DB `expiresAt = now_ms`, both equal | JWT verification fails (`jsonwebtoken` rejects when `now_seconds >= exp`); throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid refresh token"` |
 | Atomic revocation prevents replay | Two concurrent refresh requests with the same token | Exactly one request succeeds and revokes the token; the other sees `count === 0` and fails with `UNAUTHORIZED`; no duplicate tokens are issued |
 | Token cannot be reused after refresh | 1. Refresh with tokenA → get tokenB; 2. Try to refresh again with tokenA | First refresh succeeds; second refresh fails with "Refresh token revoked or expired" |
 | New tokens are properly signed | Valid refresh | Returned `accessToken` and `refreshToken` are valid JWTs; `accessToken` has `sub` claim; `refreshToken` has `sub` and `jti` claims |
@@ -200,7 +200,7 @@ Description: validates an access token and returns the decoded payload (pure ver
 |---|---|---|
 | Verify valid access token | accessToken: a valid JWT signed with `ACCESS_SECRET` | Returns `JwtPayload { sub: userId }` |
 | Reject token with invalid signature | accessToken: a JWT signed with wrong secret | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid or expired access token"` |
-| Reject token with wrong algorithm | accessToken: a JWT signed with 'RS256' instead of HS256 | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid or expired access token"` |
+| Reject token signed with wrong secret | accessToken: a JWT signed with a different secret than `ACCESS_SECRET` | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid or expired access token"` |
 | Reject expired access token | accessToken: a valid JWT with `exp` claim in the past | Throws `TRPCError` with code `UNAUTHORIZED` and message `"Invalid or expired access token"` |
 | Extract userId from valid token | accessToken: signed JWT | Decoded payload contains `sub` field equal to the original userId |
 | No database interaction | Any token | Function does not call any database methods; verification is pure |
@@ -211,7 +211,7 @@ Description: validates an access token and returns the decoded payload (pure ver
 ### Security & Timing
 - **Timing attacks on login**: ensure `bcrypt.compare()` is ALWAYS called for non-existent emails, even though the user lookup fails early. Spy on bcrypt to verify this.
 - **No user enumeration**: both "user not found" and "wrong password" return identical error message and timing.
-- **JWT algorithm enforcement**: tokens signed with wrong algorithm (e.g., RS256 vs HS256) are rejected.
+- **JWT secret enforcement**: tokens signed with a different secret are rejected. Note: `jsonwebtoken` does not enforce an algorithm allowlist by default, so algorithm mismatch tests (e.g., HS512 vs HS256) may not fail with a shared HMAC secret.
 - **No plaintext password storage**: verify password is never logged, returned, or stored unencrypted.
 
 ### Concurrency & Atomicity
@@ -220,9 +220,9 @@ Description: validates an access token and returns the decoded payload (pure ver
 - **No duplicate token issuance**: concurrent refresh requests cannot both succeed with the same token.
 
 ### Token Expiry & Boundaries
-- **JWT expiry precision**: JWT `exp` is in seconds; test that tokens with `exp <= now_seconds` are rejected.
+- **JWT expiry precision**: JWT `exp` is in seconds; `jsonwebtoken` treats tokens as expired when `now_seconds >= exp` (i.e., `exp <= now_seconds` is rejected).
 - **DB expiry precision**: Prisma `expiresAt` is in milliseconds; test that tokens with `expiresAt <= now_ms` are rejected.
-- **Expiry boundary mismatch**: JWT verification may succeed at `exp == now_seconds`, but Prisma `expiresAt > now_ms` fails at the same instant (1ms window). Test both sides of this boundary.
+- **Expiry boundary alignment**: Both JWT verification (`exp <= now_seconds` → rejected) and Prisma (`expiresAt > now` → `expiresAt <= now` fails) reject at the exact boundary. Test both sides of this boundary.
 
 ### Admin & Configuration
 - **Admin override isolation**: ensure admin override is disabled in production and only active in dev/test.
@@ -239,8 +239,8 @@ Description: validates an access token and returns the decoded payload (pure ver
 - **Token hashing for storage**: refresh tokens are hashed with SHA256 before storage in DB; raw tokens are never stored.
 
 ### JWT Payload Structure
-- **Access token structure**: contains only `sub` claim (userId).
-- **Refresh token structure**: contains both `sub` and `jti` claims (jti is a random UUID for uniqueness).
+- **Access token structure**: custom payload includes `sub` claim (userId); the JWT library may also add standard claims (e.g., `iat`, `exp` via `expiresIn`).
+- **Refresh token structure**: custom payload includes both `sub` and `jti` claims (jti is a random UUID for uniqueness); the JWT library may also add standard claims (e.g., `iat`, `exp` via `expiresIn`).
 
 ### Rate Limiting (Responsibility: API Layer)
 - **The auth service does NOT implement rate limiting**.
