@@ -149,6 +149,18 @@ describe('publicApiService', () => {
         expectedTopic: 'Release notes',
       },
       {
+        label: 'private visibility mapping in a successful payload',
+        response: makePublicChannelResponse({
+          id: 'ch-private',
+          visibility: 'PRIVATE',
+        }),
+        serverSlug: 'harmony-hq',
+        channelSlug: 'general',
+        expectedType: ChannelType.TEXT,
+        expectedVisibility: ChannelVisibility.PRIVATE,
+        expectedTopic: 'Welcome',
+      },
+      {
         label: 'unknown backend enum values via safe defaults',
         response: makePublicChannelResponse({
           id: 'ch-3',
