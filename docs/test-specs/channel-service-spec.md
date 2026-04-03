@@ -156,7 +156,7 @@ Description: permanently removes a channel and invalidates all associated cache 
 | CS-22 | Throw NOT_FOUND when channel does not exist | Unknown `channelId`; any `serverId` | Throws `TRPCError` with `code === 'NOT_FOUND'` and message `'Channel not found in this server'` |
 | CS-23 | Throw NOT_FOUND when channel belongs to a different server | Valid `channelId` that exists but under a different `serverId` | Throws `TRPCError` with `code === 'NOT_FOUND'` and message `'Channel not found in this server'` |
 | CS-24 | CHANNEL_DELETED event payload contains channelId, serverId, and timestamp | Successful delete of existing channel | `eventBus.publish` called with `EventChannels.CHANNEL_DELETED` and payload `{ channelId, serverId, timestamp }` |
-| CS-25 | All three cache invalidations are called even when cacheService rejects | Spy all three cache calls to reject | `deleteChannel` still resolves; none of the rejections propagate |
+| CS-25 | Cache and event side effects do not block the return value | Spy all three cache calls to reject; spy `eventBus.publish` to reject | `deleteChannel` still resolves; none of the four rejections propagate |
 
 ### 4.6 `createDefaultChannel`
 
