@@ -171,11 +171,15 @@ describe('authService.register', () => {
     expect(createArg.data.userId).toBe(mockUserId);
     expect(typeof createArg.data.tokenHash).toBe('string');
     expect(createArg.data.tokenHash).toHaveLength(64); // sha256 hex
-    // Verify expiresAt is ~7 days in the future (JWT_REFRESH_EXPIRES_DAYS=7)
+    // Verify expiresAt is ~7 calendar days in the future using the same
+    // Date#setDate logic as the implementation to avoid DST-related flakiness.
     const expiresMs = createArg.data.expiresAt.getTime();
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-    expect(expiresMs).toBeGreaterThanOrEqual(before + sevenDaysMs);
-    expect(expiresMs).toBeLessThanOrEqual(after + sevenDaysMs);
+    const expectedMin = new Date(before);
+    expectedMin.setDate(expectedMin.getDate() + 7);
+    const expectedMax = new Date(after);
+    expectedMax.setDate(expectedMax.getDate() + 7);
+    expect(expiresMs).toBeGreaterThanOrEqual(expectedMin.getTime());
+    expect(expiresMs).toBeLessThanOrEqual(expectedMax.getTime());
   });
 
   it('rejects duplicate email with CONFLICT', async () => {
@@ -357,29 +361,19 @@ describe('authService.login', () => {
   });
 
   it('disables admin override in production', async () => {
-    await jest.isolateModulesAsync(async () => {
-      process.env.NODE_ENV = 'production';
-      process.env.JWT_ACCESS_SECRET = ACCESS_SECRET;
-      process.env.JWT_REFRESH_SECRET = REFRESH_SECRET;
+    // The admin-override check is runtime (process.env.NODE_ENV !== 'production'),
+    // not import-time, so we can just toggle the env var directly.
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      // Re-mock prisma inside the isolated scope
-      jest.mock('../src/db/prisma', () => ({
-        prisma: {
-          user: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn(), upsert: jest.fn() },
-          refreshToken: { create: jest.fn(), updateMany: jest.fn() },
-          server: { findFirst: jest.fn(), findMany: jest.fn() },
-          serverMember: { upsert: jest.fn() },
-        },
-      }));
-
-      const { authService: prodAuthService } = await import('../src/services/auth.service');
-
+    try {
       await expect(
-        prodAuthService.login(ADMIN_EMAIL, 'admin'),
+        authService.login(ADMIN_EMAIL, 'admin'),
       ).rejects.toMatchObject({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
-
-      process.env.NODE_ENV = 'test';
-    });
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
   });
 
   it('admin override upserts admin user with correct fields', async () => {
@@ -618,22 +612,24 @@ describe('authService.refreshTokens', () => {
   it('rejects token at exact JWT expiry boundary (exp === now)', async () => {
     // jsonwebtoken treats tokens as expired when now_seconds >= exp
     jest.useFakeTimers();
-    const now = Date.now();
-    jest.setSystemTime(now);
+    try {
+      const now = Date.now();
+      jest.setSystemTime(now);
 
-    // Sign a token that expires exactly "now" (exp = floor(now/1000))
-    const expiredAtBoundary = jwt.sign(
-      { sub: mockUserId, jti: crypto.randomUUID() },
-      REFRESH_SECRET,
-      { expiresIn: 0 },
-    );
+      // Sign a token that expires exactly "now" (exp = floor(now/1000))
+      const expiredAtBoundary = jwt.sign(
+        { sub: mockUserId, jti: crypto.randomUUID() },
+        REFRESH_SECRET,
+        { expiresIn: 0 },
+      );
 
-    await expect(authService.refreshTokens(expiredAtBoundary)).rejects.toMatchObject({
-      code: 'UNAUTHORIZED',
-      message: 'Invalid refresh token',
-    });
-
-    jest.useRealTimers();
+      await expect(authService.refreshTokens(expiredAtBoundary)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Invalid refresh token',
+      });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('new tokens are properly signed JWTs with correct claims', async () => {
@@ -676,11 +672,15 @@ describe('authService.refreshTokens', () => {
     };
     expect(createArg.data.userId).toBe(mockUserId);
     expect(createArg.data.tokenHash).toHaveLength(64);
-    // Verify expiresAt is ~7 days in the future
+    // Verify expiresAt is ~7 calendar days in the future using the same
+    // Date#setDate logic as the implementation to avoid DST-related flakiness.
     const expiresMs = createArg.data.expiresAt.getTime();
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-    expect(expiresMs).toBeGreaterThanOrEqual(before + sevenDaysMs);
-    expect(expiresMs).toBeLessThanOrEqual(after + sevenDaysMs);
+    const expectedMin = new Date(before);
+    expectedMin.setDate(expectedMin.getDate() + 7);
+    const expectedMax = new Date(after);
+    expectedMax.setDate(expectedMax.getDate() + 7);
+    expect(expiresMs).toBeGreaterThanOrEqual(expectedMin.getTime());
+    expect(expiresMs).toBeLessThanOrEqual(expectedMax.getTime());
   });
 });
 
