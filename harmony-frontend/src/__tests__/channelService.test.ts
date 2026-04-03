@@ -31,6 +31,7 @@ jest.mock('react', () => ({
 }));
 
 import { publicGet, trpcQuery, trpcMutate } from '@/lib/trpc-client';
+import { ChannelType } from '@/types';
 import {
   getChannels,
   getChannel,
@@ -218,6 +219,39 @@ describe('channelService', () => {
       );
     });
 
+    it('propagates server-lookup rejection (uncaught path)', async () => {
+      mockedPublicGet.mockRejectedValueOnce(new Error('DNS failure'));
+
+      await expect(getChannel('my-server', 'general')).rejects.toThrow('DNS failure');
+      expect(mockedTrpcQuery).not.toHaveBeenCalled();
+    });
+
+    it('fills default position=0 and createdAt=epoch for public hit missing those fields', async () => {
+      mockedPublicGet
+        .mockResolvedValueOnce({ id: 'srv-1' } as never)
+        .mockResolvedValueOnce({
+          channels: [
+            {
+              id: 'ch-pub',
+              name: 'public-chan',
+              slug: 'public-chan',
+              type: 'TEXT',
+              // position and createdAt intentionally omitted
+            },
+          ],
+        } as never);
+
+      const result = await getChannel('my-server', 'public-chan');
+
+      expect(result).toMatchObject({
+        id: 'ch-pub',
+        serverId: 'srv-1',
+        visibility: 'PUBLIC_INDEXABLE',
+        position: 0,
+        createdAt: new Date(0).toISOString(),
+      });
+    });
+
     it('encodes server slug in URL', async () => {
       mockedPublicGet.mockResolvedValueOnce(null);
 
@@ -230,15 +264,19 @@ describe('channelService', () => {
   // ── updateVisibility ─────────────────────────────────────────────────────
 
   describe('updateVisibility', () => {
-    it('calls tRPC mutate with correct parameters', async () => {
+    it.each([
+      ['PRIVATE', ChannelVisibility.PRIVATE],
+      ['PUBLIC_INDEXABLE', ChannelVisibility.PUBLIC_INDEXABLE],
+      ['PUBLIC_NO_INDEX', ChannelVisibility.PUBLIC_NO_INDEX],
+    ] as const)('forwards %s through the mutation payload', async (_label, value) => {
       mockedTrpcMutate.mockResolvedValue(undefined);
 
-      await updateVisibility('ch-1', ChannelVisibility.PRIVATE, 'srv-1');
+      await updateVisibility('ch-1', value, 'srv-1');
 
       expect(mockedTrpcMutate).toHaveBeenCalledWith('channel.setVisibility', {
         serverId: 'srv-1',
         channelId: 'ch-1',
-        visibility: 'PRIVATE',
+        visibility: value,
       });
     });
 
@@ -312,7 +350,7 @@ describe('channelService', () => {
         serverId: 'srv-1',
         name: 'announcements',
         slug: 'announcements',
-        type: 'ANNOUNCEMENT' as const,
+        type: ChannelType.ANNOUNCEMENT,
         visibility: ChannelVisibility.PUBLIC_INDEXABLE,
         topic: 'News',
         position: 2,
@@ -333,6 +371,70 @@ describe('channelService', () => {
       expect(result).toMatchObject({ id: 'ch-new', name: 'announcements' });
     });
 
+    it('sends topic as undefined when omitted from input', async () => {
+      const input = {
+        serverId: 'srv-1',
+        name: 'no-topic',
+        slug: 'no-topic',
+        type: ChannelType.TEXT,
+        visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+        position: 0,
+      };
+      mockedTrpcMutate.mockResolvedValue(makeRawChannel({ ...input, id: 'ch-no-topic' }));
+
+      await createChannel(input);
+
+      expect(mockedTrpcMutate).toHaveBeenCalledWith('channel.createChannel', {
+        serverId: 'srv-1',
+        name: 'no-topic',
+        slug: 'no-topic',
+        type: 'TEXT',
+        visibility: 'PUBLIC_INDEXABLE',
+        topic: undefined,
+        position: 0,
+      });
+    });
+
+    it('does not forward description to the mutation payload', async () => {
+      const input = {
+        serverId: 'srv-1',
+        name: 'with-desc',
+        slug: 'with-desc',
+        type: ChannelType.TEXT,
+        visibility: ChannelVisibility.PRIVATE,
+        description: 'Should not appear in payload',
+        position: 1,
+      };
+      mockedTrpcMutate.mockResolvedValue(makeRawChannel({ ...input, id: 'ch-desc' }));
+
+      await createChannel(input);
+
+      const payload = mockedTrpcMutate.mock.calls[0][1] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('description');
+    });
+
+    it.each([
+      ['PUBLIC_NO_INDEX', ChannelVisibility.PUBLIC_NO_INDEX],
+      ['PRIVATE', ChannelVisibility.PRIVATE],
+    ] as const)('forwards %s visibility through the mutation payload', async (_label, vis) => {
+      const input = {
+        serverId: 'srv-1',
+        name: 'vis-test',
+        slug: 'vis-test',
+        type: ChannelType.TEXT,
+        visibility: vis,
+        position: 0,
+      };
+      mockedTrpcMutate.mockResolvedValue(makeRawChannel({ ...input, id: 'ch-vis' }));
+
+      await createChannel(input);
+
+      expect(mockedTrpcMutate).toHaveBeenCalledWith(
+        'channel.createChannel',
+        expect.objectContaining({ visibility: vis }),
+      );
+    });
+
     it('propagates creation errors', async () => {
       mockedTrpcMutate.mockRejectedValue(new Error('Duplicate slug'));
 
@@ -341,7 +443,7 @@ describe('channelService', () => {
           serverId: 'srv-1',
           name: 'general',
           slug: 'general',
-          type: 'TEXT' as const,
+          type: ChannelType.TEXT,
           visibility: ChannelVisibility.PUBLIC_INDEXABLE,
           position: 0,
         }),
