@@ -122,7 +122,7 @@ Description: creates a channel with type/visibility validation, server existence
 
 | Test ID | Test Purpose | Inputs | Expected Output / Side Effects |
 | ------- | ------------ | ------ | ------------------------------ |
-| CS-6 | Create a TEXT channel successfully | Valid `serverId`, `name`, `slug`, `type = TEXT`, `visibility = PUBLIC_INDEXABLE`, no `position` | Returns created `Channel`; `cacheService.set` called with key `channel:{id}:visibility`; `cacheService.invalidate` called with `server:{serverId}:public_channels`; `eventBus.publish` called with `CHANNEL_CREATED` payload containing `channelId`, `serverId`, `timestamp` |
+| CS-6 | Create a TEXT channel successfully | Valid `serverId`, `name`, `slug`, `type = TEXT`, `visibility = PUBLIC_INDEXABLE`, no `position` | Returns created `Channel`; `cacheService.set` called with key `channel:{id}:visibility` and value `PUBLIC_INDEXABLE` (the channel's visibility); `cacheService.invalidate` called with `server:{serverId}:public_channels`; `eventBus.publish` called with `EventChannels.CHANNEL_CREATED` and payload `{ channelId, serverId, timestamp }` |
 | CS-7 | Default position to 0 when not supplied | Valid input without `position` field | Created channel has `position === 0` |
 | CS-8 | Throw BAD_REQUEST for VOICE channel with PUBLIC_INDEXABLE visibility | `type = VOICE`, `visibility = PUBLIC_INDEXABLE` | Throws `TRPCError` with `code === 'BAD_REQUEST'` and message `'VOICE channels cannot have PUBLIC_INDEXABLE visibility'`; no Prisma calls are made |
 | CS-9 | Allow VOICE channel with PRIVATE visibility | `type = VOICE`, `visibility = PRIVATE`, valid server and unique slug | Returns created `Channel`; no error thrown |
@@ -137,7 +137,7 @@ Description: patches mutable channel fields and invalidates caches; publishes an
 
 | Test ID | Test Purpose | Inputs | Expected Output / Side Effects |
 | ------- | ------------ | ------ | ------------------------------ |
-| CS-14 | Update channel name successfully | Existing `channelId` and matching `serverId`; `patch = { name: 'new-name' }` | Returns updated `Channel` with new name; `cacheService.invalidatePattern` called with `channel:msgs:{channelId}:*`; `cacheService.invalidate` called with `server:{serverId}:public_channels`; `eventBus.publish` called with `CHANNEL_UPDATED` |
+| CS-14 | Update channel name successfully | Existing `channelId` and matching `serverId`; `patch = { name: 'new-name' }` | Returns updated `Channel` with new name; `cacheService.invalidatePattern` called with `channel:msgs:{channelId}:*`; `cacheService.invalidate` called with `server:{serverId}:public_channels`; `eventBus.publish` called with `EventChannels.CHANNEL_UPDATED` and payload `{ channelId, serverId, timestamp }` |
 | CS-15 | Update channel topic | Existing `channelId`; `patch = { topic: 'new topic' }` | Returns updated channel with new topic |
 | CS-16 | Update channel position | Existing `channelId`; `patch = { position: 5 }` | Returns updated channel with `position === 5` |
 | CS-17 | Throw NOT_FOUND when channel does not exist | Unknown `channelId`; any `serverId` | Throws `TRPCError` with `code === 'NOT_FOUND'` and message `'Channel not found in this server'` |
@@ -152,7 +152,7 @@ Description: permanently removes a channel and invalidates all associated cache 
 
 | Test ID | Test Purpose | Inputs | Expected Output / Side Effects |
 | ------- | ------------ | ------ | ------------------------------ |
-| CS-21 | Delete channel successfully | Existing `channelId` and matching `serverId` | `prisma.channel.delete` called; `cacheService.invalidate` called with `channel:{channelId}:visibility`; `cacheService.invalidatePattern` called with `channel:msgs:{channelId}:*`; `cacheService.invalidate` called with `server:{serverId}:public_channels`; `eventBus.publish` called with `CHANNEL_DELETED`; function returns `undefined` |
+| CS-21 | Delete channel successfully | Existing `channelId` and matching `serverId` | `prisma.channel.delete` called; `cacheService.invalidate` called with `channel:{channelId}:visibility`; `cacheService.invalidatePattern` called with `channel:msgs:{channelId}:*`; `cacheService.invalidate` called with `server:{serverId}:public_channels`; `eventBus.publish` called with `EventChannels.CHANNEL_DELETED` and payload `{ channelId, serverId, timestamp }`; function returns `undefined` |
 | CS-22 | Throw NOT_FOUND when channel does not exist | Unknown `channelId`; any `serverId` | Throws `TRPCError` with `code === 'NOT_FOUND'` and message `'Channel not found in this server'` |
 | CS-23 | Throw NOT_FOUND when channel belongs to a different server | Valid `channelId` that exists but under a different `serverId` | Throws `TRPCError` with `code === 'NOT_FOUND'` and message `'Channel not found in this server'` |
 | CS-24 | CHANNEL_DELETED event payload contains channelId, serverId, and timestamp | Successful delete of existing channel | `eventBus.publish` called with `EventChannels.CHANNEL_DELETED` and payload `{ channelId, serverId, timestamp }` |
