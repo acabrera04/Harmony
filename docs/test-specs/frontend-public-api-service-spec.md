@@ -37,7 +37,8 @@ jest.mock('react', () => ({
   - `PublicServerResponse`
   - `PublicChannelResponse`
   - `PublicMessagesApiResponse`
-- When asserting request construction, verify that `encodeURIComponent` is reflected in the URL for `serverSlug`, `channelSlug`, and `channelId`.
+- Unless a test explicitly mocks `API_CONFIG.BASE_URL`, assume the default test-time base URL is `http://localhost:4000`, because `NEXT_PUBLIC_API_URL` is normally unset in Jest.
+- When asserting request construction, verify that `encodeURIComponent` is reflected in the full absolute URL for `serverSlug`, `channelSlug`, and `channelId`.
 - For `fetchPublicServer` and `fetchPublicChannel`, assert that `fetch` receives `next: { revalidate: CACHE_DURATION.PUBLIC_API_REVALIDATE }`.
 - For `fetchPublicMessages`, assert that the request omits the React-cache wrapper and uses the expected `?page=` query string.
 - The spec intentionally treats React `cache()` internals as framework behavior, not service logic. Tests should validate observable service behavior, not React memoization implementation details.
@@ -136,7 +137,7 @@ Description: fetches public server metadata and suppresses all failures by retur
 | Test Purpose | Inputs | Expected Output |
 | --- | --- | --- |
 | Return mapped public server on success | `serverSlug = "gamedev"`; `fetch` resolves `200` with a valid `PublicServerResponse` | Returns a server object with `iconUrl` mapped to `icon`, and the remaining fields copied correctly |
-| URL-encode the server slug | `serverSlug = "game dev"`; `fetch` resolves successfully | `fetch` is called with `/api/public/servers/game%20dev` |
+| URL-encode the server slug | `serverSlug = "game dev"`; `fetch` resolves successfully | `fetch` is called with `http://localhost:4000/api/public/servers/game%20dev` |
 | Forward ISR revalidation options | Valid slug; `fetch` resolves successfully | `fetch` is called with `next: { revalidate: CACHE_DURATION.PUBLIC_API_REVALIDATE }` |
 | Return null on 404 | Valid slug; `fetch` resolves with `ok = false`, `status = 404` | Returns `null` |
 | Return null on 403 | Valid slug; `fetch` resolves with `ok = false`, `status = 403` | Returns `null` |
@@ -158,7 +159,7 @@ Description: fetches a guest-visible channel and distinguishes private-channel d
 | Preserve `PRIVATE` value when returned in a 200 payload | Successful `200` response with `visibility = "PRIVATE"` | Returned `channel.visibility` is `ChannelVisibility.PRIVATE`; this is a mapper assertion even though the expected public API behavior is a 403 for private channels |
 | Default unknown visibility to indexable public | Successful `200` response with `visibility = "UNKNOWN"` | Returned `channel.visibility` is `ChannelVisibility.PUBLIC_INDEXABLE` |
 | Convert `null` topic to `undefined` | Successful `200` response with `topic = null` | Returned `channel.topic` is `undefined` |
-| URL-encode both slugs | `serverSlug = "game dev"`, `channelSlug = "help & support"` | `fetch` is called with `/api/public/servers/game%20dev/channels/help%20%26%20support` |
+| URL-encode both slugs | `serverSlug = "game dev"`, `channelSlug = "help & support"` | `fetch` is called with `http://localhost:4000/api/public/servers/game%20dev/channels/help%20%26%20support` |
 | Forward ISR revalidation options | Valid slugs; `fetch` resolves successfully | `fetch` is called with `next: { revalidate: CACHE_DURATION.PUBLIC_API_REVALIDATE }` |
 | Return null on 404 | Valid slugs; `fetch` resolves with `status = 404` | Returns `null` |
 | Return private sentinel on 403 | Valid slugs; `fetch` resolves with `status = 403` | Returns `{ isPrivate: true }` |
@@ -173,9 +174,9 @@ Description: fetches paginated public messages and converts them into the fronte
 | --- | --- | --- |
 | Return mapped messages and `hasMore = true` when page is full | `channelId = "c1"`, `page = 1`; `fetch` resolves `200` with `messages.length === pageSize` | Returns mapped `Message[]`; `hasMore` is `true` |
 | Return mapped messages and `hasMore = false` when page is partial | `channelId = "c1"`, `page = 2`; `fetch` resolves `200` with `messages.length < pageSize` | Returns mapped `Message[]`; `hasMore` is `false` |
-| Default `page` to 1 | `channelId = "c1"`; `page` argument omitted | `fetch` is called with `?page=1` |
-| Forward explicit page number | `channelId = "c1"`, `page = 3` | `fetch` is called with `?page=3` |
-| URL-encode channel id | `channelId = "channel/with space"` | `fetch` is called with `/api/public/channels/channel%2Fwith%20space/messages?page=1` |
+| Default `page` to 1 | `channelId = "c1"`; `page` argument omitted | `fetch` is called with `http://localhost:4000/api/public/channels/c1/messages?page=1` |
+| Forward explicit page number | `channelId = "c1"`, `page = 3` | `fetch` is called with `http://localhost:4000/api/public/channels/c1/messages?page=3` |
+| URL-encode channel id | `channelId = "channel/with space"` | `fetch` is called with `http://localhost:4000/api/public/channels/channel%2Fwith%20space/messages?page=1` |
 | Map author and timestamp fields correctly | Successful `200` response with one `PublicMessageResponse` | Returned message contains `channelId`, `authorId`, nested `author`, `content`, and `timestamp = createdAt` |
 | Convert `editedAt = null` to `undefined` | Successful `200` response with `editedAt = null` | Returned message has `editedAt` equal to `undefined` |
 | Return empty fallback on 404 | Valid inputs; `fetch` resolves with `ok = false`, `status = 404` | Returns `{ messages: [], hasMore: false }` |
