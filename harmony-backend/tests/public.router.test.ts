@@ -19,17 +19,24 @@ import { _clearBucketsForTesting } from '../src/middleware/rate-limit.middleware
 
 jest.mock('../src/db/prisma', () => ({
   prisma: {
-    server: { findUnique: jest.fn() },
-    channel: { findUnique: jest.fn(), findMany: jest.fn() },
+    server: { findUnique: jest.fn(), findMany: jest.fn() },
+    channel: { findUnique: jest.fn(), findMany: jest.fn(), findFirst: jest.fn() },
     message: { findMany: jest.fn(), findFirst: jest.fn() },
   },
 }));
 
 import { prisma } from '../src/db/prisma';
+import { cacheService } from '../src/services/cache.service';
+
+const mockCacheService = cacheService as unknown as {
+  get: jest.Mock;
+  isStale: jest.Mock;
+  getOrRevalidate: jest.Mock;
+};
 
 const mockPrisma = prisma as unknown as {
-  server: { findUnique: jest.Mock };
-  channel: { findUnique: jest.Mock; findMany: jest.Mock };
+  server: { findUnique: jest.Mock; findMany: jest.Mock };
+  channel: { findUnique: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock };
   message: { findMany: jest.Mock; findFirst: jest.Mock };
 };
 
@@ -332,6 +339,327 @@ describe('GET /api/public/channels/:channelId/messages/:messageId', () => {
     );
 
     expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('PR-16: returns 500 on unexpected Prisma error', async () => {
+    mockPrisma.channel.findUnique.mockRejectedValue(new Error('DB down'));
+
+    const res = await request(app).get(`/api/public/channels/${CHANNEL.id}/messages/${MESSAGE.id}`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Internal server error');
+  });
+});
+
+// ─── GET /api/public/channels/:channelId/messages — additional assertions ─────
+
+describe('GET /api/public/channels/:channelId/messages — additional', () => {
+  it('PR-9: only queries non-deleted messages (isDeleted: false filter)', async () => {
+    mockPrisma.channel.findUnique.mockResolvedValue({
+      id: CHANNEL.id,
+      visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+    });
+    mockPrisma.message.findMany.mockResolvedValue([MESSAGE]);
+
+    await request(app).get(`/api/public/channels/${CHANNEL.id}/messages`);
+
+    expect(mockPrisma.message.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ isDeleted: false }) }),
+    );
+  });
+
+  it('PR-10: returns 500 on unexpected Prisma error', async () => {
+    mockPrisma.channel.findUnique.mockRejectedValue(new Error('DB down'));
+
+    const res = await request(app).get(`/api/public/channels/${CHANNEL.id}/messages`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Internal server error');
+  });
+});
+
+// ─── GET /api/public/servers ──────────────────────────────────────────────────
+
+describe('GET /api/public/servers', () => {
+  it('PR-24: returns servers ordered by memberCount descending', async () => {
+    const servers = [
+      { ...SERVER, id: 'srv-1', memberCount: 50 },
+      { ...SERVER, id: 'srv-2', memberCount: 25 },
+      { ...SERVER, id: 'srv-3', memberCount: 10 },
+    ];
+    mockPrisma.server.findMany.mockResolvedValue(servers);
+
+    const res = await request(app).get('/api/public/servers');
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(mockPrisma.server.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { memberCount: 'desc' } }),
+    );
+  });
+
+  it('PR-25: caps results at 20 servers', async () => {
+    mockPrisma.server.findMany.mockResolvedValue(Array(20).fill(SERVER));
+
+    await request(app).get('/api/public/servers');
+
+    expect(mockPrisma.server.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 20 }));
+  });
+
+  it('PR-26: returns empty array when no public servers exist', async () => {
+    mockPrisma.server.findMany.mockResolvedValue([]);
+
+    const res = await request(app).get('/api/public/servers');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('PR-27: only queries servers where isPublic is true', async () => {
+    mockPrisma.server.findMany.mockResolvedValue([SERVER]);
+
+    await request(app).get('/api/public/servers');
+
+    expect(mockPrisma.server.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { isPublic: true } }),
+    );
+  });
+
+  it('PR-28: returns 500 on unexpected Prisma error', async () => {
+    mockPrisma.server.findMany.mockRejectedValue(new Error('DB down'));
+
+    const res = await request(app).get('/api/public/servers');
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Internal server error');
+  });
+});
+
+// ─── GET /api/public/servers/:serverSlug — cache header tests ─────────────────
+
+describe('GET /api/public/servers/:serverSlug — cache headers', () => {
+  it('PR-30: sets X-Cache: HIT when a fresh cache entry exists', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(SERVER);
+    mockCacheService.get.mockResolvedValueOnce({ data: SERVER, createdAt: Date.now() });
+    mockCacheService.isStale.mockReturnValueOnce(false);
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('HIT');
+  });
+
+  it('PR-31: sets X-Cache: STALE when the cache entry is stale', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(SERVER);
+    mockCacheService.get.mockResolvedValueOnce({ data: SERVER, createdAt: Date.now() - 999999 });
+    mockCacheService.isStale.mockReturnValueOnce(true);
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('STALE');
+  });
+
+  it('PR-32: continues with X-Cache: MISS and serves response when Redis throws', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(SERVER);
+    mockCacheService.get.mockRejectedValueOnce(new Error('Redis down'));
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('MISS');
+    expect(mockCacheService.getOrRevalidate).toHaveBeenCalled();
+  });
+
+  it('PR-34: returns 500 when getOrRevalidate throws', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(SERVER);
+    mockCacheService.getOrRevalidate.mockRejectedValueOnce(new Error('Cache failure'));
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Internal server error');
+  });
+});
+
+// ─── GET /api/public/servers/:serverSlug/channels — additional assertions ─────
+
+describe('GET /api/public/servers/:serverSlug/channels — additional', () => {
+  it('PR-35: queries channels with orderBy position ascending', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockPrisma.channel.findMany.mockResolvedValue([]);
+
+    await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
+
+    expect(mockPrisma.channel.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { position: 'asc' } }),
+    );
+  });
+
+  it('PR-39b: sets X-Cache: HIT when a fresh cache entry exists for server channels', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockCacheService.get.mockResolvedValueOnce({ data: { channels: [] }, createdAt: Date.now() });
+    mockCacheService.isStale.mockReturnValueOnce(false);
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('HIT');
+  });
+
+  it('PR-39c: sets X-Cache: STALE when a stale cache entry exists for server channels', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockCacheService.get.mockResolvedValueOnce({
+      data: { channels: [] },
+      createdAt: Date.now() - 999999,
+    });
+    mockCacheService.isStale.mockReturnValueOnce(true);
+    mockPrisma.channel.findMany.mockResolvedValue([]);
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('STALE');
+  });
+
+  it('PR-40: returns 500 when getOrRevalidate throws', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockCacheService.getOrRevalidate.mockRejectedValueOnce(new Error('Cache failure'));
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Internal server error');
+  });
+});
+
+// ─── GET /api/public/servers/:serverSlug/channels/:channelSlug ───────────────
+
+const CHANNEL_FULL = {
+  id: CHANNEL.id,
+  name: CHANNEL.name,
+  slug: CHANNEL.slug,
+  serverId: SERVER.id,
+  type: CHANNEL.type,
+  visibility: ChannelVisibility.PUBLIC_INDEXABLE,
+  topic: CHANNEL.topic,
+  position: CHANNEL.position,
+  createdAt: new Date('2025-01-01T00:00:00Z'),
+};
+
+describe('GET /api/public/servers/:serverSlug/channels/:channelSlug', () => {
+  it('PR-41: returns 200 with channel data for a PUBLIC_INDEXABLE channel', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockPrisma.channel.findFirst.mockResolvedValue(CHANNEL_FULL);
+
+    const res = await request(app).get(
+      `/api/public/servers/${SERVER.slug}/channels/${CHANNEL.slug}`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: CHANNEL.id, slug: CHANNEL.slug });
+    expect(res.body).toHaveProperty('visibility', ChannelVisibility.PUBLIC_INDEXABLE);
+  });
+
+  it('PR-42: returns 200 for a PUBLIC_NO_INDEX channel', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockPrisma.channel.findFirst.mockResolvedValue({
+      ...CHANNEL_FULL,
+      visibility: ChannelVisibility.PUBLIC_NO_INDEX,
+    });
+
+    const res = await request(app).get(
+      `/api/public/servers/${SERVER.slug}/channels/${CHANNEL.slug}`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('visibility', ChannelVisibility.PUBLIC_NO_INDEX);
+  });
+
+  it('PR-43: returns 403 for a PRIVATE channel', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockPrisma.channel.findFirst.mockResolvedValue({
+      ...CHANNEL_FULL,
+      visibility: ChannelVisibility.PRIVATE,
+    });
+
+    const res = await request(app).get(
+      `/api/public/servers/${SERVER.slug}/channels/${CHANNEL.slug}`,
+    );
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty('error', 'Channel is private');
+  });
+
+  it('PR-44: returns 404 when the server slug does not exist', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(null);
+
+    const res = await request(app).get('/api/public/servers/no-such-server/channels/general');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Server not found');
+  });
+
+  it('PR-45: returns 404 when the channel slug does not exist within the server', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockPrisma.channel.findFirst.mockResolvedValue(null);
+
+    const res = await request(app).get(
+      `/api/public/servers/${SERVER.slug}/channels/no-such-channel`,
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Channel not found');
+  });
+
+  it('PR-45b: queries channel by both serverId and channelSlug (scoped lookup)', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockPrisma.channel.findFirst.mockResolvedValue(CHANNEL_FULL);
+
+    await request(app).get(`/api/public/servers/${SERVER.slug}/channels/${CHANNEL.slug}`);
+
+    expect(mockPrisma.channel.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ serverId: SERVER.id, slug: CHANNEL.slug }),
+      }),
+    );
+  });
+
+  it('PR-46: returns 500 on unexpected Prisma error', async () => {
+    mockPrisma.server.findUnique.mockRejectedValue(new Error('DB down'));
+
+    const res = await request(app).get(
+      `/api/public/servers/${SERVER.slug}/channels/${CHANNEL.slug}`,
+    );
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Internal server error');
+  });
+});
+
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+
+describe('Rate limiting on publicRouter', () => {
+  it('PR-22: allows requests within the rate limit', async () => {
+    mockPrisma.server.findMany.mockResolvedValue([SERVER]);
+
+    const res = await request(app).get('/api/public/servers');
+
+    expect(res.status).toBe(200);
+    expect(res.headers).toHaveProperty('ratelimit-limit');
+  });
+
+  it('PR-23: returns 429 after exhausting the token bucket', async () => {
+    mockPrisma.server.findMany.mockResolvedValue([]);
+
+    // Exhaust the 100-token human bucket
+    for (let i = 0; i < 100; i++) {
+      await request(app).get('/api/public/servers');
+    }
+
+    const res = await request(app).get('/api/public/servers');
+    expect(res.status).toBe(429);
     expect(res.body).toHaveProperty('error');
   });
 });
