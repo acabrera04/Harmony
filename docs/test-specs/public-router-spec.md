@@ -36,14 +36,17 @@ reachable execution paths when the cases below are run.
 - Use **supertest** (or equivalent) to drive the Express router directly,
   bypassing HTTP port binding. Mount `publicRouter` under `/api/public` in a
   minimal Express app created per test file.
-- **Prisma** — replace `prisma` with a jest mock (`jest.mock('../db/prisma')`).
-  Provide per-test return values for `prisma.channel.findUnique`,
-  `prisma.channel.findFirst`, `prisma.message.findMany`,
+- **Prisma** — replace `prisma` with a jest mock
+  (`jest.mock('../src/db/prisma')` when the test file lives under
+  `harmony-backend/tests`). Provide per-test return values for
+  `prisma.channel.findUnique`, `prisma.channel.findFirst`,
+  `prisma.channel.findMany`, `prisma.message.findMany`,
   `prisma.message.findFirst`, `prisma.server.findMany`, and
   `prisma.server.findUnique`. Prisma is not wired to a real database.
 - **cacheService** — mock `cacheService.get`, `cacheService.set`,
   `cacheService.isStale`, and `cacheService.getOrRevalidate` (from
-  `../services/cache.service`). For route-handler tests that are not
+  `../src/services/cache.service` when the test file lives under
+  `harmony-backend/tests`). For route-handler tests that are not
   specifically testing cache behavior, configure `cacheService.get` to return
   `null` (cache miss) so the route handler always executes.
 - **cacheMiddleware** — because cacheMiddleware wraps routes 1 and 2, tests
@@ -261,7 +264,7 @@ PUBLIC_NO_INDEX and PRIVATE channels.
 
 | Test ID | Test Purpose | Inputs | Expected Output / Side Effects |
 | ------- | ------------ | ------ | ------------------------------ |
-| PR-35 | Return PUBLIC_INDEXABLE channels ordered by position | Valid `serverSlug`; server has 3 PUBLIC_INDEXABLE channels at positions 2, 0, 1; `cacheService.getOrRevalidate` invokes the fetcher | HTTP 200; body `{ channels: [pos=0, pos=1, pos=2] }`; `Cache-Control: public, max-age=300`; `X-Cache-Key` header set |
+| PR-35 | Return PUBLIC_INDEXABLE channels ordered by position | Valid `serverSlug`; server has 3 PUBLIC_INDEXABLE channels; `cacheService.getOrRevalidate` invokes the fetcher | HTTP 200; body `{ channels: [<3 items>] }`; `prisma.channel.findMany` called with `orderBy: { position: 'asc' }`; `Cache-Control: public, max-age=300`; `X-Cache-Key` header set |
 | PR-36 | Exclude PUBLIC_NO_INDEX and PRIVATE channels | Server has one PUBLIC_INDEXABLE, one PUBLIC_NO_INDEX, and one PRIVATE channel | HTTP 200; body `{ channels: [<1 item>] }`; `prisma.channel.findMany` called with `visibility: PUBLIC_INDEXABLE` filter |
 | PR-37 | Return empty channels array when no PUBLIC_INDEXABLE channels exist | Server has only PRIVATE channels | HTTP 200; body `{ channels: [] }` |
 | PR-38 | Return 404 when server slug does not exist | Unknown `serverSlug` | HTTP 404; body `{ error: 'Server not found' }` |
@@ -310,9 +313,9 @@ Description: token bucket rate limiter applied globally to `publicRouter`.
   this guard is exercised when the mock for the STALE path also triggers a
   downstream Prisma failure.
 - **`cacheService.get` silent catch in routes 4 and 5 (PR-32, PR-39):** The
-  `try/catch` around the cache check only catches; it does not re-throw and
-  does not fall back to `X-Cache: MISS`. Confirm `getOrRevalidate` is still
-  called after the Redis failure.
+  `try/catch` around the cache check swallows Redis failures; it does not
+  re-throw, and `X-Cache` remains `MISS` because that is the initialized
+  default. Confirm `getOrRevalidate` is still called after the Redis failure.
 - **Route 4 fetcher identity (PR-29):** `getOrRevalidate` is passed an
   arrow-function fetcher that resolves to the already-fetched `server` variable.
   The mock for `getOrRevalidate` must invoke this fetcher to confirm the server
