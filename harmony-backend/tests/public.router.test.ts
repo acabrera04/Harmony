@@ -681,6 +681,18 @@ describe('GET /api/public/servers/:serverSlug/channels — additional', () => {
     expect(res.headers['x-cache']).toBe('STALE');
   });
 
+  it('PR-39: continues with X-Cache: MISS and returns 200 when Redis throws on cache read', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
+    mockCacheService.get.mockRejectedValueOnce(new Error('Redis down'));
+    mockPrisma.channel.findMany.mockResolvedValue([]);
+
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['x-cache']).toBe('MISS');
+    expect(mockCacheService.getOrRevalidate).toHaveBeenCalled();
+  });
+
   it('PR-40: returns 500 when getOrRevalidate throws', async () => {
     mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
     mockCacheService.getOrRevalidate.mockRejectedValueOnce(new Error('Cache failure'));
