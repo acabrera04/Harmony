@@ -644,15 +644,17 @@ describe('GET /api/public/servers/:serverSlug — cache headers', () => {
 // ─── GET /api/public/servers/:serverSlug/channels — additional assertions ─────
 
 describe('GET /api/public/servers/:serverSlug/channels — additional', () => {
-  it('PR-35: queries channels with orderBy position ascending', async () => {
+  it('PR-35: queries channels with orderBy position ascending and sets cache headers', async () => {
     mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
     mockPrisma.channel.findMany.mockResolvedValue([]);
 
-    await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
+    const res = await request(app).get(`/api/public/servers/${SERVER.slug}/channels`);
 
     expect(mockPrisma.channel.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ orderBy: { position: 'asc' } }),
     );
+    expect(res.headers['cache-control']).toContain('max-age=300');
+    expect(res.headers['x-cache-key']).toBe(`server:${SERVER.id}:public_channels`);
   });
 
   it('PR-39b: sets X-Cache: HIT when a fresh cache entry exists for server channels', async () => {
@@ -719,7 +721,7 @@ const CHANNEL_FULL = {
 };
 
 describe('GET /api/public/servers/:serverSlug/channels/:channelSlug', () => {
-  it('PR-41: returns 200 with channel data for a PUBLIC_INDEXABLE channel', async () => {
+  it('PR-41: returns 200 with channel data and Cache-Control for a PUBLIC_INDEXABLE channel', async () => {
     mockPrisma.server.findUnique.mockResolvedValue({ id: SERVER.id });
     mockPrisma.channel.findFirst.mockResolvedValue(CHANNEL_FULL);
 
@@ -730,6 +732,7 @@ describe('GET /api/public/servers/:serverSlug/channels/:channelSlug', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ id: CHANNEL.id, slug: CHANNEL.slug });
     expect(res.body).toHaveProperty('visibility', ChannelVisibility.PUBLIC_INDEXABLE);
+    expect(res.headers['cache-control']).toContain('max-age=300');
   });
 
   it('PR-42: returns 200 for a PUBLIC_NO_INDEX channel', async () => {
