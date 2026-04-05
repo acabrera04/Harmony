@@ -18,6 +18,18 @@ Shared knowledge base for the Harmony team. Add an entry whenever a mistake is c
 
 <!-- Most recent entries at the top -->
 
+**Date:** 2026-04-04  
+**Caught by:** [Human: @acabrera04]  
+**Related Issue:** N/A  
+**Mistake / Situation:** I assumed serial CI workers and relaxed auth throttles were enough, but the WebKit-only auth flake was still tied to running the Next frontend in dev mode inside GitHub Actions.  
+**Rule / Fix:** For browser E2E in CI, prefer production-style frontend serving (`build + start`) over `next dev`; dev-mode tooling can introduce non-product flakiness that hides the real signal of the suite.
+
+**Date:** 2026-04-04  
+**Caught by:** [Human: @acabrera04]  
+**Related Issue:** N/A  
+**Mistake / Situation:** I kept a browser matrix in the PR-gating CI path even after reproducing that only WebKit was flaky under CI-mode E2E, which blocked the suite without proving a product defect.  
+**Rule / Fix:** Keep every-PR E2E checks focused on the stable smoke browser for this repo, and move additional browser coverage like WebKit to non-blocking or follow-up coverage until the browser-specific flake has a rooted product cause.
+
 **Date:** 2026-04-01  
 **Caught by:** [Human: @acabrera04]  
 **Related Issue:** N/A  

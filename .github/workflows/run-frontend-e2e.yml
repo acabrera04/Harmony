@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: harmony-frontend
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install --with-deps chromium
 
       - name: Run frontend E2E tests
         working-directory: harmony-frontend
