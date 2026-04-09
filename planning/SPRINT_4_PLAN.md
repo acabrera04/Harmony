@@ -16,6 +16,8 @@ This sprint must cover the substance of **P6 Deployment** while ignoring the AWS
 - AWS Amplify with Vercel frontend hosting
 - AWS CD workflows with Vercel/Railway CD workflows
 
+Integration testing for this sprint uses a dual-target model: `local` for deterministic development verification and `cloud` for validation of the real deployed multi-replica system.
+
 The assignment requirements we still must satisfy are:
 
 1. Publicly deploy frontend and backend
@@ -189,8 +191,9 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - sitemap support on the frontend apex domain
   - production API base URL handling
 - Make the SEO ownership boundary explicit:
-  - frontend apex domain owns public SEO artifacts
-  - backend SEO routes are treated as source/internal inputs or deprecated public paths, but not the canonical SEO origin
+  - frontend apex domain owns the canonical public SEO artifacts: canonical URLs, `metadataBase`, `robots.txt`, sitemap entrypoints, and any sitemap index exposed to crawlers
+  - backend SEO routes may continue to generate sitemap/XML data as an internal or transitional source, but they are not the canonical crawler-facing host in production
+  - no SEO artifact should require crawlers to use the API subdomain as the primary source of truth
 - Ensure frontend still supports localhost development cleanly
 - Acceptance criteria:
   - Public pages generate correct production metadata
@@ -240,18 +243,19 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 
 **9. Integration Test Implementation + Environment Matrix**
 - Implement the integration tests from the spec
-- Refactor the Playwright harness to support two execution modes:
-  - **local stack mode** that boots local frontend/backend processes
-  - **external deployed target mode** that skips local boot and targets deployed URLs
-- Add configuration so tests can run against:
-  - localhost
-  - deployed frontend + backend URLs
-- Parameterize the current local-only stack configuration so the test harness is not hard-wired to localhost ports/process launchers
+- Support two execution targets:
+  - `local`: starts local frontend/backend dependencies and runs against localhost
+  - `cloud`: runs against already-deployed frontend/backend URLs without starting local app servers
+- Add environment selection via explicit env vars or script arguments
+- Document which tests are:
+  - portable across both targets
+  - local-only because they depend on reset/seed control
+  - cloud-only because they validate deployed behavior
 - Capture/structure output for both local and cloud runs
 - Acceptance criteria:
   - Tests run in a local configuration
   - Tests run in a cloud configuration
-  - The test harness can switch between local and deployed targets without code edits
+  - Cloud mode does not require local frontend/backend startup
   - Any environment-specific exceptions are documented
 - Assignee: **Aiden-Barrera**
 - Due: April 14
@@ -263,9 +267,10 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 **10. GitHub Action — `run-integration-tests.yml`**
 - Create `.github/workflows/run-integration-tests.yml`
 - Install frontend/backend dependencies
-- Set up required environment
-- Execute integration tests in CI
-- Ensure the workflow name is stable so it can be required in branch protection
+- Set up the required environment for integration tests
+- Run the local-target integration suite in CI
+- Keep the workflow name and job names stable so they can be required in branch protection
+- Document how cloud-target integration tests are invoked outside CI when deployed URLs are available
 - Acceptance criteria:
   - Workflow passes on a PR
   - Workflow is usable as a required status check
@@ -352,13 +357,14 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - attachment access independent of serving replica
   - cache invalidation / indexing behavior via singleton worker
   - SSE/realtime smoke verification in deployed environment
+- Run the cloud-target integration/smoke suite against the deployed system
 - Use the replica observability added in #5 to prove requests were served across 2+ API replicas via headers, health output, and/or structured logs
 - Capture logs/screenshots/test output needed for submission
 - Acceptance criteria:
   - Live deployment is stable with `backend-api` at 2+ replicas
   - No replica-specific failures are observed for required paths
-  - Evidence clearly shows multi-replica routing rather than a single healthy instance
-  - Cloud integration tests pass against the deployed system
+  - Cloud-target tests pass against deployed URLs
+  - Evidence clearly distinguishes deployed-system validation from localhost validation
 - Assignee: **declanblanc**
 - Backup owner: **Aiden-Barrera**
 - Due: April 18
@@ -490,7 +496,7 @@ The sprint is not complete until all of the following exist:
 - Integration test specification document
 - Integration test code committed
 - Local integration test output captured
-- Cloud integration test output captured
+- Cloud-target integration or smoke test output captured against deployed URLs
 - `.github/workflows/run-integration-tests.yml`
 - `.github/workflows/deploy-railway.yml`
 - `.github/workflows/deploy-vercel.yml`
