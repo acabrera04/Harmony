@@ -57,6 +57,11 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - API replicas must be stateless apart from live SSE client connections
 - Deployment verification must prove that 2+ API replicas behave correctly behind Railway load balancing
 
+### Explicit Production Decisions
+- **SEO ownership:** the **Vercel frontend apex domain** is the canonical public SEO surface. `robots.txt`, sitemap/index entrypoints, canonical URLs, and `metadataBase` must resolve on the frontend domain, not the API subdomain.
+- **Attachment storage target:** production uploads use **Cloudflare R2 via an S3-compatible provider**. Local filesystem storage remains development-only.
+- **Deploy authority:** **GitHub Actions** is the single source of truth for production deploys. Provider-native Git auto-deploys may be used for previews, but production promotion must be driven by the GitHub workflows in this sprint.
+
 ---
 
 ## P6 Coverage Map
@@ -100,6 +105,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - Clear ownership of public vs internal services
   - Explicit decision that `backend-api` scales to 2+ replicas and `backend-worker` stays singleton
 - Assignee: **acabrera04**
+- Backup owner: **declanblanc**
 - Due: April 9
 - Blocked by: none
 - Unblocks: #2, #6, #7, #8, #16
@@ -118,17 +124,21 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - Risks are prioritized into must-fix vs acceptable-for-demo
   - `backend-api` vs `backend-worker` responsibilities are finalized
 - Assignee: **declanblanc**
+- Backup owner: **acabrera04**
 - Due: April 9
 - Blocked by: #1
 - Unblocks: #3, #4, #5, #14
 
 **3. Shared Rate Limiting + Proxy-Aware Networking**
 - Replace process-local rate limiting with shared Redis-backed limiting
+- Replace or unify **both** current implementations:
+  - auth endpoint limiting using `express-rate-limit`
+  - public-route token bucket limiting
 - Ensure auth and public API rate limits remain correct across 2+ replicas
 - Configure Express proxy awareness so client IP handling works correctly behind Railway
 - Acceptance criteria:
   - Public and auth rate limits are shared across replicas
-  - No process-local limit counters remain in production code paths
+  - No process-local auth or public-route limit counters remain in production code paths
   - Rate limit behavior is covered by tests or verification notes
 - Assignee: **Aiden-Barrera**
 - Due: April 11
@@ -136,12 +146,13 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Unblocks: #14
 
 **4. Production Attachment Storage Provider**
-- Implement a production storage provider backed by shared object storage
+- Implement a production storage provider backed by **Cloudflare R2 via an S3-compatible interface**
 - Keep local storage available for development only
 - Add env-driven provider selection and document required secrets
 - Ensure uploaded files remain accessible regardless of which API replica serves subsequent requests
 - Acceptance criteria:
   - Production does not rely on local filesystem attachment serving
+  - The chosen production provider is Cloudflare R2, documented as such in code and setup docs
   - README and env matrix document storage setup
   - Attachment flow works end-to-end in deployed environment
 - Assignee: **AvanishKulkarni**
@@ -153,12 +164,17 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Move background-only startup behavior into a dedicated worker process
 - Ensure duplicated subscribers / cache invalidation / sitemap upkeep do not run on every API replica
 - Keep API replicas focused on HTTP/tRPC/SSE request handling
+- Add lightweight replica observability for validation:
+  - instance identity in structured logs
+  - instance/replica identity on health output and/or response headers
 - Add startup commands for both Railway backend services
 - Acceptance criteria:
   - `backend-api` can run with 2+ replicas without duplicate singleton background side effects
   - `backend-worker` runs with 1 replica and owns singleton event-driven tasks
+  - Replica identity is externally observable enough to prove load balancing across 2+ API replicas
   - Service responsibilities are documented
 - Assignee: **declanblanc**
+- Backup owner: **acabrera04**
 - Due: April 12
 - Blocked by: #2
 - Unblocks: #7, #11, #14
@@ -169,12 +185,16 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Add production-safe frontend configuration:
   - absolute canonical URLs
   - `metadataBase`
-  - `robots.txt`
-  - sitemap support
+  - `robots.txt` on the frontend apex domain
+  - sitemap support on the frontend apex domain
   - production API base URL handling
+- Make the SEO ownership boundary explicit:
+  - frontend apex domain owns public SEO artifacts
+  - backend SEO routes are treated as source/internal inputs or deprecated public paths, but not the canonical SEO origin
 - Ensure frontend still supports localhost development cleanly
 - Acceptance criteria:
   - Public pages generate correct production metadata
+  - Canonical host ownership is explicit and consistent across frontend and backend docs/code
   - Frontend can target local and cloud backends without code edits
   - SEO-critical pages render correctly on the public domain
 - Assignee: **AvanishKulkarni**
@@ -195,6 +215,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - Domains/env vars/health checks are configured
   - `backend-api` and `backend-worker` both boot successfully in Railway
 - Assignee: **acabrera04**
+- Backup owner: **FardeenI**
 - Due: April 13
 - Blocked by: #1, #5
 - Unblocks: #11, #14, #15
@@ -219,13 +240,18 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 
 **9. Integration Test Implementation + Environment Matrix**
 - Implement the integration tests from the spec
+- Refactor the Playwright harness to support two execution modes:
+  - **local stack mode** that boots local frontend/backend processes
+  - **external deployed target mode** that skips local boot and targets deployed URLs
 - Add configuration so tests can run against:
   - localhost
   - deployed frontend + backend URLs
+- Parameterize the current local-only stack configuration so the test harness is not hard-wired to localhost ports/process launchers
 - Capture/structure output for both local and cloud runs
 - Acceptance criteria:
   - Tests run in a local configuration
   - Tests run in a cloud configuration
+  - The test harness can switch between local and deployed targets without code edits
   - Any environment-specific exceptions are documented
 - Assignee: **Aiden-Barrera**
 - Due: April 14
@@ -254,11 +280,14 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Deploy `backend-api` and `backend-worker` on pushes to `main`
 - Ensure migrations / build / deploy ordering is safe
 - Use GitHub secrets for Railway authentication
+- Treat GitHub Actions as the production deploy authority and document any provider-native auto-deploy settings that must be disabled or restricted
 - Acceptance criteria:
   - Workflow deploys backend services without manual intervention
+  - Production deploy authority is unambiguous and documented
   - Deploys target the correct Railway environment
   - Deployment process is documented in README
 - Assignee: **acabrera04**
+- Backup owner: **declanblanc**
 - Due: April 15
 - Blocked by: #5, #7
 - Unblocks: #14, #15
@@ -268,8 +297,10 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Build/deploy frontend on pushes to `main`
 - Ensure preview/production environment variables are configured properly
 - Use GitHub secrets/tokens safely
+- Treat GitHub Actions as the production deploy authority and document any provider-native auto-deploy settings that must be disabled or restricted
 - Acceptance criteria:
   - Workflow deploys frontend without manual intervention
+  - Production deploy authority is unambiguous and documented
   - Production deploy points at the production backend URL
   - Deployment process is documented in README
 - Assignee: **AvanishKulkarni**
@@ -321,12 +352,15 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - attachment access independent of serving replica
   - cache invalidation / indexing behavior via singleton worker
   - SSE/realtime smoke verification in deployed environment
+- Use the replica observability added in #5 to prove requests were served across 2+ API replicas via headers, health output, and/or structured logs
 - Capture logs/screenshots/test output needed for submission
 - Acceptance criteria:
   - Live deployment is stable with `backend-api` at 2+ replicas
   - No replica-specific failures are observed for required paths
+  - Evidence clearly shows multi-replica routing rather than a single healthy instance
   - Cloud integration tests pass against the deployed system
 - Assignee: **declanblanc**
+- Backup owner: **Aiden-Barrera**
 - Due: April 18
 - Blocked by: #3, #4, #5, #7, #9, #11, #16
 - Unblocks: #15
@@ -355,6 +389,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - Submission checklist has no missing artifacts
   - Team knows who owns final reflection/log collation
 - Assignee: **acabrera04**
+- Backup owner: **FardeenI**
 - Due: April 19
 - Blocked by: #4, #8, #9, #10, #11, #12, #13, #14, #16
 
@@ -369,6 +404,18 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 | AvanishKulkarni | #4, #6, #12 | Production storage, Vercel-ready frontend config, frontend CD |
 | declanblanc | #2, #5, #14 | Replica-safety audit, API/worker split, multi-replica validation |
 | FardeenI | #8, #10, #16 | Integration test spec, integration-test CI, Vercel project/domain setup |
+
+## Critical Path Backup Coverage
+
+| Critical Issue | Primary | Backup |
+|---|---|---|
+| #1 Deployment Architecture + Environment Matrix | acabrera04 | declanblanc |
+| #2 Backend Scale Audit for Railway Replicas | declanblanc | acabrera04 |
+| #5 Split `backend-api` and Singleton `backend-worker` | declanblanc | acabrera04 |
+| #7 Railway Project Provisioning and Service Wiring | acabrera04 | FardeenI |
+| #11 `deploy-railway.yml` | acabrera04 | declanblanc |
+| #14 Railway Multi-Replica Validation and Deployment Evidence | declanblanc | Aiden-Barrera |
+| #15 README, Final Artifact Collection, and Submission Package | acabrera04 | FardeenI |
 
 ---
 
