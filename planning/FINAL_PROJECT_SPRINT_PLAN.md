@@ -378,12 +378,12 @@ S10 Override UI (needs S4) ─────────────────�
 
 The project is not complete until all of the following exist:
 
-- All SEO dev-spec acceptance criteria AC-1 through AC-10 verified against the deployed Vercel + Railway stack
-- SEO meta tag generation service, content analysis, background worker, overrides API, and frontend SSR integration merged to `main`
-- Creator override UI shipped
-- Sitemap and robots.txt correctly respect channel visibility
-- Cloud + local integration tests covering SEO paths passing in CI
-- Production validation evidence: crawler-view HTML, Rich Results test output, cache/regeneration screenshots, replica-observability confirmation
+- All SEO dev-spec acceptance criteria AC-1 through AC-10 verified per the S11/S12 split-evidence model: read-only ACs (AC-1, AC-2, AC-8 fixture-safe) against the deployed production Vercel + Railway stack; write-path ACs (AC-3, AC-4, AC-5, AC-6, AC-7, AC-9, AC-10) against the isolated staging environment; full AC-1..AC-10 coverage in `local` mode in CI. Any AC falling back to `local`-only evidence must be explicitly flagged in the submission and reflection.
+- SEO meta tag generation service, content analysis, background worker, admin overrides API, and frontend App Router SSR integration merged to `main`
+- Server-admin override UI shipped (per dev spec §12 admin-only authorization)
+- Sitemap and robots.txt correctly respect all three visibility states (`PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, `PRIVATE`)
+- Local integration tests covering the full AC matrix passing in CI; read-only cloud + isolated staging suites passing out-of-band against their respective environments
+- Validation evidence bundle: crawler-view HTML, Rich Results test output, cache/regeneration screenshots, replica-observability confirmation — with each artifact labeled by target environment (production / staging / local)
 - README updated for SEO feature and any new env vars
 - Final submission package in `planning/` or `docs/submission/` with links, logs, and reflection
 - LLM interaction logs archived under `llm-logs/`
@@ -393,5 +393,5 @@ The project is not complete until all of the following exist:
 
 - Sprint 4 must hit its exit criteria by April 19 or Sprint 5's Phase A will slip. If Sprint 4 slips, cut Sprint 5 Phase C non-essentials (e.g., S10 override UI can degrade to backend-only override via API + curl documented in README).
 - If NLP/summarization work (S2) is at risk, fall back to the template-only path in dev spec §14 fallback (AC-9) and document the degradation.
-- Cloud-mode tests remain read-only throughout Sprint 5 to protect the instructor-reviewed deployment.
+- Tests targeting the production Vercel + Railway deployment remain read-only throughout Sprint 5 to protect the instructor-reviewed dataset. Any mutation-driven AC coverage runs against the isolated Sprint 5 staging environment (separate Railway project + isolated Postgres + isolated Redis + dedicated Vercel preview), per S11/S12.
 - Keep `tasks/todo.md` and GitHub Issues in sync per `WORKFLOW.md`; every Sprint 5 item above should become a GitHub Issue on the Harmony Project Board at Sprint 5 kickoff on April 20.
