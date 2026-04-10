@@ -61,7 +61,13 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 
 ### Explicit Production Decisions
 - **SEO ownership:** the **Vercel frontend apex domain** is the canonical public SEO surface. `robots.txt`, sitemap/index entrypoints, canonical URLs, and `metadataBase` must resolve on the frontend domain, not the API subdomain.
+- **Sitemap handoff:** the frontend apex domain serves crawler-facing sitemap entrypoints through **Next.js route handlers** that fetch sitemap/XML data from the backend at request time. The backend may generate sitemap data, but the API subdomain is not the direct crawl target in production.
 - **Attachment storage target:** production uploads use **Cloudflare R2 via an S3-compatible provider**. Local filesystem storage remains development-only.
+- **SSE strategy:** multi-replica realtime uses **Redis pub/sub fan-out on every `backend-api` replica**. Each replica subscribes to the shared event bus and pushes matching events to its own connected SSE clients. The production design must not depend on sticky sessions at the Railway load balancer.
+- **Migration ownership:** exactly **one migration runner** owns `prisma migrate deploy` during production rollout. `backend-api` replicas must not run Prisma migrations on startup. The migration runner may be a one-shot Railway job or a controlled pre-deploy step attached to the worker rollout.
+- **Railway service networking:** `backend-api` and `backend-worker` must use **Railway private/internal connection strings** for Postgres and Redis in production, not public TCP proxy endpoints.
+- **Proxy trust model:** production Express instances run with **one trusted proxy hop** (`trust proxy = 1` or equivalent one-hop behavior) so rate limiting uses real client IPs without trusting arbitrary forwarded chains.
+- **Worker resilience:** `backend-worker` is configured with a health check and restart-on-failure behavior. If the worker is unavailable, API request handling should remain available while worker-owned side effects degrade gracefully rather than crashing request paths.
 - **Deploy authority:** **GitHub Actions** is the single source of truth for production deploys. Provider-native Git auto-deploys may be used for previews, but production promotion must be driven by the GitHub workflows in this sprint.
 
 ---
@@ -149,6 +155,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Acceptance criteria:
   - Public and auth rate limits are shared across replicas
   - No process-local auth or public-route limit counters remain in production code paths
+  - Production proxy trust is explicitly configured for a **single Railway hop** (`trust proxy = 1` or equivalent) and documented in deployment docs
   - Rate limit behavior is covered by tests or verification notes
 - Assignee: **Aiden-Barrera**
 - Due: April 11
@@ -175,6 +182,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Move background-only startup behavior into a dedicated worker process
 - Ensure duplicated subscribers / cache invalidation / sitemap upkeep do not run on every API replica
 - Keep API replicas focused on HTTP/tRPC/SSE request handling
+- Use **Redis pub/sub fan-out** as the explicit SSE strategy so each API replica can deliver shared events to its own connected clients without sticky-session requirements
 - Add lightweight replica observability for validation:
   - instance identity in structured logs
   - instance/replica identity on health output and/or response headers
@@ -183,7 +191,9 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Acceptance criteria:
   - `backend-api` can run with 2+ replicas without duplicate singleton background side effects
   - `backend-worker` runs with 1 replica and owns singleton event-driven tasks
+  - SSE behavior across 2+ replicas follows the documented Redis fan-out strategy and no sticky-session dependency remains in the production design
   - Replica identity is externally observable enough to prove load balancing across 2+ API replicas
+  - `backend-worker` health check and restart expectations are documented and wired into deployment assumptions
   - Service responsibilities are documented
 - Assignee: **declanblanc**
 - Backup owner: **acabrera04**
@@ -202,6 +212,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
   - production API base URL handling
 - Make the SEO ownership boundary explicit:
   - frontend apex domain owns the canonical public SEO artifacts: canonical URLs, `metadataBase`, `robots.txt`, sitemap entrypoints, and any sitemap index exposed to crawlers
+  - frontend sitemap entrypoints are implemented through Next.js route handlers that fetch backend sitemap/XML data at request time
   - backend SEO routes may continue to generate sitemap/XML data as an internal or transitional source, but they are not the canonical crawler-facing host in production
   - no SEO artifact should require crawlers to use the API subdomain as the primary source of truth
 - Ensure frontend still supports localhost development cleanly
@@ -228,6 +239,8 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Acceptance criteria:
   - Railway project is provisioned
   - Domains/env vars/health checks are configured
+  - Postgres and Redis env vars use Railway private/internal connection strings for service-to-service traffic
+  - `backend-worker` has a health check and restart-on-failure behavior configured
   - `backend-api` and `backend-worker` both boot successfully in Railway
 - Assignee: **acabrera04**
 - Backup owner: **FardeenI**
@@ -305,6 +318,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Acceptance criteria:
   - Workflow deploys backend services without manual intervention
   - Production deploy authority is unambiguous and documented
+  - Exactly one migration runner performs `prisma migrate deploy`, and `backend-api` replicas are prevented from racing migrations on startup
   - Deploys target the correct Railway environment
   - Deployment process is documented in README
 - Assignee: **acabrera04**
@@ -383,6 +397,7 @@ To safely support 2+ backend replicas, the sprint must remove or isolate process
 - Acceptance criteria:
   - Live deployment is stable with `backend-api` at 2+ replicas
   - No replica-specific failures are observed for required paths
+  - Proxy-aware rate limiting is validated against the documented one-hop trust model
   - Cloud-target tests pass against deployed URLs
   - Evidence clearly distinguishes deployed-system validation from localhost validation
 - Assignee: **declanblanc**
