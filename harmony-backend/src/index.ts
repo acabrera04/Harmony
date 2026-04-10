@@ -6,8 +6,8 @@ const PORT = Number(process.env.PORT) || 4000;
 
 const app = createApp();
 
-const server = app.listen(PORT, () => {
-  console.log(`Harmony backend running on http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Harmony backend listening on 0.0.0.0:${PORT}`);
 });
 
 cacheInvalidator.start().catch((err) => console.error('[cacheInvalidator] start failed:', err));
