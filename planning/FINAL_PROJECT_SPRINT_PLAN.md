@@ -65,7 +65,7 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 ### Phase A — SEO backend core (April 20–23)
 
 **S1. Meta tag generation service skeleton (M2)**
-- Implement `MetaTagService`, `TitleGenerator`, `DescriptionGenerator`, `OpenGraphGenerator`, `StructuredDataGen`, and `MetaTagCache` per dev spec §3/§4
+- Implement `MetaTagService`, `TitleGenerator`, `DescriptionGenerator`, `OpenGraphGenerator`, `StructuredDataGenerator` (CL-C2.5), and `MetaTagCache` per dev spec §3/§4
 - Wire Redis-backed `MetaTagCache` with configurable TTL
 - Unit tests for template application, length limits (AC-2), sanitization, fallback behavior (AC-9)
 - Acceptance criteria:
@@ -107,19 +107,21 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 - Due: Apr 22
 - Blocked by: Sprint 4 migration-runner ownership
 
-**S4. REST + tRPC endpoints (§9, §10)**
-- `GET /api/channels/:id/meta-tags`
-- `PUT /api/channels/:id/meta-tags` with override validation (customTitle ≤70, customDescription ≤200 — AC-3)
-- `POST /api/channels/:id/meta-tags/regenerate` returning `jobId` with idempotency key (AC-5, AC-6)
-- `GET /api/channels/:id/meta-tags/regenerate/:jobId` status polling
+**S4. Admin REST endpoints (§9, §10)**
+- Implement the admin-only meta-tag endpoints exactly as defined in dev spec §9/§10:
+  - `GET /api/admin/channels/{channelId}/meta-tags`
+  - `PUT /api/admin/channels/{channelId}/meta-tags` with override validation (customTitle ≤70, customDescription ≤200 — AC-3)
+  - `POST /api/admin/channels/{channelId}/meta-tags/jobs` returning `jobId` with idempotency key (AC-5, AC-6)
+  - `GET /api/admin/channels/{channelId}/meta-tags/jobs/{jobId}` status polling
+- Authorization is **server admin only** per dev spec §12 ("Only server admins can set custom meta tags"). Channel creators/owners without the server-admin role must not reach these endpoints.
 - API integration tests for each endpoint
 - Acceptance criteria:
-  - All four endpoints are reachable and documented in dev spec §9/§10 terms
+  - All four endpoints are mounted under `/api/admin/channels/...` matching dev spec §9 paths exactly
   - `PUT` rejects `customTitle >70` and `customDescription >200` with a validation error (AC-3)
-  - `POST .../regenerate` returns a `jobId` and the status endpoint reports terminal states `succeeded`/`failed` (AC-5)
+  - `POST .../jobs` returns a `jobId` and the status endpoint reports terminal states `succeeded`/`failed` (AC-5)
   - Repeat `POST` with the same idempotency key within 60s returns the existing `jobId` and does not enqueue a duplicate job (AC-6)
-  - All endpoints enforce channel-creator authorization; non-owners get 403
-  - Supertest integration tests cover success, validation failure, auth failure, and idempotency
+  - All endpoints enforce server-admin authorization; non-admins (including channel creators without admin role) get 403
+  - Supertest integration tests cover success, validation failure, non-admin rejection, and idempotency
 - Assignee: **FardeenI**
 - Due: Apr 23
 - Blocked by: S1, S3
@@ -145,14 +147,17 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 - Blocked by: S1, S2
 
 **S6. Visibility transition + de-indexing workflow (AC-4, AC-10)**
-- On `VISIBILITY_CHANGED → PRIVATE`: invalidate `MetaTagCache`, remove sitemap URL, flip `noindex`
-- On `VISIBILITY_CHANGED → PUBLIC_INDEXABLE`: re-enqueue regeneration
-- Integration tests covering both directions and cache/sitemap side effects
+- Handle all three branches of the `VISIBILITY_CHANGED` event per dev spec §6 flow F8 and §9.1 cross-spec visibility contract:
+  - `→ PRIVATE`: invalidate `MetaTagCache` (`meta:channel:{channelId}`), purge CDN, remove sitemap URL, request search-engine removal; never serve stale tags while private
+  - `→ PUBLIC_NO_INDEX`: regenerate tags with `robots=noindex`, invalidate cache, keep channel publicly reachable but exclude from indexable sitemap set
+  - `→ PUBLIC_INDEXABLE`: high-priority regeneration, invalidate cache, keep canonical URL in sitemap with refreshed `lastmod`
+- Integration tests covering all three directions and cache/sitemap side effects
 - Acceptance criteria:
-  - Flipping a channel from `PUBLIC_INDEXABLE` to `PRIVATE` invalidates the `MetaTagCache` entry and removes the URL from the sitemap within one regeneration cycle (AC-4, AC-10)
-  - Subsequent SSR requests for that channel return `noindex` meta and 404/403 public body as appropriate
-  - Flipping back to `PUBLIC_INDEXABLE` re-enqueues a regeneration job and the channel reappears in the sitemap
-  - End-to-end integration test covers `PUBLIC_INDEXABLE → PRIVATE → PUBLIC_INDEXABLE` transition and asserts cache + sitemap state at each step
+  - `PUBLIC_INDEXABLE → PRIVATE` invalidates the `MetaTagCache` entry and removes the URL from the sitemap within one regeneration cycle (AC-4, AC-10)
+  - `PUBLIC_INDEXABLE → PUBLIC_NO_INDEX` regenerates with `robots=noindex`, invalidates cache, and removes the channel from the indexable sitemap set while the page remains publicly reachable
+  - `PRIVATE → PUBLIC_INDEXABLE` and `PUBLIC_NO_INDEX → PUBLIC_INDEXABLE` re-enqueue high-priority regeneration and the channel (re)appears in the sitemap
+  - Subsequent SSR requests return `noindex` meta where required and 404/403 public body for PRIVATE
+  - End-to-end integration test covers the full `PUBLIC_INDEXABLE ↔ PUBLIC_NO_INDEX ↔ PRIVATE` matrix and asserts cache + sitemap state at each step
 - Assignee: **declanblanc**
 - Due: Apr 25
 - Blocked by: S5
@@ -175,9 +180,10 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 
 ### Phase C — Frontend rendering + SEO surface (April 23–27)
 
-**S8. `HeadComponent` + `PublicChannelPage` integration (M1)**
+**S8. `PublicChannelPage` + `generateMetadata` integration (M1)**
 - Server-render meta tags, Open Graph tags, Twitter cards, canonical URL, and JSON-LD `DiscussionForumPosting`
-- Use `getServerSideProps` / Next.js route handlers to fetch meta tags from backend at request time
+- Use the Next.js **App Router** `generateMetadata` export in `harmony-frontend/src/app/c/[serverSlug]/[channelSlug]/page.tsx` (already scaffolded) to fetch tags from the backend at request time; JSON-LD is injected via a component in `page.tsx` since `Metadata` doesn't cover structured data
+- Use App Router route handlers / metadata routes (`app/sitemap.ts`, `app/robots.ts`) for crawler-facing entrypoints — do **not** introduce `getServerSideProps` or `pages/` router code
 - Canonical host is the frontend apex domain per Sprint 4 SEO ownership decision — no crawler-facing artifact may point at the API subdomain
 - Unit/E2E tests: every public channel page serves non-empty `<title>` and `<meta name="description">` (AC-1)
 - Acceptance criteria:
@@ -205,15 +211,16 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 - Due: Apr 27
 - Blocked by: S6, S8
 
-**S10. Meta tag admin UI (creator override flow)**
-- UI under channel settings for creator to view generated tags, override title/description, and trigger manual regeneration with job status polling
+**S10. Meta tag admin UI (server-admin override flow)**
+- UI under server/channel admin settings for **server admins** to view generated tags, override title/description, and trigger manual regeneration with job status polling. Authorization matches dev spec §12: only server admins can set custom meta tags.
 - Respect `customTitle`/`customDescription` length limits with client-side validation
+- Talks to the admin endpoints from S4 (`/api/admin/channels/{channelId}/meta-tags` and `.../jobs/{jobId}`)
 - Acceptance criteria:
-  - Channel settings page exposes a "SEO Preview" section showing current generated + override values
-  - Creator can submit `customTitle` (≤70) and `customDescription` (≤200) with inline validation matching server-side rules
-  - Creator can trigger regeneration and sees live job status transitioning through `pending` → `succeeded`/`failed`
-  - Non-creators do not see the override UI (or see it disabled)
-  - Frontend unit tests cover validation, submit, and job polling flows
+  - Admin settings page exposes a "SEO Preview" section showing current generated + override values
+  - A server admin can submit `customTitle` (≤70) and `customDescription` (≤200) with inline validation matching server-side rules
+  - A server admin can trigger regeneration and sees live job status transitioning through `pending` → `succeeded`/`failed`
+  - Non-admin users (including channel creators without the admin role) do not see the override UI
+  - Frontend unit tests cover validation, submit, job polling, and admin-vs-non-admin rendering
 - Assignee: **acabrera04**
 - Backup: **declanblanc**
 - Due: Apr 27
@@ -223,31 +230,38 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 
 ### Phase D — End-to-end verification on production (April 27–30)
 
-**S11. Integration tests for SEO feature (local + cloud)**
+**S11. Integration tests for SEO feature (local + cloud + isolated staging)**
 - Extend the Sprint 4 integration test suite with cases covering AC-1 through AC-10
-- Cloud-mode coverage stays read-only (reuse Sprint 4 isolation rules) — no mutation of the instructor-reviewed production dataset
+- Split AC coverage by execution target so the read-only cloud rule from Sprint 4 is not violated:
+  - **Read-only paths against production deployed URLs:** AC-1 (tags present), AC-2 (length bounds on already-generated tags), AC-8 (no PII/profanity in fixture-safe public channels), and any AC that only needs fetch-and-assert
+  - **Write-path ACs (AC-3, AC-4, AC-5, AC-6, AC-7, AC-9, AC-10):** run against an **isolated staging environment** provisioned for Sprint 5 (separate Railway project/environment + isolated Postgres + isolated Redis + dedicated Vercel preview) so visibility flips, regeneration jobs, override persistence, and fallback injection never touch the instructor-reviewed production dataset
+  - `local` mode still runs the full AC-1..AC-10 matrix deterministically on seeded data and remains the CI source of truth
 - Add test cases for crawler view of public pages (fetch as Googlebot UA, assert tags present)
 - Acceptance criteria:
   - Test cases exist and are traceable one-to-one to AC-1 through AC-10 in dev spec §14
-  - Suite runs in `local` mode via `run-integration-tests.yml` and passes on PR
-  - Suite runs in `cloud` mode against deployed URLs and is read-only (no writes to production dataset)
+  - Suite runs in `local` mode via `run-integration-tests.yml` and passes on PR with full AC-1..AC-10 coverage
+  - Read-only cloud mode runs against production URLs and does not mutate production data
+  - Write-path AC coverage runs against a documented isolated staging environment, documented alongside the Sprint 4 isolation rules in `docs/deployment/deployment-architecture.md`
   - Crawler-UA fetches (`User-Agent: Googlebot`) of at least 3 public channels return non-empty `<title>`/`<meta name="description">` and valid JSON-LD
   - Test output is captured as an artifact for submission evidence
+  - If the isolated staging environment cannot be provisioned in time, write-path ACs fall back to `local` evidence and the limitation is explicitly documented in the submission reflection
 - Assignee: **Aiden-Barrera**
 - Due: Apr 29
 - Blocked by: S8, S9, S10
 
-**S12. Production validation + evidence capture**
-- Run cloud-target SEO integration suite against the deployed Vercel + Railway stack
-- Verify: meta tags render through the Vercel edge, cache hits are served from Redis, background regeneration triggered by worker reaches the cache observable by both API replicas, `noindex`/sitemap removal works on visibility flip
+**S12. Deployed validation + evidence capture**
+- Run the read-only cloud portion of the SEO suite against the deployed production Vercel + Railway stack and the write-path portion against the isolated staging environment provisioned in S11
+- Verify: meta tags render through the Vercel edge, cache hits are served from Redis, background regeneration triggered by worker reaches the cache observable by both API replicas, and visibility-driven sitemap/`noindex` behavior works across `PUBLIC_INDEXABLE`, `PUBLIC_NO_INDEX`, and `PRIVATE`
 - Use Sprint 4 replica observability (instance identity headers/logs) to confirm tags render consistently regardless of which `backend-api` replica served the SSR fetch
 - Capture screenshots, crawler-view HTML, and structured-data validator output (Google Rich Results test) for submission
 - Acceptance criteria:
-  - Cloud integration suite passes against the deployed Vercel + Railway stack
+  - Read-only cloud tests pass against the deployed production stack without mutating production data
+  - Write-path tests pass against the isolated staging stack
   - Evidence bundle exists under `docs/submission/seo-evidence/` containing: crawler-view HTML, Rich Results test screenshots, replica-identity headers from at least two distinct `backend-api` replicas, and a cache-hit log sample
-  - Visibility flip scenario (`PUBLIC_INDEXABLE → PRIVATE`) is verified live and captured as evidence (AC-4, AC-10)
+  - Visibility transitions for all three states (`PUBLIC_INDEXABLE ↔ PUBLIC_NO_INDEX ↔ PRIVATE`) are verified and captured as evidence (AC-4, AC-10)
   - Tag output is identical across both API replicas for the same channel within one cache TTL
-  - Every AC-1..AC-10 item has at least one linked piece of evidence in the bundle
+  - Every AC-1..AC-10 item has at least one linked piece of evidence in the bundle, with the target environment (production / staging / local) labeled
+  - Any AC for which only `local` evidence exists is flagged explicitly in the bundle and the reflection
 - Assignee: **declanblanc**
 - Backup: **Aiden-Barrera**
 - Due: Apr 30
@@ -275,7 +289,7 @@ Dev spec: `docs/dev-spec-seo-meta-tag-generation.md`
 - Fold SEO feature usage, override flow, and regeneration behavior into README
 - Update deployer guide with any new env vars introduced in Phase A–C (NLP keys, R2 bucket for OG images if any, etc.)
 - Acceptance criteria:
-  - README documents: how to view generated SEO tags, how a creator overrides them, and how regeneration is triggered
+  - README documents: how to view generated SEO tags, how a server admin overrides them, and how regeneration is triggered
   - Deployer guide lists every new env var added during Sprint 5 with purpose and example value
   - README links to the deployed frontend URL, backend URL, and submission evidence bundle
   - A fresh contributor can follow README instructions to run the app locally and see SEO tags on a public channel
