@@ -40,10 +40,14 @@ const refreshLimiter = rateLimit({
 export function createApp() {
   const app = express();
 
-  // Trust the first proxy hop (Railway's edge) so req.ip and
-  // express-rate-limit can read X-Forwarded-For safely. Using `1` instead of
-  // `true` avoids IP spoofing via attacker-supplied XFF chains.
-  app.set('trust proxy', 1);
+  // Trust N proxy hops so req.ip and express-rate-limit can read
+  // X-Forwarded-For safely. Gated on TRUST_PROXY_HOPS so running the backend
+  // without a proxy in front (local dev, direct port exposure) doesn't let
+  // clients spoof XFF and poison rate-limit buckets. Set to `1` on Railway.
+  const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
+  if (trustProxyHops > 0) {
+    app.set('trust proxy', trustProxyHops);
+  }
 
   app.use(helmet());
   // CORS must come before body parsers so error responses include CORS headers
