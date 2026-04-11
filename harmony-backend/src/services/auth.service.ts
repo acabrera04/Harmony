@@ -264,12 +264,15 @@ export const authService = {
 
     const decoded = decodePasswordVerifierRecord(user.passwordHash);
     if (!decoded) {
+      await bcrypt.compare(passwordVerifier, TIMING_DUMMY_HASH);
       throw new TRPCError({
         code: 'UNAUTHORIZED',
         message: 'This account must reset its password before signing in.',
       });
     }
 
+    // This protects request bodies and logs from raw-password exposure, but a
+    // captured verifier is still replayable. HTTPS remains load-bearing here.
     const valid = await bcrypt.compare(passwordVerifier, decoded.bcryptHash);
     if (!valid) {
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });

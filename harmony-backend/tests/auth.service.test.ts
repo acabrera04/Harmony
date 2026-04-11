@@ -220,6 +220,20 @@ describe('authService.register', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT', message: 'Email or username already in use' });
   });
 
+  it('re-throws non-P2002 Prisma errors', async () => {
+    const unknownError = new Error('DB connection lost');
+    mockPrisma.user.create.mockRejectedValue(unknownError);
+
+    await expect(
+      authService.register(
+        'user@example.com',
+        'testuser',
+        PASSWORD_SALT,
+        derivePasswordVerifier('SecurePass123!'),
+      ),
+    ).rejects.toThrow('DB connection lost');
+  });
+
   it('calls joinServer when the default server exists', async () => {
     mockPrisma.server.findFirst.mockResolvedValue({ id: 'server-001' });
 
@@ -231,6 +245,35 @@ describe('authService.register', () => {
     );
 
     expect(mockJoinServer).toHaveBeenCalledWith(mockUserId, 'server-001');
+  });
+
+  it('continues registration when joinServer fails', async () => {
+    mockPrisma.server.findFirst.mockResolvedValue({ id: 'server-001' });
+    mockJoinServer.mockRejectedValue(new Error('Server join failed'));
+
+    const result = await authService.register(
+      'user@example.com',
+      'testuser',
+      PASSWORD_SALT,
+      derivePasswordVerifier('SecurePass123!'),
+    );
+
+    expect(result.accessToken).toBeTruthy();
+    expect(result.refreshToken).toBeTruthy();
+  });
+
+  it('defaults displayName to username', async () => {
+    await authService.register(
+      'user@example.com',
+      'testuser',
+      PASSWORD_SALT,
+      derivePasswordVerifier('SecurePass123!'),
+    );
+
+    const createArgs = mockPrisma.user.create.mock.calls[0][0] as {
+      data: { displayName: string; username: string };
+    };
+    expect(createArgs.data.displayName).toBe(createArgs.data.username);
   });
 });
 
@@ -277,6 +320,27 @@ describe('authService.login', () => {
     });
   });
 
+  it('equalizes timing for legacy bcrypt-only hashes', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      ...mockUser,
+      passwordHash: '$2b$12$legacyHashValue',
+    });
+    const compareSpy = jest.spyOn(bcrypt, 'compare');
+
+    await expect(
+      authService.login(mockUser.email, derivePasswordVerifier('SecurePass123!')),
+    ).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'This account must reset its password before signing in.',
+    });
+
+    expect(compareSpy).toHaveBeenCalledWith(
+      derivePasswordVerifier('SecurePass123!'),
+      expect.stringMatching(/^\$2[aby]\$/),
+    );
+    compareSpy.mockRestore();
+  });
+
   it('admin override works in non-production using the derived verifier', async () => {
     const adminUser = {
       ...mockUser,
@@ -292,6 +356,53 @@ describe('authService.login', () => {
 
     expect(typeof result.accessToken).toBe('string');
     expect(mockPrisma.user.upsert).toHaveBeenCalled();
+  });
+
+  it('admin override upserts the expected system-admin fields', async () => {
+    await authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT));
+
+    expect(mockPrisma.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          email: ADMIN_EMAIL,
+          username: 'admin',
+          displayName: 'System Admin',
+        }),
+      }),
+    );
+  });
+
+  it('admin override makes the admin OWNER of every server', async () => {
+    mockPrisma.server.findMany.mockResolvedValue([{ id: 'server-001' }, { id: 'server-002' }]);
+
+    await authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT));
+
+    expect(mockPrisma.serverMember.upsert).toHaveBeenCalledTimes(2);
+    for (const [call] of mockPrisma.serverMember.upsert.mock.calls) {
+      expect(call).toEqual(
+        expect.objectContaining({
+          update: { role: 'OWNER' },
+          create: expect.objectContaining({ role: 'OWNER' }),
+        }),
+      );
+    }
+  });
+
+  it('propagates admin upsert failures', async () => {
+    mockPrisma.user.upsert.mockRejectedValue(new Error('DB error during upsert'));
+
+    await expect(
+      authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT)),
+    ).rejects.toThrow('DB error during upsert');
+  });
+
+  it('propagates admin membership upsert failures', async () => {
+    mockPrisma.server.findMany.mockResolvedValue([{ id: 'server-001' }, { id: 'server-002' }]);
+    mockPrisma.serverMember.upsert.mockRejectedValueOnce(new Error('membership upsert failed'));
+
+    await expect(
+      authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT)),
+    ).rejects.toThrow('membership upsert failed');
   });
 
   it('disables admin override in production', async () => {
@@ -322,6 +433,36 @@ describe('authService.logout', () => {
     expect(args.where.tokenHash).toBe(crypto.createHash('sha256').update(rawToken).digest('hex'));
     expect(args.data.revokedAt).toBeInstanceOf(Date);
   });
+
+  it('is idempotent when called twice with the same token', async () => {
+    mockPrisma.refreshToken.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    const rawToken = signTestRefreshToken(mockUserId);
+
+    await expect(authService.logout(rawToken)).resolves.toBeUndefined();
+    await expect(authService.logout(rawToken)).resolves.toBeUndefined();
+    expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not throw for unknown tokens', async () => {
+    mockPrisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(authService.logout('not-a-real-token')).resolves.toBeUndefined();
+  });
+
+  it('only revokes the matching token hash', async () => {
+    const rawToken = signTestRefreshToken(mockUserId);
+
+    await authService.logout(rawToken);
+
+    const args = mockPrisma.refreshToken.updateMany.mock.calls[0][0] as {
+      where: { tokenHash: string };
+    };
+    expect(args.where.tokenHash).toBe(
+      crypto.createHash('sha256').update(rawToken).digest('hex'),
+    );
+  });
 });
 
 describe('authService.refreshTokens', () => {
@@ -341,6 +482,38 @@ describe('authService.refreshTokens', () => {
     });
   });
 
+  it('rejects tampered refresh tokens', async () => {
+    const rawToken = signTestRefreshToken(mockUserId);
+    const tampered = rawToken.slice(0, -5) + 'XXXXX';
+
+    await expect(authService.refreshTokens(tampered)).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Invalid refresh token',
+    });
+  });
+
+  it('rejects refresh tokens signed with the wrong secret', async () => {
+    const wrongSecretToken = jwt.sign(
+      { sub: mockUserId, jti: crypto.randomUUID() },
+      'wrong-secret',
+      { expiresIn: '7d' },
+    );
+
+    await expect(authService.refreshTokens(wrongSecretToken)).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Invalid refresh token',
+    });
+  });
+
+  it('rejects expired refresh tokens', async () => {
+    const expiredToken = signTestRefreshToken(mockUserId, { expiresIn: -1 });
+
+    await expect(authService.refreshTokens(expiredToken)).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Invalid refresh token',
+    });
+  });
+
   it('rejects revoked or expired tokens when updateMany returns count 0', async () => {
     mockPrisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
 
@@ -350,6 +523,79 @@ describe('authService.refreshTokens', () => {
         message: 'Refresh token revoked or expired',
       },
     );
+  });
+
+  it('prevents refresh token reuse', async () => {
+    mockPrisma.refreshToken.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    const rawToken = signTestRefreshToken(mockUserId);
+
+    await expect(authService.refreshTokens(rawToken)).resolves.toBeDefined();
+    await expect(authService.refreshTokens(rawToken)).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+      message: 'Refresh token revoked or expired',
+    });
+  });
+
+  it('rejects tokens at the exact expiry boundary', async () => {
+    jest.useFakeTimers();
+    try {
+      const now = Date.now();
+      jest.setSystemTime(now);
+      const expiredAtBoundary = jwt.sign(
+        { sub: mockUserId, jti: crypto.randomUUID() },
+        REFRESH_SECRET,
+        { expiresIn: 0 },
+      );
+
+      await expect(authService.refreshTokens(expiredAtBoundary)).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+        message: 'Invalid refresh token',
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('issues refresh/access tokens with the expected claims', async () => {
+    const rawToken = signTestRefreshToken(mockUserId);
+
+    const result = await authService.refreshTokens(rawToken);
+
+    const accessPayload = jwt.verify(result.accessToken, ACCESS_SECRET) as {
+      sub: string;
+      exp: number;
+    };
+    const refreshPayload = jwt.verify(result.refreshToken, REFRESH_SECRET) as {
+      sub: string;
+      jti: string;
+      exp: number;
+    };
+    expect(accessPayload.sub).toBe(mockUserId);
+    expect(typeof accessPayload.exp).toBe('number');
+    expect(refreshPayload.sub).toBe(mockUserId);
+    expect(typeof refreshPayload.jti).toBe('string');
+  });
+
+  it('stores the rotated refresh token with the expected expiry window', async () => {
+    const rawToken = signTestRefreshToken(mockUserId);
+    const before = Date.now();
+
+    await authService.refreshTokens(rawToken);
+    const after = Date.now();
+
+    const createArg = mockPrisma.refreshToken.create.mock.calls[0][0] as {
+      data: { tokenHash: string; userId: string; expiresAt: Date };
+    };
+    expect(createArg.data.userId).toBe(mockUserId);
+    expect(createArg.data.tokenHash).toHaveLength(64);
+    const expectedMin = new Date(before);
+    expectedMin.setDate(expectedMin.getDate() + 7);
+    const expectedMax = new Date(after);
+    expectedMax.setDate(expectedMax.getDate() + 7);
+    expect(createArg.data.expiresAt.getTime()).toBeGreaterThanOrEqual(expectedMin.getTime());
+    expect(createArg.data.expiresAt.getTime()).toBeLessThanOrEqual(expectedMax.getTime());
   });
 });
 
@@ -363,5 +609,38 @@ describe('authService.verifyAccessToken', () => {
     expect(() => authService.verifyAccessToken('invalid')).toThrow(
       expect.objectContaining({ code: 'UNAUTHORIZED' }),
     );
+  });
+
+  it('rejects tampered access tokens', () => {
+    const token = signTestAccessToken(mockUserId);
+    const tampered = token.slice(0, -4) + 'XXXX';
+
+    expect(() => authService.verifyAccessToken(tampered)).toThrow(
+      expect.objectContaining({ code: 'UNAUTHORIZED' }),
+    );
+  });
+
+  it('rejects access tokens signed with the wrong secret', () => {
+    const wrongToken = jwt.sign({ sub: mockUserId }, 'wrong-secret', { expiresIn: '15m' });
+
+    expect(() => authService.verifyAccessToken(wrongToken)).toThrow(
+      expect.objectContaining({ code: 'UNAUTHORIZED' }),
+    );
+  });
+
+  it('rejects expired access tokens', () => {
+    const expiredToken = signTestAccessToken(mockUserId, { expiresIn: -1 });
+
+    expect(() => authService.verifyAccessToken(expiredToken)).toThrow(
+      expect.objectContaining({ code: 'UNAUTHORIZED', message: 'Invalid or expired access token' }),
+    );
+  });
+
+  it('does not call the database when verifying access tokens', () => {
+    authService.verifyAccessToken(signTestAccessToken(mockUserId));
+
+    expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.refreshToken.create).not.toHaveBeenCalled();
+    expect(mockPrisma.refreshToken.updateMany).not.toHaveBeenCalled();
   });
 });

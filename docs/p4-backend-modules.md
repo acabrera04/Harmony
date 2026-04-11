@@ -49,6 +49,8 @@ The module's core abstraction is the **AuthTokens** pair:
 
 Internally, the module stores password credentials as opaque verifier records with the shape `v1$<passwordSalt>$<bcrypt(passwordVerifier)>`. No plaintext passwords are persisted, and the raw password is no longer sent to `/api/auth/register` or `/api/auth/login`.
 
+> **Migration note:** This contract is safe for fresh deployments and newly registered users. Existing legacy `bcrypt(rawPassword)` records cannot be converted automatically by the schema migration alone; those accounts require a password-reset or separate upgrade workflow.
+
 ### 4. Stable Storage
 
 Refresh tokens and user credentials are stored in PostgreSQL via Prisma.

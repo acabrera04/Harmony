@@ -14,8 +14,7 @@ const passwordSaltSchema = z
 
 const passwordVerifierSchema = z
   .string()
-  .min(20, { message: 'Password verifier is required' })
-  .max(128, { message: 'Password verifier is too long' });
+  .length(44, { message: 'Password verifier must be a 44-character base64 string' });
 
 const challengeSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
