@@ -19,7 +19,7 @@ Reference document for topology and ownership context: `docs/deployment/deployme
 | Trust proxy not configured | `src/app.ts` (absent) | **Must-fix** | Breaks IP extraction for all rate limiters |
 | Local filesystem attachment storage | `src/lib/storage/local.provider.ts` | **Must-fix** | Files not visible across replicas |
 | Duplicate cacheInvalidator on API replicas | `src/index.ts:13` | Acceptable / ownership violation | Idempotent, but wrong service |
-| SSE correctness across replicas | `src/routes/events.router.ts` | Already safe | Redis Pub/Sub used correctly |
+| SSE correctness across replicas | `src/routes/events.router.ts` | Mostly safe — known startup window | Redis Pub/Sub used; `ready` not awaited |
 
 ---
 
@@ -65,7 +65,7 @@ The custom token-bucket rate limiter stores per-IP state in a module-level `Map`
 
 Without `app.set('trust proxy', N)`, Express reads `req.ip` from the socket's remote address. Behind Railway's HTTP proxy, the socket address is the proxy's IP, not the client's. All rate limiters key on `req.ip`, so they collapse all clients into a single bucket — effectively disabling per-IP limiting for the entire deployment.
 
-The deployment architecture document (`docs/deployment/deployment-architecture.md`, §6.2) already defines `TRUST_PROXY_HOPS=1` as a required production env var, and commit `665ed56` implemented the gated configuration below, but it was not merged to `main`:
+The deployment architecture document (`docs/deployment/deployment-architecture.md`, §6.2) already defines `TRUST_PROXY_HOPS=1` as a required production env var. The recommended gated configuration is:
 
 ```ts
 const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
@@ -112,8 +112,8 @@ cacheInvalidator.start().catch((err) => console.error('[cacheInvalidator] start 
 
 **Impact analysis:**
 - Cache invalidations (`redis.del`, `redis.unlink`) are idempotent. Running them N times has no correctness effect.
-- The `indexingService.onVisibilityChanged()` call in `VISIBILITY_CHANGED` triggers `prisma.channel.update({ data: { indexedAt: null } })` on each replica. Setting `indexedAt` to null when it is already null is a no-op at the database level. Multiple concurrent writes contend on the same row but produce the same result.
-- Extra Redis subscriber connections and redundant Postgres writes add unnecessary load.
+- The `indexingService.onVisibilityChanged()` call in `VISIBILITY_CHANGED` only reaches `prisma.channel.update({ data: { indexedAt: null } })` when a channel transitions away from `PUBLIC_INDEXABLE` (via `removeFromSitemap`). In those cases, setting `indexedAt` to `null` when it is already `null` is still a no-op at the database level. Multiple concurrent writes may contend on the same row but produce the same result.
+- Extra Redis subscriber connections add unnecessary load, and duplicate replicas only cause redundant Postgres writes on those `PUBLIC_INDEXABLE` → non-indexable visibility transitions.
 
 **Verdict:** No correctness failure at demo scale. **However**, per the deployment architecture decision, `cacheInvalidator` is a background subscriber and belongs on `backend-worker` (singleton), not `backend-api`. Running it on every API replica violates the ownership boundary established in `docs/deployment/deployment-architecture.md §2.2`.
 
@@ -126,13 +126,17 @@ cacheInvalidator.start().catch((err) => console.error('[cacheInvalidator] start 
 
 ---
 
-### 4.2 SSE Behind Load Balancing — Already Safe
+### 4.2 SSE Behind Load Balancing — Mostly Safe (Known Startup Window)
 
 **File:** `harmony-backend/src/routes/events.router.ts`
 
 SSE connections are long-lived HTTP streams. Railway's load balancer routes each new SSE connection to one replica, and that connection remains on that replica for its lifetime.
 
-Because SSE event delivery is backed by `eventBus.subscribe()` which uses a Redis Pub/Sub subscriber, every replica receives every published event. A client connected to replica A will receive events published by code running on replica B, because replica A has an active Redis subscription on the relevant channel. There is no missed-event scenario.
+Because SSE event delivery is backed by `eventBus.subscribe()` which uses a Redis Pub/Sub subscriber, every replica receives every published event. A client connected to replica A will receive events published by code running on replica B, because replica A has an active Redis subscription on the relevant channel.
+
+**Known limitation — subscription readiness window:** `eventBus.subscribe()` returns a `{ unsubscribe, ready }` pair where `ready` resolves once Redis confirms the SUBSCRIBE handshake. The SSE router does not currently await `ready` before accepting the stream as live. On the very first SSE connection to a freshly started replica (when no other subscriber holds the channel open), there is a brief window between calling `subscribe()` and the Redis handshake completing during which events published by other replicas may be missed. Subsequent connections on the same replica are not affected because the subscriber client is already active.
+
+**Impact:** Low probability in practice — the window is a single RTT to Redis and only applies to first-connection-on-fresh-replica scenarios. For the current demo scale this is acceptable. To eliminate the window entirely, the SSE handler should await `ready` before sending the initial response headers, or implement client-side reconnect with a `Last-Event-ID` to replay missed events.
 
 The `X-Accel-Buffering: no` response header (`events.router.ts:116`) instructs nginx-style reverse proxies to disable response buffering for SSE connections, which is required for real-time delivery.
 
@@ -140,7 +144,7 @@ The `X-Accel-Buffering: no` response header (`events.router.ts:116`) instructs n
 
 **Verify at deploy time:** Confirm Railway's proxy allows long-lived HTTP/1.1 connections and does not impose a timeout shorter than the SSE heartbeat interval (30 s). If a gateway timeout is shorter than 30 s, reduce the heartbeat interval in `events.router.ts:200,429`.
 
-**Owner:** No code change required. Deploy-time verification only.
+**Owner:** No code change required for demo. Await `ready` or add `Last-Event-ID` replay before production multi-replica rollout.
 
 ---
 
@@ -162,6 +166,7 @@ Use this checklist when validating that `backend-api` is ready to run at 2+ repl
 ### Deploy-Time Verifications (no code change needed)
 
 - [ ] **Railway proxy keepalive**: Confirm Railway's proxy timeout is greater than the SSE heartbeat interval (30 s) so SSE connections are not prematurely closed.
+- [ ] **SSE subscription readiness**: Consider awaiting `eventBus.subscribe().ready` in the SSE handler, or implementing `Last-Event-ID` replay, to eliminate the brief missed-event window on first connection to a fresh replica (§4.2).
 - [ ] **Redis store connection**: Confirm the Redis-backed rate-limit and token-bucket stores use the same `REDIS_URL` as the rest of the backend.
 - [ ] **S3 credentials**: Confirm `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, and `S3_BUCKET` (or equivalent) are set in Railway before enabling `STORAGE_PROVIDER=s3`.
 
