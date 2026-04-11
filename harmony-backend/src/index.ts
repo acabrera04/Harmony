@@ -3,11 +3,13 @@ import { createApp } from './app';
 import { cacheInvalidator } from './services/cacheInvalidator.service';
 
 const PORT = Number(process.env.PORT) || 4000;
+const HOST = '0.0.0.0';
+const DISPLAY_HOST = process.env.NODE_ENV === 'development' ? 'localhost' : HOST;
 
 const app = createApp();
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Harmony backend listening on 0.0.0.0:${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Harmony backend listening at http://${DISPLAY_HOST}:${PORT} (bound to ${HOST}:${PORT})`);
 });
 
 cacheInvalidator.start().catch((err) => console.error('[cacheInvalidator] start failed:', err));
