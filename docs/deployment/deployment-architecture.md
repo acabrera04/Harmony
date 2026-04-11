@@ -365,11 +365,11 @@ Operational policy:
 
 ## 8.1 Health checks
 
-| Service          | Health check                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------ |
-| `frontend`       | Vercel deployment health / successful render                                         |
-| `backend-api`    | `GET /health`                                                                        |
-| `backend-worker` | Add a lightweight worker health endpoint or process heartbeat before Railway go-live |
+| Service          | Health check                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `frontend`       | Vercel deployment health / successful render                                                                             |
+| `backend-api`    | `GET /health`                                                                                                            |
+| `backend-worker` | Add a lightweight worker health endpoint or process heartbeat before Railway go-live; this is part of issue `#322` scope |
 
 ## 8.2 Deploy authority
 
@@ -397,10 +397,10 @@ The following decisions are now explicit:
 
 ## 10. Downstream Issue Map
 
-| Issue  | Expected use of this document                                                   |
-| ------ | ------------------------------------------------------------------------------- |
-| `#317` | Audit replica safety using the API/worker boundary defined here                 |
-| `#321` | Implement frontend production metadata, canonical URLs, and SEO ownership       |
-| `#322` | Provision Railway services and env vars to match this topology                  |
-| `#323` | Write deployment-aware integration test specs using this topology               |
-| `#329` | Configure Vercel preview/production domains and env vars to match this contract |
+| Issue  | Expected use of this document                                                                                                       |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `#317` | Audit replica safety using the API/worker boundary defined here                                                                     |
+| `#321` | Implement frontend production metadata, canonical URLs, and SEO ownership                                                           |
+| `#322` | Provision Railway services and env vars to match this topology, including the worker health check / restart strategy before go-live |
+| `#323` | Write deployment-aware integration test specs using this topology                                                                   |
+| `#329` | Configure Vercel preview/production domains and env vars to match this contract                                                     |
