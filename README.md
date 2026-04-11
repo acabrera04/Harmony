@@ -93,6 +93,13 @@ npx prisma migrate deploy
 npm test
 ```
 
+If you seed the mock dataset, the loginable mock account is:
+
+```text
+username/email: alice_admin / alice_admin@mock.harmony.test
+password: HarmonyAdmin123!
+```
+
 If you want to run a single backend test file:
 
 ```bash

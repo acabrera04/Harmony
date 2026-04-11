@@ -166,6 +166,11 @@ npx prisma migrate deploy
 # 4. (Optional) Seed with mock data for development
 npm run db:seed:mock
 
+# Mock login after seeding
+# email: alice_admin@mock.harmony.test
+# username: alice_admin
+# password: HarmonyAdmin123!
+
 # 5. Verify everything works
 npm test
 ```
