@@ -2,7 +2,17 @@ import 'dotenv/config';
 import { createApp } from './app';
 import { cacheInvalidator } from './services/cacheInvalidator.service';
 
-const PORT = Number(process.env.PORT) || 4000;
+const rawPort = process.env.PORT;
+const PORT =
+  rawPort === undefined
+    ? 4000
+    : (() => {
+        const port = Number(rawPort);
+        if (!Number.isInteger(port) || port < 0 || port > 65535) {
+          throw new Error(`Invalid PORT environment variable: ${rawPort}`);
+        }
+        return port;
+      })();
 const HOST = '0.0.0.0';
 const DISPLAY_HOST = process.env.NODE_ENV === 'development' ? 'localhost' : HOST;
 
