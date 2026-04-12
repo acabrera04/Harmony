@@ -42,6 +42,27 @@ const refreshLimiter = rateLimit({
 export function createApp() {
   const app = express();
 
+  // Trust N proxy hops so req.ip and express-rate-limit can read
+  // X-Forwarded-For safely. Gated on TRUST_PROXY_HOPS so running the backend
+  // without a proxy in front (local dev, direct port exposure) doesn't let
+  // clients spoof XFF and poison rate-limit buckets. Set to `1` on Railway.
+  const trustProxyHopsEnv = process.env.TRUST_PROXY_HOPS;
+  if (trustProxyHopsEnv !== undefined && trustProxyHopsEnv.trim() === '') {
+    throw new Error(
+      `Invalid TRUST_PROXY_HOPS value "${trustProxyHopsEnv}". Expected a non-negative integer.`,
+    );
+  }
+  const trustProxyHops =
+    trustProxyHopsEnv === undefined ? 0 : Number(trustProxyHopsEnv);
+  if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
+    throw new Error(
+      `Invalid TRUST_PROXY_HOPS value "${trustProxyHopsEnv}". Expected a non-negative integer.`,
+    );
+  }
+  if (trustProxyHops > 0) {
+    app.set('trust proxy', trustProxyHops);
+  }
+
   app.use(helmet());
   // CORS must come before body parsers so error responses include CORS headers
   app.use(corsMiddleware);
