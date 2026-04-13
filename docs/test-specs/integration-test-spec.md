@@ -16,7 +16,7 @@ Reference documents:
 
 By default, integration tests run against deployed cloud URLs perform only **read-only operations**. They do not create, modify, or delete any application data.
 
-**Rationale:** Production and preview environments share real persistence backends (PostgreSQL, Redis). Write operations against live cloud deployments risk polluting production data, triggering unwanted side effects (sitemap invalidation, cache busting, email or webhook delivery), and introducing irreversible state.
+**Rationale:** Write operations against live cloud deployments risk polluting real environment data, triggering unwanted side effects (sitemap invalidation, cache busting, email or webhook delivery), and introducing irreversible state. This risk applies even when preview and production are separate deployments, because writes still alter real deployed environments rather than an isolated test data plane.
 
 Read-only smoke tests are sufficient to verify that all service boundaries, TLS termination, CORS headers, auth token forwarding, and SSR rendering work end-to-end.
 
@@ -74,6 +74,8 @@ Until an isolated environment is provisioned, all write-path test cases in this 
 | GPC-5 | Pagination works on public channel messages | Fetch `/api/public/channels/:channelId/messages?page=2` | HTTP 200; `page` field in response equals 2; `messages` array contains up to 50 items |
 | GPC-6 | Public messages endpoint returns 404 for non-public channel | Fetch `/api/public/channels/:channelId/messages` for a `PRIVATE` channel | HTTP 404 |
 
+**Known gap — `PUBLIC_NO_INDEX` message retrieval:** `GuestChannelView` always calls `fetchPublicMessages(channel.id)`, but the backend `/api/public/channels/:channelId/messages` route returns 404 for any channel that is not `PUBLIC_INDEXABLE` (see `public.router.ts` line 37). A deployed `PUBLIC_NO_INDEX` guest page will therefore render its shell (GPC-3 passes) but show no message history. This is a known behavior gap. GPC-3 covers the metadata/SEO path only; a follow-up test case or a backend fix is needed to cover message retrieval for `PUBLIC_NO_INDEX` channels.
+
 **Local-only variant:** GPC-4 and GPC-6 may require test-seeded data and are easiest to run locally where a known private channel can be created.
 
 ---
@@ -92,10 +94,10 @@ Until an isolated environment is provisioned, all write-path test cases in this 
 | AUTH-2 | Login with wrong password returns 401 | `POST /api/auth/login` with valid email and wrong password | HTTP 401; no tokens in response |
 | AUTH-3 | Login with non-existent email returns 401 | `POST /api/auth/login` with an email that does not exist | HTTP 401 |
 | AUTH-4 | Login with malformed request body returns 400 | `POST /api/auth/login` with missing `email` field | HTTP 400; validation error details in response |
-| AUTH-5 | Access token is accepted for an authenticated endpoint | `GET /trpc/user.me` or any auth-gated tRPC call with `Authorization: Bearer <accessToken>` | HTTP 200; user data returned |
+| AUTH-5 | Access token is accepted for an authenticated endpoint | Call tRPC procedure `user.getCurrentUser` via `/trpc` using the runner's standard tRPC request shape, with `Authorization: Bearer <accessToken>` | HTTP 200; current user data returned |
 | AUTH-6 | Refresh token issues a new access token | `POST /api/auth/refresh` with `{ refreshToken: "<valid-refresh-token>" }` | HTTP 200; new `accessToken` and `refreshToken` in response |
 | AUTH-7 | Expired or invalid refresh token returns 401 | `POST /api/auth/refresh` with `{ refreshToken: "invalid" }` | HTTP 401 |
-| AUTH-8 | Logout invalidates the refresh token | `POST /api/auth/logout` with `{ refreshToken: "<valid-refresh-token>" }` then repeat `POST /api/auth/refresh` with the same token | First call returns 200; second call returns 401 |
+| AUTH-8 | Logout invalidates the refresh token | `POST /api/auth/logout` with `{ refreshToken: "<valid-refresh-token>" }` then repeat `POST /api/auth/refresh` with the same token | First call returns HTTP 204 No Content with an empty response body; second call returns 401 |
 
 **Cloud smoke alternative (cloud-read-only):** A single read-only auth smoke test can be run in cloud mode by verifying the `/api/auth/login` endpoint is reachable and returns a structured JSON error for an intentionally invalid credential (no real account needed). This confirms TLS termination, CORS headers, and backend routing are live without creating any session state.
 
@@ -118,7 +120,7 @@ Until an isolated environment is provisioned, all write-path test cases in this 
 | SSRAPI-1 | Public server info endpoint returns server metadata | `GET /api/public/servers/:serverSlug` for a known public server | HTTP 200; body contains `id`, `name`, `slug`, `memberCount` |
 | SSRAPI-2 | Public server list endpoint is reachable | `GET /api/public/servers` | HTTP 200; body contains an array of public server objects |
 | SSRAPI-3 | Public channel endpoint returns channel metadata | `GET /api/public/servers/:serverSlug/channels/:channelSlug` for a `PUBLIC_INDEXABLE` channel | HTTP 200; body contains `id`, `name`, `visibility` |
-| SSRAPI-4 | Public channel list for a server returns only public channels | `GET /api/public/servers/:serverSlug/channels` | HTTP 200; all returned channels have `visibility` of `PUBLIC_INDEXABLE` or `PUBLIC_NO_INDEX`; no `PRIVATE` channels appear |
+| SSRAPI-4 | Public channel list for a server returns only `PUBLIC_INDEXABLE` channels | `GET /api/public/servers/:serverSlug/channels` | HTTP 200; response is `{ channels: [...] }` where each channel has `id`, `name`, `slug`, `type`, `topic`; filter is applied server-side so only `PUBLIC_INDEXABLE` channels are returned; no `visibility` field is present in each channel object |
 | SSRAPI-5 | Unknown server slug returns 404 | `GET /api/public/servers/nonexistent-server-slug-xyz` | HTTP 404 |
 | SSRAPI-6 | SSR metadata renders correctly for a public channel page | Fetch raw HTML of `/c/<serverSlug>/<channelSlug>` for a `PUBLIC_INDEXABLE` channel | `generateMetadata` ran server-side; `<title>` and `<meta name="description">` are present in the HTML |
 | SSRAPI-7 | Public API rate limiter responds with 429 when limit exceeded | Send more than 100 requests per minute from the same IP to any `/api/public/*` endpoint | HTTP 429 on requests beyond the limit; `Retry-After` or rate-limit headers present if configured |
@@ -168,7 +170,7 @@ Until an isolated environment is provisioned, all write-path test cases in this 
 
 | ID | Description | Steps | Expected |
 |---|---|---|---|
-| ATT-1 | Authenticated user can upload a valid image | `POST /api/attachments/upload` with a valid PNG file in the `file` field and a valid `Authorization` header | HTTP 200; response contains `{ url, filename, contentType, sizeBytes }` |
+| ATT-1 | Authenticated user can upload a valid image | `POST /api/attachments/upload` with a valid PNG file in the `file` field and a valid `Authorization` header | HTTP 201; response contains `{ url, filename, contentType, sizeBytes }` |
 | ATT-2 | Upload without authentication returns 401 | `POST /api/attachments/upload` with no `Authorization` header | HTTP 401 |
 | ATT-3 | Upload of a disallowed file type returns 400 | `POST /api/attachments/upload` with a `.exe` or disallowed MIME type | HTTP 400; error message describes the content-type restriction |
 | ATT-4 | Upload of a file exceeding 25 MB returns 400 | `POST /api/attachments/upload` with a file larger than 25 MB | HTTP 400 or HTTP 413; error message describes the size limit |
@@ -179,7 +181,9 @@ Until an isolated environment is provisioned, all write-path test cases in this 
 
 ### 3.7 SSE / Real-Time Event Smoke
 
-**Path:** Authenticated user connects to `GET /api/events/channel/:channelId?token=<accessToken>` → receives server-sent events when messages are created or channels are updated
+**Endpoints:** The SSE router exposes two streams:
+- `GET /api/events/channel/:channelId?token=<accessToken>` — delivers message events (`message:created`, `message:edited`, `message:deleted`) and server metadata events
+- `GET /api/events/server/:serverId?token=<accessToken>` — delivers channel lifecycle events (`channel:created`, `channel:updated`, `channel:deleted`, `channel:visibility-changed`) and member presence events
 
 **Backend route:** `harmony-backend/src/routes/events.router.ts`
 **Event bus:** `harmony-backend/src/events/eventBus.ts` (Redis Pub/Sub)
@@ -190,15 +194,15 @@ Until an isolated environment is provisioned, all write-path test cases in this 
 | SSE-1 | SSE endpoint accepts connection and streams headers | Open `GET /api/events/channel/:channelId?token=<valid-token>` for a channel the user is authorized to access | HTTP 200; `Content-Type: text/event-stream`; `X-Accel-Buffering: no` header present; connection stays open |
 | SSE-2 | SSE endpoint rejects unauthenticated connection | Open `GET /api/events/channel/:channelId` with no `token` parameter or an invalid token | HTTP 401; connection closed |
 | SSE-3 | SSE endpoint rejects access to a channel the user is not a member of | Open the SSE endpoint for a channel in a server the authenticated user has not joined | HTTP 403; connection closed |
-| SSE-4 | Message created event is delivered over SSE | 1. Open an SSE connection for a channel. 2. Post a message to that channel. | `MESSAGE_CREATED` event arrives on the SSE stream within a reasonable timeout (≤ 5 s) |
-| SSE-5 | Visibility changed event is delivered over SSE | 1. Open SSE connection. 2. Change channel visibility as admin. | `VISIBILITY_CHANGED` event arrives on the SSE stream |
-| SSE-6 | Heartbeat keeps the connection alive | Hold an SSE connection open for 30+ seconds without sending a message | A comment-format heartbeat line (`:heartbeat`) is received at regular intervals (every ~30 s); connection remains open |
+| SSE-4 | Message created event is delivered over SSE | 1. Open an SSE connection for a channel. 2. Post a message to that channel. | `message:created` event arrives on the SSE stream within a reasonable timeout (≤ 5 s) |
+| SSE-5 | Visibility changed event is delivered over SSE | 1. Open an SSE connection to `GET /api/events/server/:serverId`. 2. Change channel visibility as admin. | `channel:visibility-changed` event arrives on the SSE stream |
+| SSE-6 | Heartbeat keeps the connection alive | Hold an SSE connection open for 30+ seconds without sending a message | A comment-format heartbeat line (`:`) is received at regular intervals (every ~30 s); connection remains open |
 
 **Cloud-read-only smoke variant:**
 
 | ID | Description | Steps | Expected |
 |---|---|---|---|
-| SSE-SMOKE-1 | SSE endpoint is reachable and sends correct response headers | Open `GET https://api.harmony.chat/api/events/channel/<known-channel-id>?token=<valid-token>` | HTTP 200; `Content-Type: text/event-stream`; `X-Accel-Buffering: no` header present |
+| SSE-SMOKE-1 | SSE server endpoint is reachable and sends correct response headers | Open `GET https://api.harmony.chat/api/events/server/<known-server-id>?token=<valid-token>` | HTTP 200; `Content-Type: text/event-stream`; `X-Accel-Buffering: no` header present |
 
 **Replica note (from `docs/deployment/replica-readiness-audit.md §4.2`):** SSE connections are routed to a single replica by Railway's load balancer and remain on that replica for their lifetime. Because all replicas subscribe to the same Redis Pub/Sub channels, events published by code on any replica are delivered to clients connected to any other replica. No sticky-session routing is required. A brief missed-event window exists only on first connection to a fresh replica (single RTT to Redis for the SUBSCRIBE handshake). This is acceptable at demo scale. Before multi-replica production rollout, the SSE handler should await `eventBus.subscribe().ready` or implement `Last-Event-ID` replay.
 
@@ -213,7 +217,7 @@ These tests confirm the auth and CORS contract described in `docs/deployment/dep
 | ID | Description | Steps | Expected |
 |---|---|---|---|
 | CORS-1 | Backend API returns correct CORS headers for production frontend origin | Send an `OPTIONS` preflight to `https://api.harmony.chat/api/auth/login` with `Origin: https://harmony.chat` | `Access-Control-Allow-Origin: https://harmony.chat`; `Access-Control-Allow-Credentials: true` |
-| CORS-2 | Backend API rejects requests from unlisted origins | Send an `OPTIONS` preflight with `Origin: https://evil.example.com` | `Access-Control-Allow-Origin` is absent or does not match the requested origin |
+| CORS-2 | Backend API rejects requests from unlisted origins | Send an `OPTIONS` preflight with `Origin: https://evil.example.com` | HTTP 403; JSON body `{ "error": "CORS: origin not allowed" }`; no `Access-Control-Allow-Origin` header |
 | CORS-3 | Bearer token is forwarded correctly from frontend to backend | Authenticated SSR fetch from `frontend` to `backend-api` includes `Authorization: Bearer <token>` | Backend returns 200 for authenticated route |
 
 ---
