@@ -10,6 +10,7 @@ import { publicRouter } from './routes/public.router';
 import { seoRouter } from './routes/seo.router';
 import { eventsRouter } from './routes/events.router';
 import { attachmentRouter } from './routes/attachment.router';
+import { instanceId } from './lib/instance-identity';
 
 // ─── Auth rate limiters ───────────────────────────────────────────────────────
 
@@ -64,13 +65,27 @@ export function createApp() {
   }
 
   app.use(helmet());
+
+  // Replica identity header — stamped on every response (including CORS errors)
+  // so load-balancer distribution across 2+ backend-api replicas is externally
+  // observable (curl -I /health across repeated requests should cycle through ids).
+  app.use((_req, res, next) => {
+    res.setHeader('X-Instance-Id', instanceId);
+    next();
+  });
+
   // CORS must come before body parsers so error responses include CORS headers
   app.use(corsMiddleware);
   app.use(express.json());
 
   // Health check (plain HTTP — no tRPC client required)
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({
+      status: 'ok',
+      service: 'backend-api',
+      instanceId,
+      timestamp: new Date().toISOString(),
+    });
   });
 
   // SEO endpoints (robots.txt, sitemaps) — before auth so they're publicly accessible
