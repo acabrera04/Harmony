@@ -6,9 +6,11 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { createLogger } from '../lib/logger';
 import { indexingService } from '../services/indexing.service';
 
 export const seoRouter = Router();
+const logger = createLogger({ component: 'seo-router' });
 
 /**
  * GET /robots.txt
@@ -19,12 +21,7 @@ export const seoRouter = Router();
  * This is tracked as a follow-up — see issue #107 comments.
  */
 seoRouter.get('/robots.txt', (_req: Request, res: Response) => {
-  const body = [
-    'User-agent: *',
-    'Allow: /c/',
-    'Disallow: /api/',
-    'Disallow: /trpc/',
-  ].join('\n');
+  const body = ['User-agent: *', 'Allow: /c/', 'Disallow: /api/', 'Disallow: /trpc/'].join('\n');
 
   res.set('Content-Type', 'text/plain');
   res.set('Cache-Control', 'public, max-age=86400');
@@ -50,7 +47,7 @@ seoRouter.get('/sitemap/:serverSlug.xml', async (req: Request, res: Response) =>
     res.set('Cache-Control', 'public, max-age=3600');
     res.send(xml);
   } catch (err) {
-    console.error('Sitemap generation error:', err);
+    logger.error({ err, serverSlug: req.params.serverSlug }, 'Sitemap generation failed');
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal server error' });
     }

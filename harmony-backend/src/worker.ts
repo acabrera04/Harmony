@@ -15,6 +15,7 @@ import 'dotenv/config';
 import http from 'http';
 import { cacheInvalidator } from './services/cacheInvalidator.service';
 import { instanceId } from './lib/instance-identity';
+import { createLogger } from './lib/logger';
 
 const rawPort = process.env.PORT;
 const PORT =
@@ -35,10 +36,9 @@ const PORT =
         return port;
       })();
 const HOST = '0.0.0.0';
+const logger = createLogger({ component: 'worker-bootstrap', instanceId, pid: process.pid });
 
-console.log(
-  `[worker] starting backend-worker instance=${instanceId} pid=${process.pid}`,
-);
+logger.info('Starting backend-worker');
 
 // Tiny health endpoint — deliberately separate from the Express app used by
 // backend-api. The worker has no user-facing HTTP surface and should never
@@ -64,14 +64,14 @@ const healthServer = http.createServer((req, res) => {
 });
 
 healthServer.listen(PORT, HOST, () => {
-  console.log(`[worker] health endpoint listening on http://${HOST}:${PORT}/health`);
+  logger.info({ host: HOST, port: PORT }, 'Worker health endpoint listening');
 });
 
 cacheInvalidator
   .start()
-  .then(() => console.log('[worker] cacheInvalidator subscriptions ready'))
+  .then(() => logger.info('Cache invalidator subscriptions ready'))
   .catch((err) => {
-    console.error('[worker] cacheInvalidator start failed:', err);
+    logger.error({ err }, 'Cache invalidator startup failed');
     // Fail fast so Railway restarts us into a clean state rather than running
     // a half-initialized worker that silently drops events.
     process.exit(1);
@@ -81,7 +81,7 @@ let shuttingDown = false;
 const shutdown = async (signal: string) => {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`[worker] ${signal} received, shutting down instance=${instanceId}`);
+  logger.info({ signal }, 'Shutdown signal received');
   const timer = setTimeout(() => process.exit(1), 10_000);
   await new Promise<void>((resolve) => healthServer.close(() => resolve()));
   await cacheInvalidator.stop();

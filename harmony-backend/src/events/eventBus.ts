@@ -12,6 +12,7 @@
 
 import Redis from 'ioredis';
 import { redis } from '../db/redis';
+import { createLogger } from '../lib/logger';
 import { EventChannelName, EventPayloadMap, EventHandler, EventChannels } from './eventTypes';
 
 export { EventChannels, EventChannelName, EventPayloadMap, EventHandler };
@@ -27,6 +28,7 @@ export type {
 } from './eventTypes';
 
 let subscriberClient: Redis | null = null;
+const logger = createLogger({ component: 'event-bus' });
 
 // Per-channel handler count — tracks how many JS handlers are registered for
 // each Redis channel so we can unsubscribe at the Redis level precisely when
@@ -60,7 +62,7 @@ export const eventBus = {
     try {
       await redis.publish(channel, JSON.stringify(payload));
     } catch (err) {
-      console.error(`[EventBus] Failed to publish ${channel}:`, err);
+      logger.warn({ err, channel }, 'Failed to publish event');
     }
   },
 
@@ -85,13 +87,13 @@ export const eventBus = {
       try {
         payload = JSON.parse(message) as EventPayloadMap[C];
       } catch (err) {
-        console.error(`[EventBus] Failed to parse message on ${ch}:`, err);
+        logger.error({ err, channel: ch }, 'Failed to parse event payload');
         return;
       }
       try {
         handler(payload);
       } catch (err) {
-        console.error(`[EventBus] Handler error on ${ch}:`, err);
+        logger.error({ err, channel: ch }, 'Event handler threw synchronously');
       }
     };
 
@@ -106,7 +108,9 @@ export const eventBus = {
       // confirms — this resolves even on error so callers never hang.
       const handshake = new Promise<void>((resolve) => {
         client.subscribe(channel, (err) => {
-          if (err) console.error(`[EventBus] Failed to subscribe to ${channel}:`, err);
+          if (err) {
+            logger.error({ err, channel }, 'Failed to subscribe to event channel');
+          }
           resolve();
         });
       });
@@ -130,7 +134,7 @@ export const eventBus = {
           client
             .unsubscribe(channel)
             .catch((err) =>
-              console.error(`[EventBus] Failed to unsubscribe from ${channel}:`, err),
+              logger.warn({ err, channel }, 'Failed to unsubscribe from event channel'),
             );
         } else {
           channelHandlerCounts.set(channel, count);
@@ -143,7 +147,9 @@ export const eventBus = {
   /** Gracefully disconnect the subscriber client (call on server shutdown). */
   async disconnect(): Promise<void> {
     if (subscriberClient) {
-      await subscriberClient.quit().catch(() => {});
+      await subscriberClient
+        .quit()
+        .catch((err) => logger.warn({ err }, 'Failed to close event subscriber client cleanly'));
       subscriberClient = null;
       channelHandlerCounts.clear();
       channelReadyPromises.clear();
