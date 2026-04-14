@@ -14,8 +14,8 @@ This document provides the P4 specification for every backend module in the Harm
 
 | Capability | Description |
 |---|---|
-| User registration | Creates a new account with email, username, and password. Validates email format, username (3–32 chars, alphanumeric + underscore/hyphen), and password (8–72 chars). |
-| Login | Authenticates a user by email and password, returns an access token and a refresh token. Uses constant-time comparison to prevent timing attacks. |
+| User registration | Creates a new account with email, username, and a client-derived password verifier. The client first fetches a registration salt, derives a PBKDF2-SHA256 verifier locally, and sends `{ passwordSalt, passwordVerifier }` instead of the raw password. |
+| Login | Authenticates a user by email and client-derived password verifier, returns an access token and a refresh token. The client first fetches the login salt, derives the verifier locally, and the backend uses constant-time comparison to prevent timing attacks and enumeration. |
 | Token refresh | Rotates an existing refresh token into a new access/refresh pair. The old token is revoked atomically. |
 | Logout | Revokes a single refresh token. |
 | Rate limiting (planned) | Login: 10 attempts / 15 min. Registration: 5 attempts / hour (production). Not yet implemented — no rate-limiting middleware is present in `auth.router.ts`. |
@@ -29,15 +29,16 @@ The Authentication module follows a stateless JWT pattern with server-side refre
 ```mermaid
 flowchart TD
     Client -->|POST /api/auth/*| AuthRouter
-    AuthRouter -->|validate body via Zod| AuthService
-    AuthService -->|hash password / verify| Bcrypt
+    AuthRouter -->|issue salt + validate body via Zod| AuthService
+    Client -->|derive PBKDF2 verifier locally| Client
+    AuthService -->|hash verifier / verify| Bcrypt
     AuthService -->|sign / verify JWT| jsonwebtoken
     AuthService -->|store / revoke refresh tokens| Prisma[(PostgreSQL)]
     AuthService -->|return AuthTokens| AuthRouter
     AuthRouter -->|JSON response| Client
 ```
 
-**Design justification:** Stateless access tokens (short-lived, 15 min) keep the API horizontally scalable — no shared session store is required for read requests. Refresh tokens are stored hashed in PostgreSQL so that token revocation is authoritative and survives server restarts. bcrypt with 12 rounds provides adequate brute-force resistance without excessive CPU cost at current scale.
+**Design justification:** Stateless access tokens (short-lived, 15 min) keep the API horizontally scalable — no shared session store is required for read requests. Refresh tokens are stored hashed in PostgreSQL so that token revocation is authoritative and survives server restarts. For credentials, the browser now derives a PBKDF2-SHA256 verifier from a server-issued salt before submission, and the backend bcrypt-hashes that verifier. This avoids sending raw passwords in request bodies while still preserving bcrypt-based storage and verification on the server.
 
 ### 3. Data Abstraction
 
@@ -46,7 +47,9 @@ The module's core abstraction is the **AuthTokens** pair:
 - `accessToken` — a short-lived JWT (15 min) containing `{ sub: userId }`. Used by all other modules via the `requireAuth` middleware.
 - `refreshToken` — a long-lived JWT (7 days) containing `{ sub: userId, jti: uniqueId }`. Stored as a SHA-256 hash in the database.
 
-Internally, the module treats password hashes as opaque strings produced and consumed only by bcrypt. No plaintext passwords are ever persisted.
+Internally, the module stores password credentials as opaque verifier records with the shape `v1$<passwordSalt>$<bcrypt(passwordVerifier)>`. No plaintext passwords are persisted, and the raw password is no longer sent to `/api/auth/register` or `/api/auth/login`.
+
+> **Migration note:** This contract is safe for fresh deployments and newly registered users. Existing legacy `bcrypt(rawPassword)` records cannot be converted automatically by the schema migration alone; those accounts require a password-reset or separate upgrade workflow.
 
 ### 4. Stable Storage
 
@@ -82,8 +85,10 @@ model User {
 
 | Method | Endpoint | Request Body | Response | Auth |
 |---|---|---|---|---|
-| POST | `/api/auth/register` | `{ email, username, password }` | `{ accessToken, refreshToken }` | None |
-| POST | `/api/auth/login` | `{ email, password }` | `{ accessToken, refreshToken }` | None |
+| POST | `/api/auth/register/challenge` | `{}` | `{ passwordSalt }` | None |
+| POST | `/api/auth/register` | `{ email, username, passwordSalt, passwordVerifier }` | `{ accessToken, refreshToken }` | None |
+| POST | `/api/auth/login/challenge` | `{ email }` | `{ passwordSalt }` | None |
+| POST | `/api/auth/login` | `{ email, passwordVerifier }` | `{ accessToken, refreshToken }` | None |
 | POST | `/api/auth/logout` | `{ refreshToken }` | `204 No Content` | None |
 | POST | `/api/auth/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken }` | None |
 
@@ -107,8 +112,15 @@ interface JwtPayload {
 }
 
 export const authService = {
-  register(email: string, username: string, password: string): Promise<AuthTokens>;
-  login(email: string, password: string): Promise<AuthTokens>;
+  generatePasswordSalt(): string;
+  getLoginPasswordSalt(email: string): Promise<string>;
+  register(
+    email: string,
+    username: string,
+    passwordSalt: string,
+    passwordVerifier: string,
+  ): Promise<AuthTokens>;
+  login(email: string, passwordVerifier: string): Promise<AuthTokens>;
   logout(rawRefreshToken: string): Promise<void>;
   refreshTokens(rawRefreshToken: string): Promise<AuthTokens>;
   verifyAccessToken(token: string): JwtPayload;
@@ -142,15 +154,19 @@ function ensureAdminUser(): Promise<User>;
 ```mermaid
 classDiagram
     class authService {
-        +register(email, username, password) AuthTokens
-        +login(email, password) AuthTokens
+        +generatePasswordSalt() string
+        +getLoginPasswordSalt(email) string
+        +register(email, username, passwordSalt, passwordVerifier) AuthTokens
+        +login(email, passwordVerifier) AuthTokens
         +logout(rawRefreshToken) void
         +refreshTokens(rawRefreshToken) AuthTokens
         +verifyAccessToken(token) JwtPayload
     }
 
     class AuthRouter {
+        +POST /register/challenge
         +POST /register
+        +POST /login/challenge
         +POST /login
         +POST /logout
         +POST /refresh
@@ -1244,8 +1260,8 @@ Implementation code is located in:
 | Public channel detail | Returns a public channel's metadata. |
 | Public messages | Paginated messages from `PUBLIC_INDEXABLE` channels only (50/page). |
 | Single message | Returns a single message from a `PUBLIC_INDEXABLE` channel. |
-| robots.txt | Allows crawling of `/c/` routes; disallows `/api/`, `/trpc/`. |
-| Dynamic sitemap | Generates per-server XML sitemaps of `PUBLIC_INDEXABLE` channels. |
+| robots.txt | Transitional backend source for crawler directives; the frontend apex domain is the canonical public host. |
+| Dynamic sitemap | Generates XML data that frontend sitemap entrypoints proxy to crawlers on the apex domain. |
 | Caching | Stale-while-revalidate pattern. Adds `Cache-Control` and `X-Cache` headers. |
 | Rate limiting | 100 req/min for humans; 1000 req/min for verified bots. |
 
@@ -1256,7 +1272,8 @@ Implementation code is located in:
 ```mermaid
 flowchart TD
     Crawler[Search Engine / Browser] -->|HTTP GET| PublicRouter
-    Crawler -->|GET robots.txt / sitemap| SEORouter
+    Crawler -->|GET robots.txt / sitemap| Frontend["Frontend apex domain"]
+    Frontend -->|SEO XML fetch| SEORouter
     PublicRouter -->|rate limit| RateLimiter[Token Bucket]
     PublicRouter -->|cache check| CacheService[Redis]
     PublicRouter -->|query| Prisma[(PostgreSQL)]
@@ -1266,7 +1283,7 @@ flowchart TD
     IndexingService -->|query channels| Prisma
 ```
 
-**Design justification:** The public API is completely separate from the tRPC layer because crawlers and external consumers require plain HTTP with standard caching headers. The stale-while-revalidate pattern ensures fast responses for frequently-accessed public pages while keeping data fresh in the background. Per-server sitemaps keep XML file sizes manageable and allow incremental re-crawling.
+**Design justification:** The public API is completely separate from the tRPC layer because crawlers and external consumers require plain HTTP with standard caching headers. The frontend apex domain owns canonical SEO artifacts in production, while backend SEO routes continue to generate the underlying XML/text that frontend route handlers proxy on the public host. The stale-while-revalidate pattern ensures fast responses for frequently-accessed public pages while keeping data fresh in the background. Per-server sitemaps keep XML file sizes manageable and allow incremental re-crawling.
 
 ### 3. Data Abstraction
 
@@ -1291,8 +1308,9 @@ This module reads from the same PostgreSQL tables as the authenticated modules (
 | GET | `/api/public/servers/:serverSlug/channels/:channelSlug` | Public channel info |
 | GET | `/api/public/channels/:channelId/messages` | Paginated messages (PUBLIC_INDEXABLE only) |
 | GET | `/api/public/channels/:channelId/messages/:messageId` | Single message |
-| GET | `/robots.txt` | Crawler directives |
-| GET | `/sitemap/:serverSlug.xml` | Dynamic XML sitemap |
+| GET | `/robots.txt` | Transitional crawler directives source for frontend proxying |
+| GET | `/sitemap-index.xml` | Sitemap index XML consumed by the frontend sitemap entrypoint |
+| GET | `/sitemap/:serverSlug.xml` | Dynamic XML sitemap consumed by frontend per-server sitemap entrypoints |
 
 ### 6. Class/Method/Field Declarations
 
@@ -1305,11 +1323,13 @@ export const seoRouter: Router;      // Express
 export const indexingService = {
   addToSitemap(channelId: string): Promise<void>;
   removeFromSitemap(channelId: string): Promise<void>;
+  generateSitemapIndex(): Promise<string>;
   generateSitemap(serverSlug: string): Promise<string | null>;
   onVisibilityChanged(payload: { channelId; oldVisibility; newVisibility }): Promise<void>;
 };
 
 export const CacheKeys_Sitemap = {
+  index: string;
   serverSitemap(serverSlug: string): string;
 };
 
@@ -1353,6 +1373,7 @@ classDiagram
     }
 
     class seoRouter {
+        +GET /sitemap-index.xml
         +GET /robots.txt
         +GET /sitemap/:serverSlug.xml
     }
@@ -1360,6 +1381,7 @@ classDiagram
     class indexingService {
         +addToSitemap(channelId) void
         +removeFromSitemap(channelId) void
+        +generateSitemapIndex() string
         +generateSitemap(serverSlug) string
         +onVisibilityChanged(payload) void
     }
