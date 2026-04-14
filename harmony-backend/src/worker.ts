@@ -15,25 +15,9 @@ import 'dotenv/config';
 import http from 'http';
 import { cacheInvalidator } from './services/cacheInvalidator.service';
 import { instanceId } from './lib/instance-identity';
+import { parsePortEnv } from './lib/parsePortEnv';
 
-const rawPort = process.env.PORT;
-const PORT =
-  rawPort === undefined
-    ? 4100
-    : (() => {
-        if (rawPort.trim() === '') {
-          throw new Error(
-            `Invalid PORT environment variable: value is blank. Expected an integer between 1 and 65535.`,
-          );
-        }
-        const port = Number(rawPort);
-        if (!Number.isInteger(port) || port < 1 || port > 65535) {
-          throw new Error(
-            `Invalid PORT environment variable: "${rawPort}". Expected an integer between 1 and 65535.`,
-          );
-        }
-        return port;
-      })();
+const PORT = parsePortEnv(4100);
 const HOST = '0.0.0.0';
 
 console.log(
@@ -44,7 +28,8 @@ console.log(
 // backend-api. The worker has no user-facing HTTP surface and should never
 // mount auth / tRPC / attachment routes.
 const healthServer = http.createServer((req, res) => {
-  if (req.method === 'GET' && (req.url === '/health' || req.url === '/')) {
+  const pathname = new URL(req.url!, 'http://localhost').pathname;
+  if (req.method === 'GET' && (pathname === '/health' || pathname === '/')) {
     res.writeHead(200, {
       'Content-Type': 'application/json',
       'X-Instance-Id': instanceId,
@@ -61,6 +46,14 @@ const healthServer = http.createServer((req, res) => {
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
+});
+
+healthServer.on('error', (err: NodeJS.ErrnoException) => {
+  console.error(
+    `[worker] health server error instance=${instanceId} host=${HOST} port=${PORT} code=${err.code ?? 'unknown'} errno=${err.errno ?? 'unknown'} syscall=${err.syscall ?? 'unknown'}`,
+    err,
+  );
+  process.exit(1);
 });
 
 healthServer.listen(PORT, HOST, () => {
@@ -83,10 +76,28 @@ const shutdown = async (signal: string) => {
   shuttingDown = true;
   console.log(`[worker] ${signal} received, shutting down instance=${instanceId}`);
   const timer = setTimeout(() => process.exit(1), 10_000);
-  await new Promise<void>((resolve) => healthServer.close(() => resolve()));
-  await cacheInvalidator.stop();
-  clearTimeout(timer);
-  process.exit(0);
+  let exitCode = 0;
+
+  try {
+    try {
+      await new Promise<void>((resolve, reject) =>
+        healthServer.close((err) => (err ? reject(err) : resolve())),
+      );
+    } catch (err) {
+      exitCode = 1;
+      console.error('[worker] healthServer close failed during shutdown:', err);
+    }
+
+    try {
+      await cacheInvalidator.stop();
+    } catch (err) {
+      exitCode = 1;
+      console.error('[worker] cacheInvalidator stop failed during shutdown:', err);
+    }
+  } finally {
+    clearTimeout(timer);
+    process.exit(exitCode);
+  }
 };
 
 process.on('SIGTERM', () => void shutdown('SIGTERM'));

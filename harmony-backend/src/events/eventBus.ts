@@ -104,10 +104,14 @@ export const eventBus = {
       // so subsequent subscribers on the same channel wait for the same confirmation.
       // ioredis queues the SUBSCRIBE command and fires the callback once Redis
       // confirms — this resolves even on error so callers never hang.
-      const handshake = new Promise<void>((resolve) => {
+      const handshake = new Promise<void>((resolve, reject) => {
         client.subscribe(channel, (err) => {
-          if (err) console.error(`[EventBus] Failed to subscribe to ${channel}:`, err);
-          resolve();
+          if (err) {
+            console.error(`[EventBus] Failed to subscribe to ${channel}:`, err);
+            reject(err);
+          } else {
+            resolve();
+          }
         });
       });
       ready = handshake;

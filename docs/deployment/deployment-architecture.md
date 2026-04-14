@@ -43,7 +43,7 @@ Harmony deploys as five cloud services:
 - Connects to shared Postgres and Redis.
 - Stamps every response with an `X-Instance-Id` header and returns the same id in `/health` JSON so replica distribution is externally observable (see `docs/deployment/replica-readiness-audit.md §6.2`).
 - Must be kept stateless enough to support 2+ replicas behind Railway load balancing.
-- Must NOT start `cacheInvalidator` or any other Redis Pub/Sub subscriber — those belong on `backend-worker`.
+- Must NOT start `cacheInvalidator` or any other background/singleton Redis Pub/Sub subscriber — those belong on `backend-worker`. Per-request SSE fan-out subscribers opened by `/api/events/*` handlers are permitted: each replica holds its own subscriber connection so it can receive and forward published events to connected clients (see §9).
 
 `backend-worker`
 
