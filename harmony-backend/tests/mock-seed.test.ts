@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { ChannelType, PrismaClient } from '@prisma/client';
 import {
   assertMockSeedAllowed,
@@ -61,8 +63,23 @@ describe('buildMockSeedData', () => {
     // Keep in sync with the ALICE_ADMIN_HASH constant in mockSeed.ts.
     const alice = data.users.find((u) => u.username === 'alice_admin');
     const others = data.users.filter((u) => u.username !== 'alice_admin');
-    expect(alice?.passwordHash).toMatch(/^\$2[ab]\$\d+\$/);
+    expect(alice?.passwordHash).toMatch(/^v1\$[0-9a-f]{32}\$\$2[ab]\$\d+\$/);
     expect(others.every((u) => u.passwordHash === '!')).toBe(true);
+  });
+
+  it('keeps alice_admin aligned with the documented HarmonyAdmin123! login', async () => {
+    const alice = data.users.find((user) => user.username === 'alice_admin');
+    expect(alice).toBeDefined();
+
+    const record = alice!.passwordHash;
+    const separatorIndex = record.indexOf('$', 3);
+    const passwordSalt = record.slice(3, separatorIndex);
+    const bcryptHash = record.slice(separatorIndex + 1);
+    const passwordVerifier = crypto
+      .pbkdf2Sync('HarmonyAdmin123!', Buffer.from(passwordSalt, 'hex'), 310000, 32, 'sha256')
+      .toString('base64');
+
+    await expect(bcrypt.compare(passwordVerifier, bcryptHash)).resolves.toBe(true);
   });
 
   it('keeps voice channels free of messages', () => {
