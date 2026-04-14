@@ -393,7 +393,7 @@ The following decisions are now explicit:
 - `frontend` runs on Vercel and owns the canonical public host.
 - `backend-api` runs on Railway and is the only public backend service.
 - `backend-api` is expected to scale to **2+ replicas** and runs only stateless HTTP/tRPC/SSE handling.
-- `backend-worker` runs on Railway and remains a **singleton**, owning all Redis Pub/Sub subscribers and future background queues.
+- `backend-worker` runs on Railway and remains a **singleton**, owning all background/singleton Redis Pub/Sub subscribers (e.g., `cacheInvalidator`) and future background queues. Per-request SSE fan-out subscribers on `backend-api` replicas are a separate concern (see below).
 - SSE event fan-out uses Redis Pub/Sub (no sticky sessions); every `backend-api` replica receives every published event via its own subscriber connection.
 - Each `backend-api` replica is externally identifiable via an `X-Instance-Id` response header and an `instanceId` field in `/health`.
 - `postgres` and `redis` are Railway-managed private services shared by API and worker.
