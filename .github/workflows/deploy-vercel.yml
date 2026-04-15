@@ -8,6 +8,10 @@ name: Deploy Frontend to Vercel
 #   VERCEL_TOKEN       - Vercel personal access token
 #   VERCEL_ORG_ID      - Vercel team/org ID (from .vercel/project.json or dashboard)
 #   VERCEL_PROJECT_ID  - Vercel project ID (from .vercel/project.json or dashboard)
+#
+# Vercel CLI commands (pull/build/deploy) run from the repo root so the CLI
+# can resolve the "Root Directory: harmony-frontend" setting from the project
+# config. npm steps run from harmony-frontend/ via explicit working-directory.
 
 on:
   push:
@@ -27,9 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     environment: preview
-    defaults:
-      run:
-        working-directory: harmony-frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -40,9 +41,11 @@ jobs:
           cache-dependency-path: harmony-frontend/package-lock.json
 
       - name: Install dependencies
+        working-directory: harmony-frontend
         run: npm ci
 
       - name: Lint
+        working-directory: harmony-frontend
         run: npm run lint
 
       - name: Install Vercel CLI
@@ -85,9 +88,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment: production
-    defaults:
-      run:
-        working-directory: harmony-frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -98,9 +98,11 @@ jobs:
           cache-dependency-path: harmony-frontend/package-lock.json
 
       - name: Install dependencies
+        working-directory: harmony-frontend
         run: npm ci
 
       - name: Lint
+        working-directory: harmony-frontend
         run: npm run lint
 
       - name: Install Vercel CLI
