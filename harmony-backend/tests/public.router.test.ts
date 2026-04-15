@@ -13,7 +13,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app';
 import { ChannelVisibility, ChannelType } from '@prisma/client';
-import { _clearBucketsForTesting } from '../src/middleware/rate-limit.middleware';
+// _clearBucketsForTesting removed in Issue #318 — no in-process bucket state remains
 
 // ─── Mock Prisma ──────────────────────────────────────────────────────────────
 
@@ -122,7 +122,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  _clearBucketsForTesting();
+  // _clearBucketsForTesting() removed in Issue #318 — no in-process bucket state
 });
 
 // ─── GET /api/public/servers/:serverSlug ─────────────────────────────────────
@@ -251,7 +251,7 @@ describe('GET /api/public/channels/:channelId/messages', () => {
     );
 
     jest.clearAllMocks();
-    _clearBucketsForTesting();
+    // _clearBucketsForTesting() removed in Issue #318 — no in-process bucket state
     mockPrisma.channel.findUnique.mockResolvedValue({
       id: CHANNEL.id,
       visibility: ChannelVisibility.PUBLIC_INDEXABLE,
