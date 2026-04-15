@@ -11,10 +11,12 @@ import { seoRouter } from './routes/seo.router';
 import { eventsRouter } from './routes/events.router';
 import { attachmentRouter } from './routes/attachment.router';
 import { instanceId } from './lib/instance-identity';
+import { createLogger } from './lib/logger';
 
 // ─── Auth rate limiters ───────────────────────────────────────────────────────
 
 const isE2E = process.env.NODE_ENV === 'e2e';
+const logger = createLogger({ component: 'app', instanceId });
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -53,8 +55,7 @@ export function createApp() {
       `Invalid TRUST_PROXY_HOPS value "${trustProxyHopsEnv}". Expected a non-negative integer.`,
     );
   }
-  const trustProxyHops =
-    trustProxyHopsEnv === undefined ? 0 : Number(trustProxyHopsEnv);
+  const trustProxyHops = trustProxyHopsEnv === undefined ? 0 : Number(trustProxyHopsEnv);
   if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
     throw new Error(
       `Invalid TRUST_PROXY_HOPS value "${trustProxyHopsEnv}". Expected a non-negative integer.`,
@@ -114,10 +115,10 @@ export function createApp() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
-      onError({ error }) {
+      onError({ error, path }) {
         // Only log unexpected server errors; auth/validation errors (4xx) are routine
         if (error.code === 'INTERNAL_SERVER_ERROR') {
-          console.error('tRPC error:', error);
+          logger.error({ err: error, path }, 'Unhandled tRPC error');
         }
       },
     }),
@@ -133,8 +134,9 @@ export function createApp() {
     const isCorsError = err instanceof CorsError;
     const status = isCorsError ? 403 : 500;
     const message = isCorsError ? err.message : 'Internal server error';
-    if (!isCorsError)
-      console.error('Unhandled error:', process.env.NODE_ENV === 'production' ? err.message : err);
+    if (!isCorsError) {
+      logger.error({ err, status }, 'Unhandled Express error');
+    }
     res.status(status).json({ error: message });
   });
 

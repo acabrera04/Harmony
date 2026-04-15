@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db/prisma';
 import { ChannelVisibility } from '@prisma/client';
+import { createLogger } from '../lib/logger';
 import { cacheMiddleware } from '../middleware/cache.middleware';
 import { cacheService, CacheKeys, CacheTTL, sanitizeKeySegment } from '../services/cache.service';
 import { tokenBucketRateLimiter } from '../middleware/rate-limit.middleware';
 
 export const publicRouter = Router();
+const logger = createLogger({ component: 'public-router' });
 
 // Token bucket rate limiting per issue #110: 100 req/min (human) / 1000 req/min (verified bots)
 publicRouter.use(tokenBucketRateLimiter);
@@ -56,7 +58,7 @@ publicRouter.get(
       res.set('Cache-Control', `public, max-age=${CacheTTL.channelMessages}`);
       res.json({ messages, page, pageSize });
     } catch (err) {
-      console.error('Public messages route error:', err);
+      logger.error({ err, channelId: req.params.channelId }, 'Public messages route failed');
       if (!res.headersSent) {
         res.status(500).json({ error: 'Internal server error' });
       }
@@ -110,7 +112,10 @@ publicRouter.get(
       res.set('Cache-Control', `public, max-age=${CacheTTL.channelMessages}`);
       res.json(message);
     } catch (err) {
-      console.error('Public message route error:', err);
+      logger.error(
+        { err, channelId: req.params.channelId, messageId: req.params.messageId },
+        'Public message route failed',
+      );
       if (!res.headersSent) {
         res.status(500).json({ error: 'Internal server error' });
       }
@@ -142,7 +147,7 @@ publicRouter.get('/servers', async (_req: Request, res: Response) => {
     res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
     res.json(servers);
   } catch (err) {
-    console.error('Public servers list route error:', err);
+    logger.error({ err }, 'Public servers list route failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -182,8 +187,8 @@ publicRouter.get('/servers/:serverSlug', async (req: Request, res: Response) => 
       if (entry) {
         xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
       }
-    } catch {
-      /* Redis error */
+    } catch (err) {
+      logger.warn({ err, cacheKey }, 'Failed to inspect public server cache state');
     }
 
     const data = await cacheService.getOrRevalidate(
@@ -197,7 +202,7 @@ publicRouter.get('/servers/:serverSlug', async (req: Request, res: Response) => 
     res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
     res.json(data);
   } catch (err) {
-    console.error('Public server route error:', err);
+    logger.error({ err, serverSlug: req.params.serverSlug }, 'Public server route failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -238,8 +243,8 @@ publicRouter.get('/servers/:serverSlug/channels', async (req: Request, res: Resp
       if (entry) {
         xCache = cacheService.isStale(entry, CacheTTL.serverInfo) ? 'STALE' : 'HIT';
       }
-    } catch {
-      /* Redis error */
+    } catch (err) {
+      logger.warn({ err, cacheKey }, 'Failed to inspect public channel cache state');
     }
 
     const data = await cacheService.getOrRevalidate(cacheKey, fetcher, cacheOpts);
@@ -249,7 +254,7 @@ publicRouter.get('/servers/:serverSlug/channels', async (req: Request, res: Resp
     res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
     res.json(data);
   } catch (err) {
-    console.error('Public channels route error:', err);
+    logger.error({ err, serverSlug: req.params.serverSlug }, 'Public channels route failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -301,7 +306,10 @@ publicRouter.get(
       res.set('Cache-Control', `public, max-age=${CacheTTL.serverInfo}`);
       res.json(channel);
     } catch (err) {
-      console.error('Public channel route error:', err);
+      logger.error(
+        { err, serverSlug: req.params.serverSlug, channelSlug: req.params.channelSlug },
+        'Public channel route failed',
+      );
       res.status(500).json({ error: 'Internal server error' });
     }
   },
