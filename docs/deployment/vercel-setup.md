@@ -7,6 +7,16 @@ verification checklist used to confirm preview and production are healthy.
 It is the operational companion to `docs/deployment/deployment-architecture.md`
 (§3 Domains, §6.1 Frontend env matrix).
 
+## Spec vs. current operations
+
+`deployment-architecture.md` §3.1 and §6.1 define the **target** production
+contract: apex and `www` on `harmony.chat`, API on `api.harmony.chat`, and the
+frontend env matrix examples that match those hosts. This page records **today’s**
+Vercel/Railway wiring—the `*.vercel.app` origin and whichever Railway URL serves
+the API—until custom domains and public hostnames match the architecture doc.
+Keep §6.1 as the canonical final shape; when domains bind, update the Vercel
+dashboard values here instead of changing the matrix for interim hostnames alone.
+
 ## Production Host
 
 The production frontend is served from **`https://harmony-dun-omega.vercel.app`**
