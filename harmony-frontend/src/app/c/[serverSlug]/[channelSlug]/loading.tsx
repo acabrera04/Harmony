@@ -8,7 +8,9 @@ export default function Loading() {
     <div className='flex h-screen w-full overflow-hidden bg-[#36393f]'>
       {/* Server rail */}
       <div className='flex w-[72px] flex-col items-center gap-2 bg-[#202225] py-3'>
-        {[...Array(5)].map((_, i) => (
+        <div className='mb-2 h-12 w-12 animate-pulse rounded-[24px] bg-[#40444b]' />
+        <div className='mx-auto mb-2 h-0.5 w-8 rounded-full bg-[#40444b]' />
+        {[...Array(4)].map((_, i) => (
           <div key={i} className='h-12 w-12 animate-pulse rounded-full bg-[#40444b]' />
         ))}
       </div>
