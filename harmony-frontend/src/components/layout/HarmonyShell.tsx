@@ -185,12 +185,20 @@ export function HarmonyShell({
   // Show the pin UI only to users with MODERATOR+ server-scoped role.
   // localMembers is populated by toFrontendMember() in serverService.ts, which maps
   // the backend ServerMember.role field (server-scoped) to User.role.
-  const currentMemberRecord = localMembers.find(m => m.id === authUser?.id);
-  const canPin =
-    isAuthenticated &&
-    (currentMemberRecord?.role === 'owner' ||
-      currentMemberRecord?.role === 'admin' ||
-      currentMemberRecord?.role === 'moderator');
+  // System admins bypass membership checks — they are authorized server-side regardless.
+  const currentMemberRecord = useMemo(
+    () => localMembers.find(m => m.id === authUser?.id),
+    [localMembers, authUser?.id],
+  );
+  const canPin = useMemo(
+    () =>
+      isAuthenticated &&
+      (authUser?.isSystemAdmin ||
+        currentMemberRecord?.role === 'owner' ||
+        currentMemberRecord?.role === 'admin' ||
+        currentMemberRecord?.role === 'moderator'),
+    [isAuthenticated, authUser?.isSystemAdmin, currentMemberRecord?.role],
+  );
 
   const handleServerCreated = useCallback(
     (server: Server, defaultChannel: Channel) => {
