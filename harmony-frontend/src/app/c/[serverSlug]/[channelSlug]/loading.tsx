@@ -31,14 +31,18 @@ export default function Loading() {
 
         {/* Message area */}
         <div className='flex flex-1 overflow-hidden'>
-          <div className='flex flex-1 flex-col gap-4 overflow-hidden px-4 py-6'>
+          <div className='flex flex-1 flex-col overflow-hidden px-4 py-4'>
             {[...Array(8)].map((_, i) => (
-              <div key={i} className='flex gap-3'>
-                <div className='h-10 w-10 flex-shrink-0 animate-pulse rounded-full bg-[#40444b]' />
+              <div key={i} className={i % 3 === 0 ? 'mt-4 flex gap-4' : 'mt-1 flex gap-4'}>
+                {i % 3 === 0 ? (
+                  <div className='h-10 w-10 flex-shrink-0 animate-pulse rounded-full bg-[#40444b]' />
+                ) : (
+                  <div className='w-10 flex-shrink-0' />
+                )}
                 <div className='flex flex-1 flex-col gap-2'>
-                  <div className='h-3 w-24 animate-pulse rounded bg-[#40444b]' />
+                  {i % 3 === 0 && <div className='h-3 w-24 animate-pulse rounded bg-[#40444b]' />}
                   <div className='h-3 w-full animate-pulse rounded bg-[#40444b]' />
-                  <div className='h-3 w-3/4 animate-pulse rounded bg-[#40444b]' />
+                  {i % 3 === 0 && <div className='h-3 w-3/4 animate-pulse rounded bg-[#40444b]' />}
                 </div>
               </div>
             ))}
