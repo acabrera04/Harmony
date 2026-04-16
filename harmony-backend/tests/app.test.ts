@@ -58,7 +58,11 @@ describe('CORS', () => {
     const originalEnv = process.env.FRONTEND_URL;
 
     afterEach(() => {
-      process.env.FRONTEND_URL = originalEnv;
+      if (originalEnv === undefined) {
+        delete process.env.FRONTEND_URL;
+      } else {
+        process.env.FRONTEND_URL = originalEnv;
+      }
     });
 
     it('allows the single URL when FRONTEND_URL has no comma', async () => {
