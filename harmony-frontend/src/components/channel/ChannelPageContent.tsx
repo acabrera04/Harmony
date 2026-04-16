@@ -2,9 +2,9 @@ import { notFound, redirect } from 'next/navigation';
 import { getServers, getServerMembers } from '@/services/serverService';
 import { getChannels } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
-import { getCurrentUser } from '@/services/authService';
 import { HarmonyShell } from '@/components/layout/HarmonyShell';
 import { PrivateChannelLockedPane } from '@/components/channel/PrivateChannelLockedPane';
+import { getSessionUser } from '@/lib/trpc-client';
 import { ChannelVisibility } from '@/types';
 
 interface ChannelPageContentProps {
@@ -40,11 +40,14 @@ export async function ChannelPageContent({
     )
   ).flat();
 
-  const [members, currentUser] = await Promise.all([getServerMembers(server.id), getCurrentUser()]);
+  const [members, sessionUser] = await Promise.all([
+    getServerMembers(server.id),
+    getSessionUser(),
+  ]);
 
-  const currentMember = currentUser ? members.find(m => m.id === currentUser.id) : undefined;
+  const currentMember = sessionUser ? members.find(m => m.id === sessionUser.id) : undefined;
   const isServerAdmin =
-    currentUser?.isSystemAdmin ||
+    sessionUser?.isSystemAdmin ||
     currentMember?.role === 'admin' ||
     currentMember?.role === 'owner';
   const isLockedPrivateChannel = channel.visibility === ChannelVisibility.PRIVATE && !isServerAdmin;
@@ -64,7 +67,7 @@ export async function ChannelPageContent({
       basePath={isGuestView ? '/c' : '/channels'}
       lockedMessagePane={
         isLockedPrivateChannel ? (
-          <PrivateChannelLockedPane mode={currentUser ? 'member' : 'guest'} />
+          <PrivateChannelLockedPane mode={sessionUser ? 'member' : 'guest'} />
         ) : undefined
       }
     />
