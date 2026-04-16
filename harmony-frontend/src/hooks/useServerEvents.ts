@@ -240,8 +240,8 @@ export function useServerEvents({
         source: 'sse',
         target: '/api/events/server/[serverId]',
       });
-      if (!everOpened) {
-        // Never successfully opened — likely 401/403. Stop retrying.
+      if (!everOpened && reconnectCountRef.current === 0) {
+        // Never successfully opened on the first attempt — likely 401/403. Stop retrying.
         es.close();
         return;
       }

@@ -174,8 +174,8 @@ export function useChannelEvents({
         source: 'sse',
         target: '/api/events/channel/[channelId]',
       });
-      if (!everOpened) {
-        // Never successfully opened — likely a 401/403. Stop retrying.
+      if (!everOpened && reconnectCountRef.current === 0) {
+        // Never successfully opened on the first attempt — likely a 401/403. Stop retrying.
         es.close();
         return;
       }
