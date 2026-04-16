@@ -73,6 +73,7 @@ function ActionBar({
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(initialPinned ?? false);
   const [pinState, setPinState] = useState<PinState>('idle');
+  const [pinErrorMsg, setPinErrorMsg] = useState('');
   const moreRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -91,18 +92,20 @@ function ActionBar({
     if (!serverId) return;
     setIsMoreOpen(false);
     setPinState('loading');
-    try {
-      if (isPinned) {
-        await unpinMessageAction(messageId, serverId);
-      } else {
-        await pinMessageAction(messageId, serverId);
-      }
+    const result = isPinned
+      ? await unpinMessageAction(messageId, serverId)
+      : await pinMessageAction(messageId, serverId);
+    if (result.ok) {
       setIsPinned(prev => !prev);
       setPinState('success');
       setTimeout(() => setPinState('idle'), 2000);
-    } catch {
+    } else {
+      const msg = result.forbidden
+        ? "You don't have permission to pin messages."
+        : 'Failed to pin message. Please try again.';
+      setPinErrorMsg(msg);
       setPinState('error');
-      setTimeout(() => setPinState('idle'), 3000);
+      setTimeout(() => { setPinState('idle'); setPinErrorMsg(''); }, 3000);
     }
   }, [isPinned, messageId, serverId]);
 
@@ -113,7 +116,7 @@ function ActionBar({
         <span className='px-2 text-xs text-green-400'>{isPinned ? '📌 Pinned' : 'Unpinned'}</span>
       )}
       {pinState === 'error' && (
-        <span className='px-2 text-xs text-red-400'>Failed</span>
+        <span className='px-2 text-xs text-red-400'>{pinErrorMsg}</span>
       )}
 
       {/* Reply (stub) */}
