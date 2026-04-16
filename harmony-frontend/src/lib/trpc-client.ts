@@ -145,6 +145,45 @@ export async function trpcQuery<T>(procedure: string, input?: unknown): Promise<
   return data as T;
 }
 
+// ─── Session user helper ──────────────────────────────────────────────────────
+
+interface BackendSessionUser {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  status: 'ONLINE' | 'IDLE' | 'DND' | 'OFFLINE';
+  isSystemAdmin?: boolean;
+}
+
+/**
+ * Returns the currently authenticated user using the server-side cookie,
+ * or null if no valid session exists.
+ *
+ * Safe to call from Server Components and Server Actions — uses the httpOnly
+ * `auth_token` cookie forwarded to the backend as a Bearer token.
+ */
+export async function getSessionUser(): Promise<{
+  id: string;
+  username: string;
+  displayName: string;
+  isSystemAdmin: boolean;
+} | null> {
+  const token = await getAuthToken();
+  if (!token) return null;
+  try {
+    const user = await trpcQuery<BackendSessionUser>('user.getCurrentUser');
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName ?? user.username,
+      isSystemAdmin: user.isSystemAdmin ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Calls a tRPC mutation procedure via HTTP POST.
  */
