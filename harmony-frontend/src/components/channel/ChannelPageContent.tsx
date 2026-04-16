@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { getServers, getServerMembers } from '@/services/serverService';
 import { getChannels } from '@/services/channelService';
 import { getMessages } from '@/services/messageService';
@@ -18,9 +18,17 @@ export async function ChannelPageContent({
   channelSlug,
   isGuestView = false,
 }: ChannelPageContentProps) {
-  const servers = await getServers();
+  let servers;
+  try {
+    servers = await getServers();
+  } catch {
+    // Backend rejected the auth token (expired or invalid) — send to login.
+    redirect('/auth/login');
+  }
   const server = servers.find(s => s.slug === serverSlug);
-  if (!server) notFound();
+  // Server not found in member list — redirect to channels index which resolves
+  // the user's first valid server dynamically.
+  if (!server) redirect('/channels');
 
   let serverChannels;
   try {
@@ -30,7 +38,8 @@ export async function ChannelPageContent({
     redirect(`/c/${serverSlug}/${channelSlug}`);
   }
   const channel = serverChannels.find(c => c.slug === channelSlug);
-  if (!channel) notFound();
+  // Channel not found — redirect to channels index rather than showing a dead-end 404.
+  if (!channel) redirect('/channels');
 
   // Gather all channels across servers for cross-server navigation.
   // Use .catch(() => []) so a FORBIDDEN error for servers the authenticated
