@@ -28,6 +28,14 @@ export const serverRepository = {
     return client.server.findMany({ orderBy: { createdAt: 'desc' }, take: limit });
   },
 
+  findAllIds(client: Client = prisma): Promise<string[]> {
+    return client.server.findMany({ select: { id: true } }).then((rs) => rs.map((r) => r.id));
+  },
+
+  findBySlugSelect<T extends Prisma.ServerSelect>(slug: string, select: T, client: Client = prisma) {
+    return client.server.findUnique({ where: { slug }, select });
+  },
+
   findPublicBySlugSelect(client: Client = prisma) {
     return client.server.findMany({
       where: { isPublic: true },

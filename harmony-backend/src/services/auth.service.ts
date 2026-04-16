@@ -152,12 +152,12 @@ async function ensureAdminUser() {
   );
 
   // Auto-join every server as OWNER so the admin can access everything.
-  const allServers = await serverRepository.findAll(10000);
-  for (const server of allServers) {
+  const allServerIds = await serverRepository.findAllIds();
+  for (const serverId of allServerIds) {
     await serverMemberRepository.upsert(
-      { userId_serverId: { userId: admin.id, serverId: server.id } },
+      { userId_serverId: { userId: admin.id, serverId } },
       { role: 'OWNER' },
-      { userId: admin.id, serverId: server.id, role: 'OWNER' as const },
+      { userId: admin.id, serverId, role: 'OWNER' as const },
     );
   }
 

@@ -16,24 +16,6 @@ export const channelRepository = {
     return client.channel.findUnique({ where: { serverId_slug: { serverId, slug } } });
   },
 
-  findByServerSlugAndChannelSlug(serverSlug: string, channelSlug: string, client: Client = prisma) {
-    return client.server
-      .findUnique({ where: { slug: serverSlug } })
-      .then((server) => {
-        if (!server) return null;
-        return client.channel.findUnique({
-          where: { serverId_slug: { serverId: server.id, slug: channelSlug } },
-        });
-      });
-  },
-
-  findWithServerId(id: string, client: Client = prisma) {
-    return client.channel.findUnique({
-      where: { id },
-      select: { serverId: true, visibility: true },
-    });
-  },
-
   findVisibilityAndServerId(id: string, client: Client = prisma) {
     return client.channel.findUnique({
       where: { id },

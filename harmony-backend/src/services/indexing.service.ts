@@ -69,7 +69,7 @@ export const indexingService = {
    * Uses stale-while-revalidate caching via getOrRevalidate.
    */
   async generateSitemap(serverSlug: string): Promise<string | null> {
-    const server = await serverRepository.findBySlug(serverSlug);
+    const server = await serverRepository.findBySlugSelect(serverSlug, { id: true, slug: true });
 
     if (!server) return null;
 
