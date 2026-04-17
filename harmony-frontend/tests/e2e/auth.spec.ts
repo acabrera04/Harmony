@@ -79,12 +79,12 @@ test.describe('True E2E auth and access flows', () => {
     );
 
     await expect(page.getByRole('heading', { name: 'This channel is private' })).toBeVisible();
-    // The header also renders auth CTAs (no returnUrl); narrow to the locked-pane links that carry returnUrl.
+    // Both the guest header and the locked-pane now render returnUrl auth CTAs; use .first() to avoid strict-mode violation.
     await expect(
-      page.getByRole('link', { name: 'Create Account' }).and(page.locator('[href*="returnUrl"]')),
+      page.getByRole('link', { name: 'Create Account' }).and(page.locator('[href*="returnUrl"]')).first(),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'Log In' }).and(page.locator('[href*="returnUrl"]')),
+      page.getByRole('link', { name: 'Log In' }).and(page.locator('[href*="returnUrl"]')).first(),
     ).toHaveAttribute(
       'href',
       new RegExp(
