@@ -396,7 +396,7 @@ export function HarmonyShell({
           currentServerId={currentServer.id}
           basePath={basePath}
           isMobileVisible={isMenuOpen}
-          onBrowseServers={isAuthenticated ? () => setIsBrowseServersOpen(true) : undefined}
+          onBrowseServers={() => setIsBrowseServersOpen(true)}
           onAddServer={
             isAuthLoading
               ? undefined
