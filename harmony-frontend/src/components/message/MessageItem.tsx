@@ -13,9 +13,46 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { useRouter, usePathname } from 'next/navigation';
 import { formatMessageTimestamp, formatTimeOnly } from '@/lib/utils';
 import { pinMessageAction, unpinMessageAction } from '@/app/actions/pinMessage';
+import { useAuth } from '@/hooks/useAuth';
 import type { Message, Reaction } from '@/types';
+
+// ─── AttachmentList ───────────────────────────────────────────────────────────
+
+function AttachmentList({ attachments }: { attachments: Message['attachments'] }) {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <div className='mt-1.5 flex flex-col gap-2'>
+      {attachments.map(a => {
+        const isImage = a.type?.startsWith('image/');
+        if (isImage) {
+          return (
+            <a key={a.id} href={a.url} target='_blank' rel='noopener noreferrer' className='inline-block max-w-sm'>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={a.url} alt={a.filename} className='max-h-64 rounded-md object-contain' />
+            </a>
+          );
+        }
+        return (
+          <a
+            key={a.id}
+            href={a.url}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-blue-400 hover:bg-white/10 hover:text-blue-300 transition-colors w-fit'
+          >
+            <svg className='h-4 w-4 flex-shrink-0' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} aria-hidden='true'>
+              <path d='M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48' />
+            </svg>
+            <span className='truncate max-w-xs'>{a.filename}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── ReactionList ─────────────────────────────────────────────────────────────
 
@@ -70,6 +107,9 @@ function ActionBar({
   canPin?: boolean;
   initialPinned?: boolean;
 }) {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(initialPinned ?? false);
   const [pinState, setPinState] = useState<PinState>('idle');
@@ -139,11 +179,12 @@ function ActionBar({
         <span className='px-2 text-xs text-red-400'>{pinErrorMsg}</span>
       )}
 
-      {/* Reply (stub) */}
+      {/* Reply — redirects guests to login; stub for authenticated users */}
       <button
         type='button'
         aria-label='Reply'
         title='Reply'
+        onClick={!isAuthenticated ? () => router.push(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`) : undefined}
         className='flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors'
       >
         <svg className='h-4 w-4' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' focusable='false'>
@@ -151,11 +192,12 @@ function ActionBar({
         </svg>
       </button>
 
-      {/* Add Reaction (stub) */}
+      {/* Add Reaction — redirects guests to login; stub for authenticated users */}
       <button
         type='button'
         aria-label='Add Reaction'
         title='Add Reaction'
+        onClick={!isAuthenticated ? () => router.push(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`) : undefined}
         className='flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors'
       >
         <svg className='h-4 w-4' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true' focusable='false'>
@@ -259,6 +301,7 @@ export function MessageItem({
             {message.content}
             {message.editedAt && <span className='ml-1 text-[10px] text-gray-500'>(edited)</span>}
           </p>
+          <AttachmentList attachments={message.attachments} />
           <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
         </div>
       </div>
@@ -300,6 +343,7 @@ export function MessageItem({
         <p className='mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
           {message.content}
         </p>
+        <AttachmentList attachments={message.attachments} />
         <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
       </div>
     </div>

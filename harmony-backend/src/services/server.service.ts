@@ -115,7 +115,7 @@ export const serverService = {
     return withSlugRetry(input.name, slug, (s) =>
       prisma.$transaction(async (tx) => {
         const server = await serverRepository.create({ ...input, slug: s }, tx);
-        await channelService.createDefaultChannel(server.id, tx);
+        await channelService.createDefaultChannel(server.id, input.isPublic ?? false, tx);
         await serverMemberService.addOwner(input.ownerId, server.id, tx);
         return server;
       }),

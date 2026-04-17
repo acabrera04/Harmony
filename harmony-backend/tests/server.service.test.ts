@@ -317,7 +317,7 @@ describe('serverService.createServer', () => {
     });
 
     expect(result).toEqual(created);
-    expect(channelService.createDefaultChannel).toHaveBeenCalledWith('new-id', expect.anything());
+    expect(channelService.createDefaultChannel).toHaveBeenCalledWith('new-id', true, expect.anything());
     expect(serverMemberService.addOwner).toHaveBeenCalledWith('owner-1', 'new-id', expect.anything());
     // createDefaultChannel must be called before addOwner
     const createOrder = (channelService.createDefaultChannel as jest.Mock).mock.invocationCallOrder[0];
@@ -332,7 +332,7 @@ describe('serverService.createServer', () => {
 
     const result = await serverService.createServer({ name: 'Minimal', ownerId: 'owner-1' });
     expect(result).toEqual(created);
-    expect(channelService.createDefaultChannel).toHaveBeenCalledWith('min-id', expect.anything());
+    expect(channelService.createDefaultChannel).toHaveBeenCalledWith('min-id', false, expect.anything());
     expect(serverMemberService.addOwner).toHaveBeenCalledWith('owner-1', 'min-id', expect.anything());
   });
 
@@ -423,7 +423,8 @@ describe('serverService.createServer', () => {
 
     await expect(serverService.createServer({ name: 'New Server', ownerId: 'owner-1' }))
       .rejects.toThrow('addOwner failed');
-    expect(channelService.createDefaultChannel).toHaveBeenCalledWith('new-id', expect.anything());
+    // createDefaultChannel was called and completed before addOwner threw.
+    expect(channelService.createDefaultChannel).toHaveBeenCalledWith('new-id', false, expect.anything());
   });
 
   it('wraps server creation in prisma.$transaction for atomicity', async () => {

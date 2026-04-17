@@ -205,13 +205,13 @@ export const channelService = {
       );
   },
 
-  async createDefaultChannel(serverId: string, tx?: Prisma.TransactionClient) {
+  async createDefaultChannel(serverId: string, isPublic = false, tx?: Prisma.TransactionClient) {
     return channelService.createChannel({
       serverId,
       name: 'general',
       slug: 'general',
       type: ChannelType.TEXT,
-      visibility: ChannelVisibility.PRIVATE,
+      visibility: isPublic ? ChannelVisibility.PUBLIC_INDEXABLE : ChannelVisibility.PRIVATE,
       position: 0,
     }, tx);
   },

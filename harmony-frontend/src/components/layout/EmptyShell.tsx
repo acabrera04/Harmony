@@ -116,7 +116,7 @@ export function EmptyShell({
           allChannels={allChannels}
           currentServerId={currentServer?.id ?? ''}
           basePath={basePath}
-          onBrowseServers={isAuthenticated ? () => setIsBrowseServersOpen(true) : undefined}
+          onBrowseServers={() => setIsBrowseServersOpen(true)}
           onAddServer={
             isAuthLoading
               ? undefined
