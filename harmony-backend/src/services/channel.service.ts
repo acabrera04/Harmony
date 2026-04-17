@@ -43,7 +43,7 @@ export const channelService = {
     return channel;
   },
 
-  async createChannel(input: CreateChannelInput) {
+  async createChannel(input: CreateChannelInput, _tx?: Prisma.TransactionClient) {
     const { serverId, name, slug, type, visibility, topic, position = 0 } = input;
 
     // VOICE channels cannot be PUBLIC_INDEXABLE
@@ -201,7 +201,7 @@ export const channelService = {
       );
   },
 
-  async createDefaultChannel(serverId: string, isPublic = false, _tx?: Prisma.TransactionClient) {
+  async createDefaultChannel(serverId: string, isPublic = false, tx?: Prisma.TransactionClient) {
     return channelService.createChannel({
       serverId,
       name: 'general',
@@ -209,6 +209,6 @@ export const channelService = {
       type: ChannelType.TEXT,
       visibility: isPublic ? ChannelVisibility.PUBLIC_INDEXABLE : ChannelVisibility.PRIVATE,
       position: 0,
-    });
+    }, tx);
   },
 };

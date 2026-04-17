@@ -546,7 +546,7 @@ describe('channelService.createDefaultChannel', () => {
       type: 'TEXT',
       visibility: 'PRIVATE',
       position: 0,
-    });
+    }, undefined);
     expect(result.name).toBe('general');
     expect(result.slug).toBe('general');
 
@@ -560,6 +560,7 @@ describe('channelService.createDefaultChannel', () => {
 
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({ visibility: 'PUBLIC_INDEXABLE' }),
+      undefined,
     );
     expect(result.visibility).toBe('PUBLIC_INDEXABLE');
 
