@@ -17,6 +17,11 @@ export async function POST(request: NextRequest) {
     body: formData,
   });
 
-  const data = await res.json();
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    data = { error: 'Upload failed.' };
+  }
   return NextResponse.json(data, { status: res.status });
 }
