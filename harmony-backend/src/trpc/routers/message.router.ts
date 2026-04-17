@@ -37,7 +37,7 @@ export const messageRouter = router({
       z.object({
         serverId: z.string().uuid(),
         channelId: z.string().uuid(),
-        content: z.string().min(1).max(4000),
+        content: z.string().max(4000),
         attachments: z.array(AttachmentInputSchema).max(10).optional(),
       }),
     )

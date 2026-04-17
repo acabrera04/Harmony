@@ -118,7 +118,7 @@ export function MessageInput({
 
   const handleSend = useCallback(async () => {
     const trimmed = value.trim();
-    if (!trimmed || isSending || isUploading || isReadOnly) return;
+    if ((!trimmed && !pendingAttachments.length) || isSending || isUploading || isReadOnly) return;
     setIsSending(true);
     setSendError(null);
     try {
