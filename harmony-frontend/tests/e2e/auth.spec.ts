@@ -79,8 +79,13 @@ test.describe('True E2E auth and access flows', () => {
     );
 
     await expect(page.getByRole('heading', { name: 'This channel is private' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Create Account' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Log In' })).toHaveAttribute(
+    // Both the guest header and the locked-pane now render returnUrl auth CTAs; use .first() to avoid strict-mode violation.
+    await expect(
+      page.getByRole('link', { name: 'Create Account' }).and(page.locator('[href*="returnUrl"]')).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Log In' }).and(page.locator('[href*="returnUrl"]')).first(),
+    ).toHaveAttribute(
       'href',
       new RegExp(
         `returnUrl=%2Fc%2F${SEEDED_PRIVATE_CHANNEL.serverSlug}%2F${SEEDED_PRIVATE_CHANNEL.channelSlug}$`,
@@ -164,10 +169,6 @@ test.describe('True E2E auth and access flows', () => {
       timeout: NAVIGATION_TIMEOUT_MS,
     });
     await expect(page.getByLabel('Join server promotion')).toBeVisible();
-    await expect(
-      page.getByRole('link', {
-        name: 'Log In',
-      }),
-    ).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Log In' }).first()).toBeVisible();
   });
 });

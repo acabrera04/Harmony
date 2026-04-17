@@ -17,43 +17,9 @@ import { AuthRedirect } from '@/components/channel/AuthRedirect';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 import { MessageList } from '@/components/channel/MessageList';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
+import { GuestHeader } from '@/components/channel/GuestHeader';
 import { PrivateChannelLockedPane } from '@/components/channel/PrivateChannelLockedPane';
-import type { Server, Channel } from '@/types';
-
-type PublicServer = Omit<Server, 'ownerId'>;
-
-// ─── Guest Header ─────────────────────────────────────────────────────────────
-
-function GuestHeader({ server, memberCount }: { server: PublicServer; memberCount: number }) {
-  return (
-    <header className='flex h-14 shrink-0 items-center gap-3 border-b border-black/20 bg-[#2f3136] px-4'>
-      {/* Harmony logo wordmark */}
-      <span className='text-lg font-bold text-[#5865f2]'>Harmony</span>
-
-      {/* Divider */}
-      <span className='text-gray-600' aria-hidden='true'>
-        /
-      </span>
-
-      {/* Server name */}
-      <span className='text-sm font-semibold text-white'>{server.name}</span>
-
-      {/* Member count */}
-      <span className='ml-auto flex items-center gap-1.5 text-xs text-gray-400'>
-        <svg
-          className='h-3.5 w-3.5'
-          viewBox='0 0 24 24'
-          fill='currentColor'
-          aria-hidden='true'
-          focusable='false'
-        >
-          <path d='M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z' />
-        </svg>
-        {memberCount.toLocaleString()} members
-      </span>
-    </header>
-  );
-}
+import type { Channel } from '@/types';
 
 // ─── Channel Header ───────────────────────────────────────────────────────────
 
@@ -122,7 +88,7 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
     return (
       <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
         {isMember && <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />}
-        <GuestHeader server={server} memberCount={server.memberCount ?? 0} />
+        <GuestHeader server={server} />
         <PrivateChannelLockedPane mode='guest' />
       </div>
     );
@@ -136,7 +102,7 @@ export async function GuestChannelView({ serverSlug, channelSlug }: GuestChannel
   return (
     <div className='flex h-screen flex-col overflow-hidden bg-[#36393f] font-sans'>
       {isMember && <AuthRedirect to={`/channels/${serverSlug}/${channelSlug}`} />}
-      <GuestHeader server={server} memberCount={memberCount} />
+      <GuestHeader server={server} />
 
       <VisibilityGuard visibility={channel.visibility} isLoading={false}>
         <div className='flex flex-1 flex-col overflow-hidden'>
