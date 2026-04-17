@@ -526,8 +526,11 @@ describe('channelService.createDefaultChannel', () => {
     defaultChannelServerId = server.id;
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await prisma.channel.deleteMany({ where: { serverId: defaultChannelServerId } }).catch(() => {});
+  });
+
+  afterAll(async () => {
     await prisma.server.delete({ where: { id: defaultChannelServerId } }).catch(() => {});
   });
 
@@ -543,9 +546,23 @@ describe('channelService.createDefaultChannel', () => {
       type: 'TEXT',
       visibility: 'PRIVATE',
       position: 0,
-    });
+    }, undefined);
     expect(result.name).toBe('general');
     expect(result.slug).toBe('general');
+
+    spy.mockRestore();
+  });
+
+  it('CS-26b: creates PUBLIC_INDEXABLE channel when isPublic=true', async () => {
+    const spy = jest.spyOn(channelService, 'createChannel');
+
+    const result = await channelService.createDefaultChannel(defaultChannelServerId, true);
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ visibility: 'PUBLIC_INDEXABLE' }),
+      undefined,
+    );
+    expect(result.visibility).toBe('PUBLIC_INDEXABLE');
 
     spy.mockRestore();
   });

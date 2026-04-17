@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { ChannelType, ChannelVisibility } from '@prisma/client';
+import { ChannelType, ChannelVisibility, Prisma } from '@prisma/client';
 import { createLogger } from '../lib/logger';
 import { cacheService, CacheKeys, CacheTTL, sanitizeKeySegment } from './cache.service';
 import { eventBus, EventChannels } from '../events/eventBus';
@@ -43,7 +43,7 @@ export const channelService = {
     return channel;
   },
 
-  async createChannel(input: CreateChannelInput) {
+  async createChannel(input: CreateChannelInput, _tx?: Prisma.TransactionClient) {
     const { serverId, name, slug, type, visibility, topic, position = 0 } = input;
 
     // VOICE channels cannot be PUBLIC_INDEXABLE
@@ -201,14 +201,14 @@ export const channelService = {
       );
   },
 
-  async createDefaultChannel(serverId: string) {
+  async createDefaultChannel(serverId: string, isPublic = false, tx?: Prisma.TransactionClient) {
     return channelService.createChannel({
       serverId,
       name: 'general',
       slug: 'general',
       type: ChannelType.TEXT,
-      visibility: ChannelVisibility.PRIVATE,
+      visibility: isPublic ? ChannelVisibility.PUBLIC_INDEXABLE : ChannelVisibility.PRIVATE,
       position: 0,
-    });
+    }, tx);
   },
 };
