@@ -6,7 +6,6 @@
  */
 
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import {
   fetchPublicServer,
   fetchPublicChannel,
@@ -18,46 +17,9 @@ import { AuthRedirect } from '@/components/channel/AuthRedirect';
 import { VisibilityGuard } from '@/components/channel/VisibilityGuard';
 import { MessageList } from '@/components/channel/MessageList';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
+import { GuestHeader } from '@/components/channel/GuestHeader';
 import { PrivateChannelLockedPane } from '@/components/channel/PrivateChannelLockedPane';
-import type { Server, Channel } from '@/types';
-
-type PublicServer = Omit<Server, 'ownerId'>;
-
-// ─── Guest Header ─────────────────────────────────────────────────────────────
-
-function GuestHeader({ server }: { server: PublicServer }) {
-  return (
-    <header className='flex h-14 shrink-0 items-center gap-3 border-b border-black/20 bg-[#2f3136] px-4'>
-      {/* Harmony logo wordmark */}
-      <span className='text-lg font-bold text-[#5865f2]'>Harmony</span>
-
-      {/* Divider */}
-      <span className='text-gray-600' aria-hidden='true'>
-        /
-      </span>
-
-      {/* Server name */}
-      <span className='text-sm font-semibold text-white'>{server.name}</span>
-
-      {/* Persistent auth CTAs — always visible so guests retain a login path after dismissing the promo banner */}
-      <div className='ml-auto flex shrink-0 items-center gap-2'>
-        <Link
-          href='/auth/signup'
-          className='inline-flex h-7 items-center justify-center rounded-md bg-[#5865f2] px-3 text-xs font-medium text-white transition-colors hover:bg-[#4752c4]'
-        >
-          <span className='hidden sm:inline'>Create Account</span>
-          <span className='sm:hidden'>Join</span>
-        </Link>
-        <Link
-          href='/auth/login'
-          className='inline-flex h-7 items-center justify-center rounded-md border border-white/20 bg-[#40444b] px-3 text-xs font-medium text-gray-200 transition-colors hover:bg-[#3d4148]'
-        >
-          Log In
-        </Link>
-      </div>
-    </header>
-  );
-}
+import type { Channel } from '@/types';
 
 // ─── Channel Header ───────────────────────────────────────────────────────────
 
