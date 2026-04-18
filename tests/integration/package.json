@@ -2,15 +2,16 @@
   "name": "harmony-integration-tests",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:local": "TEST_TARGET=local jest",
-    "test:cloud": "TEST_TARGET=cloud jest"
+    "test": "jest --config jest.config.js",
+    "test:local": "TEST_TARGET=local jest --config jest.config.js",
+    "test:cloud": "TEST_TARGET=cloud jest --config jest.config.js"
   },
   "devDependencies": {
-    "@types/jest": "^29",
-    "@types/node": "^20",
-    "jest": "^29",
-    "ts-jest": "^29",
-    "typescript": "^5"
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.17.19",
+    "dotenv": "^17.3.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2"
   }
 }
