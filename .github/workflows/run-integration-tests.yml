@@ -75,7 +75,10 @@ jobs:
       # allowed-origins list, not a live frontend process.
       FRONTEND_URL: http://localhost:3000
       BASE_URL: http://localhost:3000
-      NODE_ENV: development
+      # NODE_ENV=e2e raises auth rate-limit maxima to 1000 so the full auth
+      # test suite (~10 login calls) doesn't exhaust the per-IP limit (normally
+      # max=10 for login, max=30 for refresh). See harmony-backend/src/app.ts.
+      NODE_ENV: e2e
       PORT: "4000"
 
     steps:
