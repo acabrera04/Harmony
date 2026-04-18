@@ -70,14 +70,12 @@ jobs:
       JWT_ACCESS_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_DAYS: "7"
       # FRONTEND_URL is passed to the backend so its CORS allowlist accepts
-      # requests from the integration test runner (origin: http://localhost:3000).
-      # Nothing actually serves port 3000 in CI; this only affects the backend's
-      # allowed-origins list, not a live frontend process.
+      # requests from the integration test runner and the local Next.js app.
       FRONTEND_URL: http://localhost:3000
       BASE_URL: http://localhost:3000
       # NODE_ENV=e2e raises auth rate-limit maxima to 1000 so the full auth
-      # test suite (~10 login calls) doesn't exhaust the per-IP limit (normally
-      # max=10 for login, max=30 for refresh). See harmony-backend/src/app.ts.
+      # test suite (~10 login calls from 127.0.0.1) doesn't exhaust the
+      # per-IP limit (normally max=10 for login). See harmony-backend/src/app.ts.
       NODE_ENV: e2e
       PORT: "4000"
 
@@ -111,21 +109,71 @@ jobs:
 
       - name: Start backend API
         working-directory: harmony-backend
-        run: npx tsx src/index.ts > /tmp/backend.log 2>&1 &
+        run: npx tsx src/index.ts > /tmp/backend-api.log 2>&1 &
 
-      - name: Wait for backend to be ready
+      # backend-worker owns cacheInvalidator (Redis pub/sub). Without it, sitemap
+      # cache is never invalidated after visibility changes (VIS-1 test would fail).
+      - name: Start backend worker
+        working-directory: harmony-backend
+        run: npx tsx src/worker.ts > /tmp/backend-worker.log 2>&1 &
+
+      - name: Wait for backend API to be ready
         run: |
           echo "Waiting for backend API on port 4000..."
           for i in $(seq 1 30); do
             if curl -sf http://localhost:4000/health > /dev/null 2>&1; then
-              echo "Backend is ready after $((i * 2))s"
+              echo "Backend API ready after $((i * 2))s"
               exit 0
             fi
-            echo "  attempt $i/30 — not yet ready, sleeping 2s"
+            echo "  attempt $i/30 — sleeping 2s"
             sleep 2
           done
-          echo "ERROR: backend did not become healthy within 60s"
-          cat /tmp/backend.log
+          echo "ERROR: backend API did not become healthy within 60s"
+          cat /tmp/backend-api.log
+          exit 1
+
+      # ── Frontend setup ─────────────────────────────────────────────────────
+      # GPC and VIS-4 tests fetch FRONTEND_URL (SSR-rendered pages). The frontend
+      # must be running on port 3000 for those tests to pass.
+
+      - name: Set up Node.js (frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: harmony-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: harmony-frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: harmony-frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_BASE_URL: http://localhost:3000
+        run: npm run build
+
+      - name: Start frontend
+        working-directory: harmony-frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_BASE_URL: http://localhost:3000
+        run: npm run start > /tmp/frontend.log 2>&1 &
+
+      - name: Wait for frontend to be ready
+        run: |
+          echo "Waiting for Next.js frontend on port 3000..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend ready after $((i * 2))s"
+              exit 0
+            fi
+            echo "  attempt $i/30 — sleeping 2s"
+            sleep 2
+          done
+          echo "ERROR: frontend did not become ready within 60s"
+          cat /tmp/frontend.log
           exit 1
 
       # ── Integration test suite ─────────────────────────────────────────────
@@ -149,10 +197,13 @@ jobs:
           FRONTEND_URL: http://localhost:3000
         run: npm test
 
-      - name: Upload backend logs on failure
+      - name: Upload service logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-log
-          path: /tmp/backend.log
+          name: service-logs
+          path: |
+            /tmp/backend-api.log
+            /tmp/backend-worker.log
+            /tmp/frontend.log
           retention-days: 3
