@@ -291,6 +291,16 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     return;
   }
 
+  // ── Pre-load server channel IDs for message event filtering ─────────────
+  // Message event payloads carry channelId but not serverId. Pre-loading the
+  // server's channel set lets us filter without a per-event DB lookup. The set
+  // is kept current by the channel:created / channel:deleted handlers below.
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId },
+    select: { id: true },
+  });
+  const serverChannelIds = new Set(serverChannels.map(c => c.id));
+
   // ── SSE headers ──────────────────────────────────────────────────────────
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -298,12 +308,106 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
+  // ── Subscribe to message events ──────────────────────────────────────────
+
+  const { unsubscribe: unsubMessageCreated } = eventBus.subscribe(
+    EventChannels.MESSAGE_CREATED,
+    async (payload: MessageCreatedPayload) => {
+      if (!serverChannelIds.has(payload.channelId)) return;
+
+      try {
+        const message = await prisma.message.findUnique({
+          where: { id: payload.messageId },
+          include: MESSAGE_SSE_INCLUDE,
+        });
+        if (!message || message.isDeleted) return;
+
+        sendEvent(res, 'message:created', {
+          id: message.id,
+          channelId: message.channelId,
+          authorId: message.authorId,
+          author: message.author,
+          content: message.content,
+          timestamp: message.createdAt.toISOString(),
+          attachments: message.attachments,
+          editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+        });
+      } catch (err) {
+        logger.warn(
+          { err, serverId, messageId: payload.messageId },
+          'Failed to hydrate SSE message:created payload on server endpoint',
+        );
+      }
+    },
+  );
+
+  const { unsubscribe: unsubMessageEdited } = eventBus.subscribe(
+    EventChannels.MESSAGE_EDITED,
+    async (payload: MessageEditedPayload) => {
+      if (!serverChannelIds.has(payload.channelId)) return;
+
+      try {
+        const message = await prisma.message.findUnique({
+          where: { id: payload.messageId },
+          include: MESSAGE_SSE_INCLUDE,
+        });
+        if (!message || message.isDeleted) return;
+
+        sendEvent(res, 'message:edited', {
+          id: message.id,
+          channelId: message.channelId,
+          authorId: message.authorId,
+          author: message.author,
+          content: message.content,
+          timestamp: message.createdAt.toISOString(),
+          attachments: message.attachments,
+          editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+        });
+      } catch (err) {
+        logger.warn(
+          { err, serverId, messageId: payload.messageId },
+          'Failed to hydrate SSE message:edited payload on server endpoint',
+        );
+      }
+    },
+  );
+
+  const { unsubscribe: unsubMessageDeleted } = eventBus.subscribe(
+    EventChannels.MESSAGE_DELETED,
+    (payload: MessageDeletedPayload) => {
+      if (!serverChannelIds.has(payload.channelId)) return;
+      sendEvent(res, 'message:deleted', {
+        messageId: payload.messageId,
+        channelId: payload.channelId,
+      });
+    },
+  );
+
+  // ── Subscribe to server:updated events ───────────────────────────────────
+
+  const { unsubscribe: unsubServerUpdated } = eventBus.subscribe(
+    EventChannels.SERVER_UPDATED,
+    (payload: ServerUpdatedPayload) => {
+      if (payload.serverId !== serverId) return;
+      sendEvent(res, 'server:updated', {
+        id: payload.serverId,
+        name: payload.name,
+        iconUrl: payload.iconUrl,
+        description: payload.description,
+        updatedAt: payload.timestamp,
+      });
+    },
+  );
+
   // ── Subscribe to channel events ──────────────────────────────────────────
 
   const { unsubscribe: unsubChannelCreated } = eventBus.subscribe(
     EventChannels.CHANNEL_CREATED,
     async (payload: ChannelCreatedPayload) => {
       if (payload.serverId !== serverId) return;
+      // Update Set before async work so subsequent message events on this channel
+      // are not dropped while the DB hydration is in-flight.
+      serverChannelIds.add(payload.channelId);
 
       try {
         const channel = await prisma.channel.findUnique({
@@ -348,6 +452,8 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     EventChannels.CHANNEL_DELETED,
     (payload: ChannelDeletedPayload) => {
       if (payload.serverId !== serverId) return;
+      // Remove from Set so no further message events are forwarded for deleted channels.
+      serverChannelIds.delete(payload.channelId);
       sendEvent(res, 'channel:deleted', { channelId: payload.channelId });
     },
   );
@@ -463,6 +569,10 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
   // ── Cleanup on client disconnect ─────────────────────────────────────────
   req.on('close', () => {
     clearInterval(heartbeat);
+    unsubMessageCreated();
+    unsubMessageEdited();
+    unsubMessageDeleted();
+    unsubServerUpdated();
     unsubChannelCreated();
     unsubChannelUpdated();
     unsubChannelDeleted();
