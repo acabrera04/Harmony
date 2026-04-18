@@ -249,6 +249,21 @@ describe('authService.register', () => {
     expect(mockJoinServer).toHaveBeenCalledWith(mockUserId, 'server-001');
   });
 
+  it('returns tokens when no default server exists and skips joinServer', async () => {
+    mockPrisma.server.findFirst.mockResolvedValue(null);
+
+    const result = await authService.register(
+      'user@example.com',
+      'testuser',
+      PASSWORD_SALT,
+      derivePasswordVerifier('SecurePass123!'),
+    );
+
+    expect(result.accessToken).toBeTruthy();
+    expect(result.refreshToken).toBeTruthy();
+    expect(mockJoinServer).not.toHaveBeenCalled();
+  });
+
   it('continues registration when joinServer fails', async () => {
     mockPrisma.server.findFirst.mockResolvedValue({ id: 'server-001' });
     mockJoinServer.mockRejectedValue(new Error('Server join failed'));
