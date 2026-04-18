@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/services/authService';
-import { getServerAuthenticated } from '@/services/serverService';
+import { getServerAuthenticated, getServerMembersWithRole } from '@/services/serverService';
 
 type UnauthorizedMode = 'redirect' | 'throw';
 
@@ -9,6 +9,16 @@ function isSettingsAdmin(
   ownerId: string,
 ): boolean {
   return Boolean(user && (user.isSystemAdmin || user.id === ownerId));
+}
+
+async function hasServerAdminAccess(userId: string, serverId: string): Promise<boolean> {
+  try {
+    const members = await getServerMembersWithRole(serverId);
+    const currentMembership = members.find(member => member.userId === userId);
+    return currentMembership?.role === 'owner' || currentMembership?.role === 'admin';
+  } catch {
+    return false;
+  }
 }
 
 export async function requireServerSettingsAccess(
@@ -20,6 +30,10 @@ export async function requireServerSettingsAccess(
 
   const user = await getCurrentUser();
   if (isSettingsAdmin(user, server.ownerId)) {
+    return server;
+  }
+
+  if (user && (await hasServerAdminAccess(user.id, server.id))) {
     return server;
   }
 
