@@ -77,7 +77,12 @@ jobs:
       # test suite (~10 login calls from 127.0.0.1) doesn't exhaust the
       # per-IP limit (normally max=10 for login). See harmony-backend/src/app.ts.
       NODE_ENV: e2e
-      PORT: "4000"
+      # PORT is intentionally NOT set here at the job level.
+      # worker.ts uses parsePortEnv(4100) — if PORT is set job-wide to 4000,
+      # the worker races the backend-api to bind port 4000 and wins (fewer
+      # imports → faster startup), causing the backend-api to crash with
+      # EADDRINUSE. PORT is set only on the "Start backend API" step below so
+      # the worker falls back to its default port 4100.
 
     steps:
       - uses: actions/checkout@v4
@@ -109,10 +114,13 @@ jobs:
 
       - name: Start backend API
         working-directory: harmony-backend
+        env:
+          PORT: "4000"
         run: npx tsx src/index.ts > /tmp/backend-api.log 2>&1 &
 
       # backend-worker owns cacheInvalidator (Redis pub/sub). Without it, sitemap
       # cache is never invalidated after visibility changes (VIS-1 test would fail).
+      # No PORT override: worker.ts defaults to 4100 via parsePortEnv(4100).
       - name: Start backend worker
         working-directory: harmony-backend
         run: npx tsx src/worker.ts > /tmp/backend-worker.log 2>&1 &
@@ -159,8 +167,6 @@ jobs:
         working-directory: harmony-frontend
         env:
           NODE_ENV: production
-          # Override the job-level PORT (4000) so Next.js binds to 3000, not
-          # the backend's port.
           PORT: "3000"
           NEXT_PUBLIC_API_URL: http://localhost:4000
           NEXT_PUBLIC_BASE_URL: http://localhost:3000
