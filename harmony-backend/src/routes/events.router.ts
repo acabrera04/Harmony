@@ -186,7 +186,11 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_DELETED,
     (payload: MessageDeletedPayload) => {
       if (payload.channelId !== channelId) return;
-      sendEvent(res, 'message:deleted', { messageId: payload.messageId });
+      // Include channelId so the payload shape is consistent with the server endpoint.
+      sendEvent(res, 'message:deleted', {
+        messageId: payload.messageId,
+        channelId: payload.channelId,
+      });
     },
   );
 
@@ -197,7 +201,8 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
       sendEvent(res, 'server:updated', {
         id: payload.serverId,
         name: payload.name,
-        iconUrl: payload.iconUrl,
+        // Use 'icon' to match the frontend Server type (Server.icon, not iconUrl)
+        icon: payload.iconUrl ?? undefined,
         description: payload.description,
         updatedAt: payload.timestamp,
       });
@@ -291,15 +296,56 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     return;
   }
 
-  // ── Pre-load server channel IDs for message event filtering ─────────────
-  // Message event payloads carry channelId but not serverId. Pre-loading the
-  // server's channel set lets us filter without a per-event DB lookup. The set
-  // is kept current by the channel:created / channel:deleted handlers below.
+  // ── Initialize channel ID set — registered before findMany so any CHANNEL_CREATED
+  //    events that fire during the preload query are captured by the handler below.
+  //    Message events carry channelId but not serverId; this set is the filter.
+  const serverChannelIds = new Set<string>();
+
+  // ── Subscribe CHANNEL_CREATED / CHANNEL_DELETED before findMany ───────────
+  // Registering these two handlers before the preload query closes the race window:
+  // if a channel is created (or deleted) while findMany is awaiting, the handler
+  // mutates serverChannelIds synchronously so subsequent message events for that
+  // channel are correctly forwarded (or suppressed). Handlers skip res.write()
+  // until headers are flushed, using res.headersSent as the gate.
+  const { unsubscribe: unsubChannelCreated } = eventBus.subscribe(
+    EventChannels.CHANNEL_CREATED,
+    async (payload: ChannelCreatedPayload) => {
+      if (payload.serverId !== serverId) return;
+      serverChannelIds.add(payload.channelId);
+      if (!res.headersSent) return; // headers not flushed yet — skip SSE write
+      try {
+        const channel = await prisma.channel.findUnique({
+          where: { id: payload.channelId },
+          select: CHANNEL_SSE_SELECT,
+        });
+        if (!channel) return;
+        sendEvent(res, 'channel:created', channel);
+      } catch (err) {
+        logger.warn(
+          { err, serverId, channelId: payload.channelId },
+          'Failed to hydrate SSE channel:created payload',
+        );
+      }
+    },
+  );
+
+  const { unsubscribe: unsubChannelDeleted } = eventBus.subscribe(
+    EventChannels.CHANNEL_DELETED,
+    (payload: ChannelDeletedPayload) => {
+      if (payload.serverId !== serverId) return;
+      serverChannelIds.delete(payload.channelId);
+      if (!res.headersSent) return;
+      sendEvent(res, 'channel:deleted', { channelId: payload.channelId });
+    },
+  );
+
+  // ── Preload existing channel IDs — handlers above capture creations/deletions
+  //    that race with this await.
   const serverChannels = await prisma.channel.findMany({
     where: { serverId },
     select: { id: true },
   });
-  const serverChannelIds = new Set(serverChannels.map(c => c.id));
+  for (const c of serverChannels) serverChannelIds.add(c.id);
 
   // ── SSE headers ──────────────────────────────────────────────────────────
   res.setHeader('Content-Type', 'text/event-stream');
@@ -392,39 +438,15 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
       sendEvent(res, 'server:updated', {
         id: payload.serverId,
         name: payload.name,
-        iconUrl: payload.iconUrl,
+        // Use 'icon' to match the frontend Server type (Server.icon, not iconUrl)
+        icon: payload.iconUrl ?? undefined,
         description: payload.description,
         updatedAt: payload.timestamp,
       });
     },
   );
 
-  // ── Subscribe to channel events ──────────────────────────────────────────
-
-  const { unsubscribe: unsubChannelCreated } = eventBus.subscribe(
-    EventChannels.CHANNEL_CREATED,
-    async (payload: ChannelCreatedPayload) => {
-      if (payload.serverId !== serverId) return;
-      // Update Set before async work so subsequent message events on this channel
-      // are not dropped while the DB hydration is in-flight.
-      serverChannelIds.add(payload.channelId);
-
-      try {
-        const channel = await prisma.channel.findUnique({
-          where: { id: payload.channelId },
-          select: CHANNEL_SSE_SELECT,
-        });
-        if (!channel) return;
-
-        sendEvent(res, 'channel:created', channel);
-      } catch (err) {
-        logger.warn(
-          { err, serverId, channelId: payload.channelId },
-          'Failed to hydrate SSE channel:created payload',
-        );
-      }
-    },
-  );
+  // ── Subscribe to remaining channel events ────────────────────────────────
 
   const { unsubscribe: unsubChannelUpdated } = eventBus.subscribe(
     EventChannels.CHANNEL_UPDATED,
@@ -445,16 +467,6 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
           'Failed to hydrate SSE channel:updated payload',
         );
       }
-    },
-  );
-
-  const { unsubscribe: unsubChannelDeleted } = eventBus.subscribe(
-    EventChannels.CHANNEL_DELETED,
-    (payload: ChannelDeletedPayload) => {
-      if (payload.serverId !== serverId) return;
-      // Remove from Set so no further message events are forwarded for deleted channels.
-      serverChannelIds.delete(payload.channelId);
-      sendEvent(res, 'channel:deleted', { channelId: payload.channelId });
     },
   );
 

@@ -119,7 +119,6 @@ const MOCK_MESSAGE: Message = {
   content: 'Hello world',
   timestamp: '2024-01-01T00:00:00.000Z',
   attachments: [],
-  editedAt: null as unknown as undefined,
 };
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
