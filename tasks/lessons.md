@@ -92,3 +92,9 @@ Shared knowledge base for the Harmony team. Add an entry whenever a mistake is c
 **Related Issue:** #331  
 **Mistake / Situation:** I described the preferred custom-domain deployment contract too prominently in the root README when the user wanted the current live Vercel and Railway hostnames treated as the actual deployment URLs.  
 **Rule / Fix:** In Harmony deployment docs, present the currently serving hostnames as the source of truth unless the task is explicitly about future domain setup; mention custom domains only as preferred future state when they are not actually configured.
+
+**Date:** 2026-04-19  
+**Caught by:** [Human: user]  
+**Related Issue:** #331  
+**Mistake / Situation:** I documented `npm run dev` and `npm run dev:worker` as if the worker would naturally stay on `4100`, but the backend `.env.example` sets `PORT=4000`, so both processes collide unless the worker port is overridden explicitly.  
+**Rule / Fix:** When documenting split-process local startup in Harmony, verify how `.env` values interact with entrypoint defaults; if a shared `PORT` variable exists, either force the worker dev script to `4100` or document an explicit `PORT=4100` override instead of relying on fallback defaults.

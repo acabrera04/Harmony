@@ -80,6 +80,8 @@ cd harmony-backend
 npm run dev:worker
 ```
 
+`npm run dev:worker` forces the worker health server onto port `4100` locally so it does not conflict with the API process, even if your backend `.env` sets `PORT=4000`.
+
 ```bash
 # Terminal 3: frontend
 cd harmony-frontend
