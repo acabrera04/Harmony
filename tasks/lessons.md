@@ -86,3 +86,9 @@ Shared knowledge base for the Harmony team. Add an entry whenever a mistake is c
 **Caught by:** [Human: user]  
 **Mistake / Situation:** I renamed the branch and PR for a log export when the user meant to rename the exported log file itself.  
 **Rule / Fix:** When a user asks to "rename it" during log-export/PR work, confirm whether the target is the file, branch, PR, or commit before changing GitHub metadata; if context strongly points to the artifact path, rename the file first.
+
+**Date:** 2026-04-19  
+**Caught by:** [Human: user]  
+**Related Issue:** #331  
+**Mistake / Situation:** I described the preferred custom-domain deployment contract too prominently in the root README when the user wanted the current live Vercel and Railway hostnames treated as the actual deployment URLs.  
+**Rule / Fix:** In Harmony deployment docs, present the currently serving hostnames as the source of truth unless the task is explicitly about future domain setup; mention custom domains only as preferred future state when they are not actually configured.
