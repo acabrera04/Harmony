@@ -370,6 +370,11 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
   }
   for (const c of serverChannels) serverChannelIds.add(c.id);
 
+  // Guard: if the client disconnected while findMany was in flight, cleanup()
+  // has already fired (cleanedUp === true) and the early subscriptions are
+  // released. Stop here so no further handlers are registered under a dead conn.
+  if (cleanedUp) return;
+
   // ── SSE headers ──────────────────────────────────────────────────────────
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
