@@ -20,12 +20,13 @@
 # for per-test classification (cloud-read-only vs local-only).
 #
 # ─── Cloud-target usage (GitHub Actions) ────────────────────────────────────
-# The "Run Cloud Integration Tests" job expects these repository-level settings:
-#   vars.CLOUD_TEST_BACKEND_URL   required (deployed backend base URL)
-#   vars.CLOUD_TEST_FRONTEND_URL  required (deployed frontend base URL)
-#   vars.CLOUD_TEST_SERVER_SLUG   optional (defaults to test code fallback)
+# The "Run Cloud Integration Tests" job uses the `cloud-integration-tests`
+# GitHub Actions environment. Configure these environment-scoped settings:
+#   vars.CLOUD_TEST_BACKEND_URL    required (deployed backend base URL)
+#   vars.CLOUD_TEST_FRONTEND_URL   required (deployed frontend base URL)
+#   vars.CLOUD_TEST_SERVER_SLUG    optional (defaults to test code fallback)
 #   vars.CLOUD_TEST_PUBLIC_CHANNEL optional (defaults to test code fallback)
-#   vars.CLOUD_TEST_SERVER_ID     optional (enables authenticated SSE smoke)
+#   vars.CLOUD_TEST_SERVER_ID      optional (enables authenticated SSE smoke)
 #   secrets.CLOUD_TEST_ACCESS_TOKEN optional (enables authenticated smoke cases)
 #
 # Environment contract reference: docs/deployment/deployment-architecture.md
@@ -229,6 +230,7 @@ jobs:
   run-cloud-integration-tests:
     name: Run Cloud Integration Tests
     runs-on: ubuntu-latest
+    environment: cloud-integration-tests
     env:
       TEST_TARGET: cloud
       BACKEND_URL: ${{ vars.CLOUD_TEST_BACKEND_URL }}
