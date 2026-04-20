@@ -139,6 +139,13 @@ describe('DescriptionGenerator', () => {
     expect(DescriptionGenerator.enforceLength(valid)).toBe(valid);
   });
 
+  it('AC-2: generateFromMessages produces ≥50 chars even for a very short message', () => {
+    const shortMessages: MessageContext[] = [{ content: 'hi', createdAt: new Date() }];
+    const desc = DescriptionGenerator.generateFromMessages(shortMessages, channel);
+    expect(desc.length).toBeGreaterThanOrEqual(50);
+    expect(desc.length).toBeLessThanOrEqual(160);
+  });
+
   it('extractKeyPhrases returns non-empty array for non-empty messages', () => {
     const phrases = DescriptionGenerator.extractKeyPhrases(messages);
     expect(Array.isArray(phrases)).toBe(true);

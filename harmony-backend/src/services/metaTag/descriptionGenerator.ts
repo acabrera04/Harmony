@@ -34,13 +34,22 @@ export const DescriptionGenerator = {
   },
 
   summarizeThread(messages: MessageContext[], channel: ChannelContext): string {
+    const suffix = ` — Join the discussion on ${channel.serverName}.`;
+
     if (messages.length === 0) {
-      const base = `Discussions in #${channel.name} on ${channel.serverName}.`;
+      const base = `Discussions in #${channel.name} on ${channel.serverName}. Join today.`;
       return this.enforceLength(base);
     }
+
     const first = messages[0].content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
     const prefix = `${channel.serverName} › #${channel.name}: `;
-    return this.enforceLength(prefix + first);
+    let text = prefix + first;
+
+    if (text.length < MIN_LENGTH) {
+      text = text + suffix;
+    }
+
+    return this.enforceLength(text);
   },
 
   enforceLength(text: string): string {
