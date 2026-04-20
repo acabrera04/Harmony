@@ -47,6 +47,10 @@ function getSubscriberClient(): Redis {
     subscriberClient = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
       maxRetriesPerRequest: null, // subscriber clients must not timeout on blocked commands
       lazyConnect: true,
+      // Subscriber connections cannot issue INFO; skipping the ready check prevents
+      // ioredis from calling INFO on reconnect which would throw an unhandled error
+      // and crash the backend process.
+      enableReadyCheck: false,
     });
 
     // Single dispatcher — routes all incoming Redis messages to registered JS handlers.
