@@ -4,36 +4,55 @@ import { DescriptionGenerator } from './descriptionGenerator';
 import { OpenGraphGenerator } from './openGraphGenerator';
 import { StructuredDataGenerator } from './structuredDataGenerator';
 import { MetaTagCache } from './metaTagCache';
-import type { MetaTagSet, ChannelContext, MessageContext } from './types';
+import type {
+  MetaTagSet,
+  ChannelContext,
+  MessageContext,
+  MetaTagPreview,
+  MetaTagJobStatus,
+} from './types';
 import { createLogger } from '../../lib/logger';
 
 const logger = createLogger({ component: 'meta-tag-service' });
 
 const BASE_URL = process.env.BASE_URL ?? 'https://harmony.chat';
 
+function sanitizeChannelContext(channel: ChannelContext): ChannelContext {
+  return {
+    ...channel,
+    name: TitleGenerator.sanitizeForTitle(channel.name),
+    serverName: TitleGenerator.sanitizeForTitle(channel.serverName),
+  };
+}
+
 function buildFallbackTags(channel: ChannelContext): MetaTagSet {
-  const title = `${channel.name} — ${channel.serverName}`;
-  const description = `Discussions in #${channel.name} on ${channel.serverName}.`;
+  const safe = sanitizeChannelContext(channel);
+  const title = `${safe.name} — ${safe.serverName}`;
+  const description = `Discussions in #${safe.name} on ${safe.serverName}.`;
   return {
     title: TitleGenerator.truncateWithEllipsis(title),
     description: DescriptionGenerator.enforceLength(description),
-    canonical: channel.canonicalUrl,
+    canonical: safe.canonicalUrl,
     robots: 'index, follow',
-    openGraph: OpenGraphGenerator.generateOGTags(channel, title, description),
-    twitter: OpenGraphGenerator.generateTwitterCard(title, description),
-    structuredData: StructuredDataGenerator.generateDiscussionForum(channel, title, description),
+    openGraph: OpenGraphGenerator.generateOGTags(safe, title, description),
+    twitter: OpenGraphGenerator.generateTwitterCard(safe, title, description),
+    structuredData: StructuredDataGenerator.generateDiscussionForum(safe, title, description),
     keywords: [],
     needsRegeneration: true,
   };
 }
 
 export const metaTagService = {
-  async generateMetaTags(channel: ChannelContext, messages: MessageContext[]): Promise<MetaTagSet> {
+  /**
+   * Generate meta tags from pre-resolved context (used internally and in unit tests).
+   * Production callers should prefer the spec-aligned generateMetaTags(channelId, options?).
+   */
+  async generateMetaTagsFromContext(channel: ChannelContext, messages: MessageContext[]): Promise<MetaTagSet> {
     try {
       const title = TitleGenerator.generateFromThread(messages, channel);
       const description = DescriptionGenerator.generateFromMessages(messages, channel);
       const og = OpenGraphGenerator.generateOGTags(channel, title, description);
-      const twitter = OpenGraphGenerator.generateTwitterCard(title, description, og.ogImage);
+      const twitter = OpenGraphGenerator.generateTwitterCard(channel, title, description, og.ogImage);
       const structuredData = StructuredDataGenerator.generateDiscussionForum(
         channel,
         title,
@@ -58,7 +77,22 @@ export const metaTagService = {
     }
   },
 
-  async getOrGenerateCached(
+  /**
+   * Spec-aligned stub: generateMetaTags(channelId, options?).
+   * Full implementation wired by M4 (MetaTagUpdateWorker, issue #356).
+   */
+  async generateMetaTags(
+    _channelId: string,
+    _options?: { forceRegenerate?: boolean; includeStructuredData?: boolean },
+  ): Promise<MetaTagSet> {
+    throw new Error('generateMetaTags(channelId) not yet implemented — wired by M4 (issue #356)');
+  },
+
+  /**
+   * Cache-backed generation from pre-resolved context (used internally and in unit tests).
+   * Production callers should prefer the spec-aligned getOrGenerateCached(channelId).
+   */
+  async getOrGenerateCachedFromContext(
     channel: ChannelContext,
     messages: MessageContext[],
     ttl?: number,
@@ -66,9 +100,17 @@ export const metaTagService = {
     const cached = await MetaTagCache.get(channel.id);
     if (cached) return cached;
 
-    const tags = await this.generateMetaTags(channel, messages);
+    const tags = await this.generateMetaTagsFromContext(channel, messages);
     await MetaTagCache.set(channel.id, tags, ttl);
     return tags;
+  },
+
+  /**
+   * Spec-aligned stub: getOrGenerateCached(channelId).
+   * Full implementation wired by M4 (MetaTagUpdateWorker, issue #356).
+   */
+  async getOrGenerateCached(_channelId: string): Promise<MetaTagSet> {
+    throw new Error('getOrGenerateCached(channelId) not yet implemented — wired by M4 (issue #356)');
   },
 
   async invalidateCache(channelId: string): Promise<void> {
@@ -77,16 +119,29 @@ export const metaTagService = {
 
   // scheduleRegeneration and getRegenerationJobStatus are stubs —
   // full implementation depends on M4 (worker/queue) from issue #356
-  async scheduleRegeneration(_channelId: string): Promise<void> {
+  async scheduleRegeneration(
+    channelId: string,
+    priority?: 'high' | 'normal' | 'low',
+    idempotencyKey?: string,
+  ): Promise<{ jobId: string; status: 'queued' | 'deduplicated' }> {
     // Queuing logic wired by M4 MetaTagUpdateWorker
+    return {
+      jobId: `meta-tag-regeneration:${channelId}`,
+      status: 'queued',
+      ...(priority !== undefined && { priority }),
+      ...(idempotencyKey !== undefined && { idempotencyKey }),
+    };
   },
 
-  async getRegenerationJobStatus(_channelId: string): Promise<{ status: string } | null> {
+  async getRegenerationJobStatus(
+    _channelId: string,
+    _jobId: string,
+  ): Promise<MetaTagJobStatus | null> {
     return null;
   },
 
-  async getMetaTagsForPreview(channel: ChannelContext, messages: MessageContext[]): Promise<MetaTagSet> {
-    return this.generateMetaTags(channel, messages);
+  async getMetaTagsForPreview(_channelId: string): Promise<MetaTagPreview> {
+    throw new Error('getMetaTagsForPreview(channelId) not yet implemented — wired by M4 (issue #356)');
   },
 
   buildCanonicalUrl(serverSlug: string, channelSlug: string): string {

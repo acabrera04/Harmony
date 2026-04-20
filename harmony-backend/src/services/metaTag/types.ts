@@ -54,6 +54,28 @@ export interface IMetaTagGenerator {
   validate(): boolean;
 }
 
+export interface MetaTagPreview {
+  title: string;
+  description: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  keywords: string[];
+  generatedAt: string;
+  isCustom: boolean;
+  searchPreview: { title: string; description: string; url: string };
+  socialPreview: { title: string; description: string; image: string };
+}
+
+export interface MetaTagJobStatus {
+  jobId: string;
+  channelId: string;
+  status: 'queued' | 'processing' | 'succeeded' | 'failed';
+  attempts: number;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
 export interface ChannelContext {
   id: string;
   name: string;

@@ -17,8 +17,8 @@ export const TitleGenerator = {
   },
 
   generateFromMessage(message: MessageContext, channel: ChannelContext): string {
-    const raw = `${this.sanitizeForTitle(message.content)} — ${channel.serverName}`;
-    return this.truncateWithEllipsis(raw);
+    const raw = `${message.content} — ${channel.serverName}`;
+    return this.truncateWithEllipsis(this.sanitizeForTitle(raw));
   },
 
   generateFromThread(messages: MessageContext[], channel: ChannelContext): string {
@@ -42,7 +42,7 @@ export const TitleGenerator = {
 
   applyTemplate(template: string, vars: Record<string, string>): string {
     return Object.entries(vars).reduce(
-      (result, [key, value]) => result.replace(`{${key}}`, value),
+      (result, [key, value]) => result.replaceAll(`{${key}}`, value),
       template,
     );
   },

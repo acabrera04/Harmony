@@ -33,16 +33,22 @@ export const DescriptionGenerator = {
       .map(([word]) => word);
   },
 
+  sanitizeText(text: string): string {
+    return text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  },
+
   summarizeThread(messages: MessageContext[], channel: ChannelContext): string {
-    const suffix = ` — Join the discussion on ${channel.serverName}.`;
+    const serverName = this.sanitizeText(channel.serverName);
+    const channelName = this.sanitizeText(channel.name);
+    const suffix = ` — Join the discussion on ${serverName}.`;
 
     if (messages.length === 0) {
-      const base = `Discussions in #${channel.name} on ${channel.serverName}. Join today.`;
+      const base = `Discussions in #${channelName} on ${serverName}. Join today.`;
       return this.enforceLength(base);
     }
 
-    const first = messages[0].content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-    const prefix = `${channel.serverName} › #${channel.name}: `;
+    const first = this.sanitizeText(messages[0].content);
+    const prefix = `${serverName} › #${channelName}: `;
     let text = prefix + first;
 
     if (text.length < MIN_LENGTH) {
@@ -53,9 +59,24 @@ export const DescriptionGenerator = {
   },
 
   enforceLength(text: string): string {
-    if (text.length > MAX_LENGTH) {
-      return text.slice(0, MAX_LENGTH - 1).trimEnd() + '…';
+    let result = text;
+
+    if (result.length < MIN_LENGTH) {
+      const additions = [
+        ' Join the discussion.',
+        ' Explore the latest updates.',
+        ' Connect with the community.',
+      ];
+      let i = 0;
+      while (result.length < MIN_LENGTH) {
+        result += additions[i % additions.length];
+        i++;
+      }
     }
-    return text;
+
+    if (result.length > MAX_LENGTH) {
+      return result.slice(0, MAX_LENGTH - 1).trimEnd() + '…';
+    }
+    return result;
   },
 };

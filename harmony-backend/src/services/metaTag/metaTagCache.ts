@@ -12,8 +12,8 @@ export const MetaTagCache = {
     return entry?.data ?? null;
   },
 
-  async set(channelId: string, tags: MetaTagSet, ttl: number = DEFAULT_TTL): Promise<void> {
-    await cacheService.set(CacheKeys.metaChannel(channelId), tags, { ttl });
+  async set(channelId: string, tags: MetaTagSet, ttl?: number): Promise<void> {
+    await cacheService.set(CacheKeys.metaChannel(channelId), tags, { ttl: ttl ?? this.ttl });
   },
 
   async invalidate(channelId: string): Promise<void> {

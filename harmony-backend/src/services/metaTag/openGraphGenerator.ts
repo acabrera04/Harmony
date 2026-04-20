@@ -19,12 +19,19 @@ export const OpenGraphGenerator = {
     };
   },
 
-  generateTwitterCard(title: string, description: string, image?: string): TwitterCardTags {
+  generateTwitterCard(
+    channel: ChannelContext,
+    title: string,
+    description: string,
+    image?: string,
+  ): TwitterCardTags {
+    const resolvedImage = image ?? this.selectPreviewImage(channel);
+    const isCustomImage = resolvedImage !== DEFAULT_IMAGE;
     return {
-      card: 'summary_large_image',
+      card: isCustomImage ? 'summary_large_image' : 'summary',
       title,
       description,
-      image: image ?? DEFAULT_IMAGE,
+      image: resolvedImage,
       site: TWITTER_SITE,
     };
   },

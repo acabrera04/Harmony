@@ -1,6 +1,8 @@
 // CL-C2.5 StructuredDataGenerator — generates JSON-LD structured data
 import type { ChannelContext, StructuredData } from './types';
 
+const BASE_URL = process.env.BASE_URL ?? 'https://harmony.chat';
+
 export const StructuredDataGenerator = {
   generateDiscussionForum(channel: ChannelContext, title: string, description: string): StructuredData {
     return {
@@ -8,6 +10,10 @@ export const StructuredDataGenerator = {
       '@type': 'DiscussionForumPosting',
       headline: title,
       description,
+      // author and datePublished are stub fields — populated by M4 when message data is available
+      author: undefined,
+      datePublished: undefined,
+      dateModified: undefined,
       mainEntity: {
         '@type': 'WebPage',
         url: channel.canonicalUrl,
@@ -24,7 +30,7 @@ export const StructuredDataGenerator = {
           '@type': 'ListItem',
           position: 1,
           name: channel.serverName,
-          item: `https://harmony.chat/s/${channel.serverSlug}`,
+          item: `${BASE_URL}/s/${channel.serverSlug}`,
         },
         {
           '@type': 'ListItem',

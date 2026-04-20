@@ -202,8 +202,8 @@ describe('MetaTagCache', () => {
 // ─── MetaTagService ──────────────────────────────────────────────────────────
 
 describe('metaTagService', () => {
-  it('generateMetaTags returns valid MetaTagSet', async () => {
-    const tags = await metaTagService.generateMetaTags(channel, messages);
+  it('generateMetaTagsFromContext returns valid MetaTagSet', async () => {
+    const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
     expect(tags.title.length).toBeGreaterThan(0);
     expect(tags.title.length).toBeLessThanOrEqual(60);
     expect(tags.description.length).toBeGreaterThanOrEqual(50);
@@ -212,13 +212,13 @@ describe('metaTagService', () => {
     expect(tags.needsRegeneration).toBe(false);
   });
 
-  it('generateMetaTags sets robots to index, follow', async () => {
-    const tags = await metaTagService.generateMetaTags(channel, messages);
+  it('generateMetaTagsFromContext sets robots to index, follow', async () => {
+    const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
     expect(tags.robots).toBe('index, follow');
   });
 
-  it('generateMetaTags includes openGraph and twitter tags', async () => {
-    const tags = await metaTagService.generateMetaTags(channel, messages);
+  it('generateMetaTagsFromContext includes openGraph and twitter tags', async () => {
+    const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
     expect(tags.openGraph.ogTitle).toBeDefined();
     expect(tags.twitter.card).toBeDefined();
   });
@@ -227,26 +227,26 @@ describe('metaTagService', () => {
     const spy = jest
       .spyOn(TitleGenerator, 'generateFromThread')
       .mockImplementation(() => { throw new Error('NLP timeout'); });
-    const tags = await metaTagService.generateMetaTags(channel, messages);
+    const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
     spy.mockRestore();
     expect(tags.needsRegeneration).toBe(true);
     expect(tags.title.length).toBeGreaterThan(0);
   });
 
-  it('getOrGenerateCached returns cache hit without regenerating', async () => {
+  it('getOrGenerateCachedFromContext returns cache hit without regenerating', async () => {
     const cachedTags = { title: 'Cached', needsRegeneration: false } as never;
     mockCacheService.get.mockResolvedValue({ data: cachedTags, createdAt: Date.now() });
 
-    const tags = await metaTagService.getOrGenerateCached(channel, messages);
+    const tags = await metaTagService.getOrGenerateCachedFromContext(channel, messages);
     expect(tags).toEqual(cachedTags);
     expect(mockCacheService.set).not.toHaveBeenCalled();
   });
 
-  it('getOrGenerateCached generates and caches on miss', async () => {
+  it('getOrGenerateCachedFromContext generates and caches on miss', async () => {
     mockCacheService.get.mockResolvedValue(null);
     mockCacheService.set.mockResolvedValue(undefined);
 
-    const tags = await metaTagService.getOrGenerateCached(channel, messages);
+    const tags = await metaTagService.getOrGenerateCachedFromContext(channel, messages);
     expect(tags.title.length).toBeGreaterThan(0);
     expect(mockCacheService.set).toHaveBeenCalled();
   });
