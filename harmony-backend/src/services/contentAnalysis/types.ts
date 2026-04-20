@@ -11,6 +11,13 @@ export interface ContentAnalysis {
   summary: string;
   sentiment: 'positive' | 'negative' | 'neutral';
   readingLevel: 'basic' | 'intermediate' | 'advanced';
+  /**
+   * True when the NLP path threw or timed out and the deterministic
+   * fallback was used instead. Per dev spec §9.2.1 / AC-9, MetaTagService
+   * (M-B5) must call MetaTagRepository.markForRegeneration() so the
+   * background worker can re-queue the meta tag once NLP is healthy.
+   */
+  usedFallback: boolean;
 }
 
 export interface ScoredKeyword {

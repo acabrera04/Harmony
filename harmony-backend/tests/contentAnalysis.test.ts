@@ -71,7 +71,7 @@ describe('TextSummarizer (C3.3)', () => {
 
   it('summarize respects target length and is non-empty', () => {
     const summary = textSummarizer.summarize(content, 80);
-    expect(summary.length).toBeLessThanOrEqual(80 + 1);
+    expect(summary.length).toBeLessThanOrEqual(80);
     expect(summary.length).toBeGreaterThan(0);
   });
 
@@ -155,6 +155,7 @@ describe('ContentAnalyzer (C3.1)', () => {
       summary: '',
       sentiment: 'neutral',
       readingLevel: 'basic',
+      usedFallback: false,
     });
   });
 
@@ -185,6 +186,9 @@ describe('ContentAnalyzer (C3.1)', () => {
     expect(result.keywords.length).toBeGreaterThan(0);
     expect(result.topics[0]).toBe('technology');
     expect(result.summary.length).toBeGreaterThan(0);
+    // AC-9: surface the fallback signal so MetaTagService can mark the
+    // meta tag for regeneration (dev spec §9.2.1).
+    expect(result.usedFallback).toBe(true);
   });
 
   it('falls back deterministically when the NLP path exceeds the timeout budget', async () => {
@@ -200,6 +204,7 @@ describe('ContentAnalyzer (C3.1)', () => {
     expect(elapsed).toBeLessThan(1000);
     expect(result.keywords).toContain('typescript');
     expect(result.topics[0]).toBe('technology');
+    expect(result.usedFallback).toBe(true);
   });
 
   it('merges partial NLP output with deterministic fallback fields', async () => {
@@ -212,5 +217,7 @@ describe('ContentAnalyzer (C3.1)', () => {
     // fields NLP didn't return still come from the deterministic fallback
     expect(result.summary.length).toBeGreaterThan(0);
     expect(result.topics[0]).toBe('technology');
+    // NLP succeeded (partial output is still success), so no regeneration needed.
+    expect(result.usedFallback).toBe(false);
   });
 });

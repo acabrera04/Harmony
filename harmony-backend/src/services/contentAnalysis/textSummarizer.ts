@@ -43,9 +43,12 @@ function buildWordFrequency(content: string): Map<string, number> {
 
 function truncateAtBoundary(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  const slice = text.slice(0, maxLength);
+  // Reserve one character for the appended ellipsis so the final string
+  // never exceeds maxLength — the summarize() contract promises this bound.
+  const budget = Math.max(1, maxLength - 1);
+  const slice = text.slice(0, budget);
   const lastSpace = slice.lastIndexOf(' ');
-  const boundary = lastSpace > maxLength * 0.6 ? lastSpace : slice.length;
+  const boundary = lastSpace > budget * 0.6 ? lastSpace : slice.length;
   return `${slice.slice(0, boundary).trimEnd()}…`;
 }
 

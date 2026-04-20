@@ -95,7 +95,7 @@ export function createContentAnalyzer(options: ContentAnalyzerOptions = {}) {
     nlpPath,
   } = options;
 
-  function deterministicAnalysis(content: string): ContentAnalysis {
+  function deterministicAnalysis(content: string, usedFallback: boolean): ContentAnalysis {
     const keywords = keywordExtractor.extractKeywords(content, maxKeywords);
     const summary = textSummarizer.summarize(content, summaryLength)
       || textSummarizer.extractFirstSentence(content);
@@ -107,6 +107,7 @@ export function createContentAnalyzer(options: ContentAnalyzerOptions = {}) {
       summary,
       sentiment: analyzer.getSentiment(content),
       readingLevel: analyzer.getReadingLevel(content),
+      usedFallback,
     };
   }
 
@@ -117,6 +118,7 @@ export function createContentAnalyzer(options: ContentAnalyzerOptions = {}) {
       summary: '',
       sentiment: 'neutral',
       readingLevel: 'basic',
+      usedFallback: false,
     };
   }
 
@@ -126,22 +128,23 @@ export function createContentAnalyzer(options: ContentAnalyzerOptions = {}) {
       if (!content) return emptyFallback();
 
       if (!nlpPath) {
-        return deterministicAnalysis(content);
+        return deterministicAnalysis(content, false);
       }
 
       try {
         const partial = await withTimeout(nlpPath(content), timeoutMs);
-        const fallback = deterministicAnalysis(content);
+        const fallback = deterministicAnalysis(content, false);
         return {
           keywords: partial.keywords ?? fallback.keywords,
           topics: partial.topics ?? fallback.topics,
           summary: partial.summary ?? fallback.summary,
           sentiment: partial.sentiment ?? fallback.sentiment,
           readingLevel: partial.readingLevel ?? fallback.readingLevel,
+          usedFallback: false,
         };
       } catch (err) {
         console.error('[contentAnalyzer] NLP path failed, using fallback:', err);
-        return deterministicAnalysis(content);
+        return deterministicAnalysis(content, true);
       }
     },
 
