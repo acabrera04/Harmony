@@ -13,7 +13,7 @@ export const MetaTagCache = {
   },
 
   async set(channelId: string, tags: MetaTagSet, ttl?: number): Promise<void> {
-    await cacheService.set(CacheKeys.metaChannel(channelId), tags, { ttl: ttl ?? this.ttl });
+    await cacheService.set(CacheKeys.metaChannel(channelId), tags, { ttl: ttl ?? DEFAULT_TTL });
   },
 
   async invalidate(channelId: string): Promise<void> {

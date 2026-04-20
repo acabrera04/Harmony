@@ -1,11 +1,19 @@
 // CL-C2.2 TitleGenerator — generates SEO-optimized titles (AC-2: ≤60 chars)
-import type { ChannelContext, MessageContext } from './types';
+import type { ChannelContext, MessageContext, MetaTagSet, IMetaTagGenerator } from './types';
 
 const MAX_LENGTH = 60;
 
 const CHANNEL_TEMPLATE = '{channelName} — {serverName}';
 
-export const TitleGenerator = {
+export const TitleGenerator: IMetaTagGenerator & {
+  maxLength: number;
+  generateFromChannel(channel: ChannelContext): string;
+  generateFromMessage(message: MessageContext, channel: ChannelContext): string;
+  generateFromThread(messages: MessageContext[], channel: ChannelContext): string;
+  truncateWithEllipsis(text: string): string;
+  sanitizeForTitle(text: string): string;
+  applyTemplate(template: string, vars: Record<string, string>): string;
+} = {
   maxLength: MAX_LENGTH,
 
   generateFromChannel(channel: ChannelContext): string {
@@ -45,5 +53,13 @@ export const TitleGenerator = {
       (result, [key, value]) => result.replaceAll(`{${key}}`, value),
       template,
     );
+  },
+
+  // CL-I1 stubs — full generate/validate wired by M4
+  generate(): MetaTagSet {
+    throw new Error('TitleGenerator.generate() not yet implemented — wired by M4');
+  },
+  validate(): boolean {
+    throw new Error('TitleGenerator.validate() not yet implemented — wired by M4');
   },
 };

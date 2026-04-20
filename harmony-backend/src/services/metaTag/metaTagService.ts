@@ -100,7 +100,7 @@ export const metaTagService = {
     const cached = await MetaTagCache.get(channel.id);
     if (cached) return cached;
 
-    const tags = await this.generateMetaTagsFromContext(channel, messages);
+    const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
     await MetaTagCache.set(channel.id, tags, ttl);
     return tags;
   },
@@ -121,15 +121,13 @@ export const metaTagService = {
   // full implementation depends on M4 (worker/queue) from issue #356
   async scheduleRegeneration(
     channelId: string,
-    priority?: 'high' | 'normal' | 'low',
-    idempotencyKey?: string,
+    _priority?: 'high' | 'normal' | 'low',
+    _idempotencyKey?: string,
   ): Promise<{ jobId: string; status: 'queued' | 'deduplicated' }> {
     // Queuing logic wired by M4 MetaTagUpdateWorker
     return {
       jobId: `meta-tag-regeneration:${channelId}`,
       status: 'queued',
-      ...(priority !== undefined && { priority }),
-      ...(idempotencyKey !== undefined && { idempotencyKey }),
     };
   },
 

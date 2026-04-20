@@ -1,10 +1,18 @@
 // CL-C2.3 DescriptionGenerator — generates meta descriptions (AC-2: 50-160 chars)
-import type { MessageContext, ChannelContext } from './types';
+import type { MessageContext, ChannelContext, MetaTagSet, IMetaTagGenerator } from './types';
 
 const MAX_LENGTH = 160;
 const MIN_LENGTH = 50;
 
-export const DescriptionGenerator = {
+export const DescriptionGenerator: IMetaTagGenerator & {
+  maxLength: number;
+  minLength: number;
+  generateFromMessages(messages: MessageContext[], channel: ChannelContext): string;
+  extractKeyPhrases(messages: MessageContext[]): string[];
+  sanitizeText(text: string): string;
+  summarizeThread(messages: MessageContext[], channel: ChannelContext): string;
+  enforceLength(text: string): string;
+} = {
   maxLength: MAX_LENGTH,
   minLength: MIN_LENGTH,
 
@@ -78,5 +86,13 @@ export const DescriptionGenerator = {
       return result.slice(0, MAX_LENGTH - 1).trimEnd() + '…';
     }
     return result;
+  },
+
+  // CL-I1 stubs — full generate/validate wired by M4
+  generate(): MetaTagSet {
+    throw new Error('DescriptionGenerator.generate() not yet implemented — wired by M4');
+  },
+  validate(): boolean {
+    throw new Error('DescriptionGenerator.validate() not yet implemented — wired by M4');
   },
 };
