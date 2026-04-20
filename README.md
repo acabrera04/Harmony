@@ -123,14 +123,8 @@ npm run dev:e2e:worker
 ```bash
 # Terminal 3: frontend
 cd harmony-frontend
-NEXT_PUBLIC_API_URL=http://localhost:4000 \
-NEXT_PUBLIC_BASE_URL=http://localhost:3000 \
-npm run build
-
-PORT=3000 \
-NEXT_PUBLIC_API_URL=http://localhost:4000 \
-NEXT_PUBLIC_BASE_URL=http://localhost:3000 \
-npm run start
+npm run build:e2e
+npm run start:e2e
 ```
 
 This CI-faithful path matters because `NODE_ENV=e2e` raises the backend auth rate limits used by the full local integration suite.
@@ -175,7 +169,7 @@ Local target:
 ```bash
 # After starting the backend via `npm run dev:e2e`,
 # the worker via `npm run dev:e2e:worker`,
-# and the frontend via `npm run build` + `npm run start`
+# and the frontend via `npm run build:e2e` + `npm run start:e2e`
 npm run test:integration
 ```
 
