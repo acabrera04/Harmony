@@ -19,6 +19,16 @@ const MAX_CHARS = 2000;
 /** Show remaining-char indicator when this many characters remain */
 const CHAR_WARN_THRESHOLD = 200;
 
+function getUploadErrorMessage(status: number, body: unknown): string {
+  if (typeof (body as { error?: unknown } | null)?.error === 'string') {
+    return (body as { error: string }).error;
+  }
+
+  if (status === 401) return 'You must be logged in to upload files.';
+  if (status === 413) return 'File is too large (max 25 MB).';
+  return 'Upload failed. Unsupported file type or server error.';
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export interface MessageInputProps {
@@ -66,51 +76,40 @@ export function MessageInput({
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      // Reset the input so selecting the same file again triggers onChange
-      e.target.value = '';
+    // Reset the input so selecting the same file again triggers onChange
+    e.target.value = '';
 
-      setIsUploading(true);
-      setSendError(null);
+    setIsUploading(true);
+    setSendError(null);
 
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-        const res = await fetch('/api/attachments/upload', {
-          method: 'POST',
-          body: formData,
-        });
+      const res = await fetch('/api/attachments/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          const msg =
-            typeof body?.error === 'string'
-              ? body.error
-              : res.status === 401
-                ? 'You must be logged in to upload files.'
-                : res.status === 413
-                  ? 'File is too large (max 25 MB).'
-                  : 'Upload failed. Unsupported file type or server error.';
-          setSendError(msg);
-          return;
-        }
-
-        const attachment = (await res.json()) as AttachmentInput;
-        setPendingAttachments(prev => [...prev, attachment]);
-      } catch {
-        setSendError('Upload failed. Please try again.');
-      } finally {
-        setIsUploading(false);
-        textareaRef.current?.focus();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setSendError(getUploadErrorMessage(res.status, body));
+        return;
       }
-    },
-    [],
-  );
+
+      const attachment = (await res.json()) as AttachmentInput;
+      setPendingAttachments(prev => [...prev, attachment]);
+    } catch {
+      setSendError('Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+      textareaRef.current?.focus();
+    }
+  }, []);
 
   const removeAttachment = (index: number) => {
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
@@ -137,7 +136,16 @@ export function MessageInput({
       setIsSending(false);
       textareaRef.current?.focus();
     }
-  }, [value, isSending, isUploading, isReadOnly, channelId, serverId, onMessageSent, pendingAttachments]);
+  }, [
+    value,
+    isSending,
+    isUploading,
+    isReadOnly,
+    channelId,
+    serverId,
+    onMessageSent,
+    pendingAttachments,
+  ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter sends; Shift+Enter inserts a newline

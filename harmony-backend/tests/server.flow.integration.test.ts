@@ -28,7 +28,7 @@ interface CreatedServer {
 }
 
 function createCredentials(label: string) {
-  const suffix = `${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const suffix = `${label}-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
   return {
     email: `server-flow-${suffix}@example.com`,
     username: `server_flow_${suffix}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32),
@@ -36,7 +36,7 @@ function createCredentials(label: string) {
 }
 
 function createServerName(base: string) {
-  return `${base} ${Date.now()} ${Math.random().toString(36).slice(2, 8)}`;
+  return `${base} ${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 }
 
 async function deriveRegistrationPayload(app: Express, email: string, password: string) {

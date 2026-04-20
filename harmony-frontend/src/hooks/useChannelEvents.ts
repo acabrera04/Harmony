@@ -16,7 +16,15 @@
 
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react';
 import type { Message } from '@/types/message';
 import type { Server } from '@/types/server';
 import { getAccessToken, refreshAccessToken } from '@/lib/api-client';
@@ -27,6 +35,20 @@ const logger = createFrontendLogger({ component: 'use-channel-events' });
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 2_000;
+
+function scheduleReconnect(
+  reconnectCountRef: MutableRefObject<number>,
+  setReconnectKey: Dispatch<SetStateAction<number>>,
+): ReturnType<typeof setTimeout> {
+  reconnectCountRef.current += 1;
+  const delay = RECONNECT_DELAY_MS * reconnectCountRef.current;
+
+  return setTimeout(() => {
+    refreshAccessToken().finally(() => {
+      setReconnectKey(key => key + 1);
+    });
+  }, delay);
+}
 
 export interface UseChannelEventsOptions {
   channelId: string;
@@ -189,16 +211,10 @@ export function useChannelEvents({
       const attempt = reconnectCountRef.current;
       if (attempt >= MAX_RECONNECT_ATTEMPTS) return; // give up after cap
 
-      reconnectCountRef.current += 1;
-      const delay = RECONNECT_DELAY_MS * reconnectCountRef.current;
-      reconnectTimer = setTimeout(() => {
-        // Attempt a silent token refresh so the next EventSource URL carries a
-        // valid token even when the user has been idle (no API calls to trigger
-        // the axios interceptor refresh).
-        refreshAccessToken().finally(() => {
-          setReconnectKey(k => k + 1);
-        });
-      }, delay);
+      // Attempt a silent token refresh so the next EventSource URL carries a
+      // valid token even when the user has been idle (no API calls to trigger
+      // the axios interceptor refresh).
+      reconnectTimer = scheduleReconnect(reconnectCountRef, setReconnectKey);
     };
 
     return () => {

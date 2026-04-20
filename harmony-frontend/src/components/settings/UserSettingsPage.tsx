@@ -149,9 +149,7 @@ function AccountSection() {
 
         {/* Username + role */}
         <div className='mb-4 px-1'>
-          <p className='text-lg font-bold text-white'>
-            {user.displayName ?? user.username}
-          </p>
+          <p className='text-lg font-bold text-white'>{user.displayName ?? user.username}</p>
           <p className='text-sm text-gray-400'>#{user.username}</p>
           <span className='mt-1 inline-block rounded bg-[#3d4148] px-2 py-0.5 text-xs font-medium text-gray-300 capitalize'>
             {user.role}
@@ -161,9 +159,7 @@ function AccountSection() {
 
       {/* Editable fields */}
       <div className='flex flex-col gap-4 rounded-lg bg-[#2b2d31] p-4'>
-        <h3 className='text-xs font-bold uppercase tracking-wide text-gray-400'>
-          Profile
-        </h3>
+        <h3 className='text-xs font-bold uppercase tracking-wide text-gray-400'>Profile</h3>
 
         {/* Display name */}
         <div>
@@ -217,9 +213,7 @@ function AccountSection() {
 
         {/* Username (read-only) */}
         <div>
-          <label className='mb-1.5 block text-xs font-bold uppercase text-gray-400'>
-            Username
-          </label>
+          <label className='mb-1.5 block text-xs font-bold uppercase text-gray-400'>Username</label>
           <p className='text-sm text-gray-300'>#{user.username}</p>
           <p className='mt-0.5 text-xs text-gray-500'>Username cannot be changed.</p>
         </div>
@@ -279,6 +273,23 @@ function parseChannelPath(path: string): { serverSlug: string; channelSlug: stri
   return { serverSlug: match[1], channelSlug: match[2] };
 }
 
+async function resolveLogoutDestination(returnTo?: string): Promise<string> {
+  if (!returnTo) return DEFAULT_CHANNEL;
+
+  const decoded = safeDecodeURIComponent(returnTo);
+  if (!decoded) return DEFAULT_CHANNEL;
+
+  const parsed = parseChannelPath(decoded);
+  if (!parsed) return DEFAULT_CHANNEL;
+
+  try {
+    const accessible = await isChannelGuestAccessible(parsed.serverSlug, parsed.channelSlug);
+    return accessible ? decoded : DEFAULT_CHANNEL;
+  } catch {
+    return DEFAULT_CHANNEL;
+  }
+}
+
 function LogoutSection({ returnTo }: { returnTo?: string }) {
   const { logout } = useAuth();
   const router = useRouter();
@@ -290,24 +301,7 @@ function LogoutSection({ returnTo }: { returnTo?: string }) {
 
     // Determine post-logout destination before clearing the session so that a
     // future auth-aware version of isChannelGuestAccessible would still work.
-    let destination = DEFAULT_CHANNEL;
-    if (returnTo) {
-      const decoded = safeDecodeURIComponent(returnTo);
-      if (decoded) {
-        const parsed = parseChannelPath(decoded);
-        if (parsed) {
-          try {
-            const accessible = await isChannelGuestAccessible(
-              parsed.serverSlug,
-              parsed.channelSlug,
-            );
-            if (accessible) destination = decoded;
-          } catch {
-            // Visibility check failed; fall back to default channel
-          }
-        }
-      }
-    }
+    const destination = await resolveLogoutDestination(returnTo);
 
     // Perform logout. If it fails, bail early.
     try {
@@ -355,6 +349,12 @@ function resolveReturnTo(returnTo: string | undefined): string {
     }
   }
   return DEFAULT_CHANNEL;
+}
+
+function getSectionButtonClass(section: { danger?: boolean }, isActive: boolean): string {
+  if (isActive) return cn(BG.active, 'text-white');
+  if (section.danger) return 'text-red-400 hover:bg-[#3d4148] hover:text-red-300';
+  return 'text-gray-300 hover:bg-[#3d4148] hover:text-white';
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -416,11 +416,7 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
                 }}
                 className={cn(
                   'w-full rounded px-2 py-1.5 text-left text-sm font-medium transition-colors',
-                  activeSection === section.id
-                    ? cn(BG.active, 'text-white')
-                    : section.danger
-                      ? 'text-red-400 hover:bg-[#3d4148] hover:text-red-300'
-                      : 'text-gray-300 hover:bg-[#3d4148] hover:text-white',
+                  getSectionButtonClass(section, activeSection === section.id),
                 )}
                 aria-current={activeSection === section.id ? 'page' : undefined}
               >
@@ -452,8 +448,18 @@ export function UserSettingsPage({ returnTo }: { returnTo?: string }) {
             aria-expanded={isSidebarOpen}
             aria-controls='settings-sidebar'
           >
-            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true' focusable='false'>
-              <path fillRule='evenodd' d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' clipRule='evenodd' />
+            <svg
+              className='h-5 w-5'
+              viewBox='0 0 20 20'
+              fill='currentColor'
+              aria-hidden='true'
+              focusable='false'
+            >
+              <path
+                fillRule='evenodd'
+                d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
+                clipRule='evenodd'
+              />
             </svg>
           </button>
           <span className='ml-2 text-sm font-semibold text-gray-300'>User Settings</span>

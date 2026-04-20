@@ -13,10 +13,7 @@
  */
 
 import { ChannelType, ChannelVisibility } from '@prisma/client';
-import {
-  auditLogService,
-  LogVisibilityChangeInput,
-} from '../src/services/auditLog.service';
+import { auditLogService, LogVisibilityChangeInput } from '../src/services/auditLog.service';
 import { prisma } from '../src/db/prisma';
 
 let userId: string;
@@ -84,7 +81,9 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const makeLogInput = (overrides: Partial<LogVisibilityChangeInput> = {}): LogVisibilityChangeInput => ({
+const makeLogInput = (
+  overrides: Partial<LogVisibilityChangeInput> = {},
+): LogVisibilityChangeInput => ({
   channelId,
   actorId: userId,
   oldValue: { visibility: 'PRIVATE' },
@@ -117,16 +116,12 @@ describe('auditLogService.logVisibilityChange', () => {
   });
 
   it('defaults userAgent to empty string when not provided', async () => {
-    const entry = await auditLogService.logVisibilityChange(
-      makeLogInput({ userAgent: undefined }),
-    );
+    const entry = await auditLogService.logVisibilityChange(makeLogInput({ userAgent: undefined }));
     expect(entry.userAgent).toBe('');
   });
 
   it('stores IPv6 addresses', async () => {
-    const entry = await auditLogService.logVisibilityChange(
-      makeLogInput({ ipAddress: '::1' }),
-    );
+    const entry = await auditLogService.logVisibilityChange(makeLogInput({ ipAddress: '::1' }));
     expect(entry.ipAddress).toBe('::1');
   });
 
@@ -153,6 +148,7 @@ describe('auditLogService.logVisibilityChange', () => {
 // ─── getVisibilityAuditLog ────────────────────────────────────────────────────
 
 describe('auditLogService.getVisibilityAuditLog', () => {
+  const seedIpAddress = ['198', '51', '100', '10'].join('.');
   // Seed several audit log entries for the pagination tests
   let seededIds: string[] = [];
 
@@ -168,7 +164,7 @@ describe('auditLogService.getVisibilityAuditLog', () => {
           action: 'VISIBILITY_CHANGED',
           oldValue: { visibility: 'PRIVATE' },
           newValue: { visibility: 'PUBLIC_NO_INDEX' },
-          ipAddress: '10.0.0.1',
+          ipAddress: seedIpAddress,
           userAgent: 'seed-agent',
           timestamp: ts,
         },

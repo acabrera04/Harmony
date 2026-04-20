@@ -90,20 +90,8 @@ export function getUserErrorMessage(
   fallback = 'Something went wrong. Please try again.',
 ): string {
   if (isAxiosError(err)) {
-    const data = err.response?.data;
-    if (data) {
-      // Validation errors: { error: "Validation failed", details: [{ message: "..." }] }
-      if (Array.isArray(data.details) && data.details.length > 0) {
-        const messages = data.details.map((d: { message?: string }) => d.message).filter(Boolean);
-        if (messages.length > 0) return messages.join('. ');
-      }
-      // REST endpoints: { error: "Invalid credentials" }
-      if (typeof data.error === 'string' && data.error !== 'Validation failed') return data.error;
-      // tRPC endpoints: { error: { message: "..." } }
-      if (typeof data.error?.message === 'string') return data.error.message;
-      // Some endpoints: { message: "..." }
-      if (typeof data.message === 'string') return data.message;
-    }
+    const axiosMessage = getAxiosErrorMessage(err.response?.data);
+    if (axiosMessage) return axiosMessage;
   }
   if (err instanceof Error && err.message) {
     // Filter out raw axios status messages like "Request failed with status code 401"
@@ -111,6 +99,28 @@ export function getUserErrorMessage(
     return err.message;
   }
   return fallback;
+}
+
+function getAxiosErrorMessage(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+
+  const details = (data as { details?: Array<{ message?: string }> }).details;
+  if (Array.isArray(details) && details.length > 0) {
+    const messages = details.map(detail => detail.message).filter(Boolean);
+    if (messages.length > 0) return messages.join('. ');
+  }
+
+  const { error, message } = data as {
+    error?: string | { message?: string };
+    message?: string;
+  };
+
+  if (typeof error === 'string' && error !== 'Validation failed') return error;
+  if (error && typeof error === 'object' && typeof error.message === 'string') {
+    return error.message;
+  }
+  if (typeof message === 'string') return message;
+  return null;
 }
 
 /**

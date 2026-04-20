@@ -1,16 +1,26 @@
 const LOCAL_FRONTEND_URL = 'http://localhost:3000';
 const LOCAL_API_URL = 'http://localhost:4000';
 
+function trimTrailingSlashes(value: string): string {
+  let trimmed = value;
+
+  while (trimmed.endsWith('/') && trimmed.length > 1) {
+    trimmed = trimmed.slice(0, -1);
+  }
+
+  return trimmed;
+}
+
 function normalizeBaseUrl(value: string | undefined, fallback: string, envVarName: string): string {
   const configuredValue = value?.trim();
   const candidate = configuredValue || fallback;
 
   try {
     const url = new URL(candidate);
-    url.pathname = url.pathname.replace(/\/+$/, '');
+    url.pathname = trimTrailingSlashes(url.pathname);
     url.search = '';
     url.hash = '';
-    return url.toString().replace(/\/$/, '');
+    return trimTrailingSlashes(url.toString());
   } catch {
     if (configuredValue) {
       throw new Error(

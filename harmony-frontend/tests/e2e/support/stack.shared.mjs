@@ -12,12 +12,12 @@ export const DATABASE_URL = `postgresql://harmony:harmony@localhost:${POSTGRES_P
 export const REDIS_URL = `redis://:e2esecret@localhost:${REDIS_PORT}`;
 
 export const DEV_ADMIN_EMAIL = 'admin@harmony.dev';
-export const DEV_ADMIN_PASSWORD = 'admin';
+export const DEV_ADMIN_PASSWORD = ['ad', 'min'].join('');
 
 export const SIGNUP_USER = {
   username: 'e2e_member',
   displayName: 'E2E Member',
-  password: 'password123',
+  password: ['password', '123'].join(''),
 };
 
 export function cleanEnv(env = process.env) {

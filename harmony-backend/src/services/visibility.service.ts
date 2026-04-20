@@ -110,7 +110,12 @@ export const visibilityService = {
         tx,
       );
 
-      return { isNoOp: false as const, updatedChannel: updated, auditEntry: audit, oldVisibility: current.visibility };
+      return {
+        isNoOp: false as const,
+        updatedChannel: updated,
+        auditEntry: audit,
+        oldVisibility: current.visibility,
+      };
     });
 
     if (result.isNoOp) {
@@ -124,14 +129,16 @@ export const visibilityService = {
     }
 
     // Publish event after successful commit (fire-and-forget)
-    void eventBus.publish(EventChannels.VISIBILITY_CHANGED, {
-      channelId: result.updatedChannel.id,
-      serverId: result.updatedChannel.serverId,
-      oldVisibility: result.oldVisibility,
-      newVisibility: visibility,
-      actorId,
-      timestamp: new Date().toISOString(),
-    });
+    eventBus
+      .publish(EventChannels.VISIBILITY_CHANGED, {
+        channelId: result.updatedChannel.id,
+        serverId: result.updatedChannel.serverId,
+        oldVisibility: result.oldVisibility,
+        newVisibility: visibility,
+        actorId,
+        timestamp: new Date().toISOString(),
+      })
+      .catch(() => undefined);
 
     return {
       success: true,

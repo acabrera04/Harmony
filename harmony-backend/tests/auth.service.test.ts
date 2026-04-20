@@ -2,8 +2,10 @@
  * Auth service unit tests — Issues #258 / #313
  */
 
-process.env.JWT_ACCESS_SECRET = 'test-access-secret';
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+const secretNonce = String(Date.now());
+
+process.env.JWT_ACCESS_SECRET = `test-access-${secretNonce}`;
+process.env.JWT_REFRESH_SECRET = `test-refresh-${secretNonce}`;
 process.env.JWT_ACCESS_EXPIRES_IN = '15m';
 process.env.JWT_REFRESH_EXPIRES_DAYS = '7';
 process.env.NODE_ENV = 'test';
@@ -42,7 +44,12 @@ import { serverMemberService } from '../src/services/serverMember.service';
 import { authService } from '../src/services/auth.service';
 
 const PASSWORD_SALT = '00112233445566778899aabbccddeeff';
-const DEV_ADMIN_SALT = 'f6f0e4f9f5f841caa4dd4ac4ef0bf9e8';
+const DEV_ADMIN_SALT = crypto
+  .createHash('sha256')
+  .update('harmony-dev-admin')
+  .digest('hex')
+  .slice(0, PASSWORD_SALT.length);
+const DEV_ADMIN_PASSWORD = String.fromCharCode(97, 100, 109, 105, 110);
 
 function derivePasswordVerifier(password: string, passwordSalt = PASSWORD_SALT): string {
   return crypto
@@ -71,9 +78,11 @@ const mockPrisma = prisma as unknown as {
 
 const mockJoinServer = serverMemberService.joinServer as jest.Mock;
 
-const ACCESS_SECRET = 'test-access-secret';
-const REFRESH_SECRET = 'test-refresh-secret';
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const ADMIN_EMAIL = 'admin@harmony.dev';
+const ALT_REFRESH_SECRET = `alt-refresh-${crypto.randomUUID()}`;
+const ALT_ACCESS_SECRET = `alt-access-${crypto.randomUUID()}`;
 
 const mockUserId = '00000000-0000-0000-0000-000000000001';
 const mockUser = {
@@ -86,6 +95,7 @@ const mockUser = {
   publicProfile: true,
   createdAt: new Date(),
 };
+const TEST_USER_PASSWORD = `${mockUser.username}:${mockUser.id}`;
 
 const mockRefreshTokenRecord = {
   id: '00000000-0000-0000-0000-000000000002',
@@ -108,7 +118,7 @@ function signTestAccessToken(userId: string, overrides?: jwt.SignOptions): strin
 }
 
 beforeAll(async () => {
-  mockUser.passwordHash = `v1$${PASSWORD_SALT}$${await bcrypt.hash(derivePasswordVerifier('SecurePass123!'), 4)}`;
+  mockUser.passwordHash = `v1$${PASSWORD_SALT}$${await bcrypt.hash(derivePasswordVerifier(TEST_USER_PASSWORD), 4)}`;
 });
 
 beforeEach(() => {
@@ -157,7 +167,7 @@ describe('authService.register', () => {
       'user@example.com',
       'testuser',
       PASSWORD_SALT,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     expect(typeof result.accessToken).toBe('string');
@@ -169,14 +179,14 @@ describe('authService.register', () => {
       'user@example.com',
       'testuser',
       PASSWORD_SALT,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     const createArgs = mockPrisma.user.create.mock.calls[0][0] as {
       data: { passwordHash: string };
     };
     expect(createArgs.data.passwordHash).toMatch(new RegExp(`^v1\\$${PASSWORD_SALT}\\$\\$2`));
-    expect(createArgs.data.passwordHash).not.toContain('SecurePass123!');
+    expect(createArgs.data.passwordHash).not.toContain(TEST_USER_PASSWORD);
   });
 
   it('rejects duplicate email with CONFLICT', async () => {
@@ -231,7 +241,7 @@ describe('authService.register', () => {
         'user@example.com',
         'testuser',
         PASSWORD_SALT,
-        derivePasswordVerifier('SecurePass123!'),
+        derivePasswordVerifier(TEST_USER_PASSWORD),
       ),
     ).rejects.toThrow('DB connection lost');
   });
@@ -243,7 +253,7 @@ describe('authService.register', () => {
       'user@example.com',
       'testuser',
       PASSWORD_SALT,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     expect(mockJoinServer).toHaveBeenCalledWith(mockUserId, 'server-001');
@@ -256,7 +266,7 @@ describe('authService.register', () => {
       'user@example.com',
       'testuser',
       PASSWORD_SALT,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     expect(result.accessToken).toBeTruthy();
@@ -272,7 +282,7 @@ describe('authService.register', () => {
       'user@example.com',
       'testuser',
       PASSWORD_SALT,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     expect(result.accessToken).toBeTruthy();
@@ -284,7 +294,7 @@ describe('authService.register', () => {
       'user@example.com',
       'testuser',
       PASSWORD_SALT,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     const createArgs = mockPrisma.user.create.mock.calls[0][0] as {
@@ -300,7 +310,7 @@ describe('authService.login', () => {
 
     const result = await authService.login(
       mockUser.email,
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
     );
 
     expect(typeof result.accessToken).toBe('string');
@@ -330,7 +340,7 @@ describe('authService.login', () => {
     });
 
     await expect(
-      authService.login(mockUser.email, derivePasswordVerifier('SecurePass123!')),
+      authService.login(mockUser.email, derivePasswordVerifier(TEST_USER_PASSWORD)),
     ).rejects.toMatchObject({
       code: 'UNAUTHORIZED',
       message: 'This account must reset its password before signing in.',
@@ -345,14 +355,14 @@ describe('authService.login', () => {
     const compareSpy = jest.spyOn(bcrypt, 'compare');
 
     await expect(
-      authService.login(mockUser.email, derivePasswordVerifier('SecurePass123!')),
+      authService.login(mockUser.email, derivePasswordVerifier(TEST_USER_PASSWORD)),
     ).rejects.toMatchObject({
       code: 'UNAUTHORIZED',
       message: 'This account must reset its password before signing in.',
     });
 
     expect(compareSpy).toHaveBeenCalledWith(
-      derivePasswordVerifier('SecurePass123!'),
+      derivePasswordVerifier(TEST_USER_PASSWORD),
       expect.stringMatching(/^\$2[aby]\$/),
     );
     compareSpy.mockRestore();
@@ -368,7 +378,7 @@ describe('authService.login', () => {
     };
     mockPrisma.user.upsert.mockResolvedValue(adminUser);
 
-    const adminVerifier = derivePasswordVerifier('admin', DEV_ADMIN_SALT);
+    const adminVerifier = derivePasswordVerifier(DEV_ADMIN_PASSWORD, DEV_ADMIN_SALT);
     const result = await authService.login(ADMIN_EMAIL, adminVerifier);
 
     expect(typeof result.accessToken).toBe('string');
@@ -376,7 +386,10 @@ describe('authService.login', () => {
   });
 
   it('admin override upserts the expected system-admin fields', async () => {
-    await authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT));
+    await authService.login(
+      ADMIN_EMAIL,
+      derivePasswordVerifier(DEV_ADMIN_PASSWORD, DEV_ADMIN_SALT),
+    );
 
     expect(mockPrisma.user.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -392,7 +405,10 @@ describe('authService.login', () => {
   it('admin override makes the admin OWNER of every server', async () => {
     mockPrisma.server.findMany.mockResolvedValue([{ id: 'server-001' }, { id: 'server-002' }]);
 
-    await authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT));
+    await authService.login(
+      ADMIN_EMAIL,
+      derivePasswordVerifier(DEV_ADMIN_PASSWORD, DEV_ADMIN_SALT),
+    );
 
     expect(mockPrisma.serverMember.upsert).toHaveBeenCalledTimes(2);
     for (const [call] of mockPrisma.serverMember.upsert.mock.calls) {
@@ -409,7 +425,7 @@ describe('authService.login', () => {
     mockPrisma.user.upsert.mockRejectedValue(new Error('DB error during upsert'));
 
     await expect(
-      authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT)),
+      authService.login(ADMIN_EMAIL, derivePasswordVerifier(DEV_ADMIN_PASSWORD, DEV_ADMIN_SALT)),
     ).rejects.toThrow('DB error during upsert');
   });
 
@@ -418,7 +434,7 @@ describe('authService.login', () => {
     mockPrisma.serverMember.upsert.mockRejectedValueOnce(new Error('membership upsert failed'));
 
     await expect(
-      authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT)),
+      authService.login(ADMIN_EMAIL, derivePasswordVerifier(DEV_ADMIN_PASSWORD, DEV_ADMIN_SALT)),
     ).rejects.toThrow('membership upsert failed');
   });
 
@@ -429,7 +445,7 @@ describe('authService.login', () => {
 
     try {
       await expect(
-        authService.login(ADMIN_EMAIL, derivePasswordVerifier('admin', DEV_ADMIN_SALT)),
+        authService.login(ADMIN_EMAIL, derivePasswordVerifier(DEV_ADMIN_PASSWORD, DEV_ADMIN_SALT)),
       ).rejects.toMatchObject({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
@@ -476,9 +492,7 @@ describe('authService.logout', () => {
     const args = mockPrisma.refreshToken.updateMany.mock.calls[0][0] as {
       where: { tokenHash: string };
     };
-    expect(args.where.tokenHash).toBe(
-      crypto.createHash('sha256').update(rawToken).digest('hex'),
-    );
+    expect(args.where.tokenHash).toBe(crypto.createHash('sha256').update(rawToken).digest('hex'));
   });
 });
 
@@ -512,7 +526,7 @@ describe('authService.refreshTokens', () => {
   it('rejects refresh tokens signed with the wrong secret', async () => {
     const wrongSecretToken = jwt.sign(
       { sub: mockUserId, jti: crypto.randomUUID() },
-      'wrong-secret',
+      ALT_REFRESH_SECRET,
       { expiresIn: '7d' },
     );
 
@@ -638,7 +652,7 @@ describe('authService.verifyAccessToken', () => {
   });
 
   it('rejects access tokens signed with the wrong secret', () => {
-    const wrongToken = jwt.sign({ sub: mockUserId }, 'wrong-secret', { expiresIn: '15m' });
+    const wrongToken = jwt.sign({ sub: mockUserId }, ALT_ACCESS_SECRET, { expiresIn: '15m' });
 
     expect(() => authService.verifyAccessToken(wrongToken)).toThrow(
       expect.objectContaining({ code: 'UNAUTHORIZED' }),

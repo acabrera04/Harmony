@@ -71,11 +71,13 @@ export const userService = {
       if (patch.status !== undefined) {
         const memberships = await serverMemberRepository.findByUserIdSelect(userId);
         for (const { serverId } of memberships) {
-          void eventBus.publish(EventChannels.USER_STATUS_CHANGED, {
-            userId,
-            serverId,
-            status: patch.status,
-          });
+          eventBus
+            .publish(EventChannels.USER_STATUS_CHANGED, {
+              userId,
+              serverId,
+              status: patch.status,
+            })
+            .catch(() => undefined);
         }
       }
 

@@ -10,7 +10,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn, getUserErrorMessage } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { saveChannelSettings, fetchAuditLog } from '@/app/settings/[serverSlug]/[channelSlug]/actions';
+import {
+  saveChannelSettings,
+  fetchAuditLog,
+} from '@/app/settings/[serverSlug]/[channelSlug]/actions';
 import { VisibilityToggle } from '@/components/channel/VisibilityToggle';
 import type { Channel } from '@/types';
 import type { AuditLogEntry, AuditLogPage } from '@/services/channelService';
@@ -189,7 +192,7 @@ function OverviewSection({
             saved ? 'bg-[#3ba55c] hover:bg-[#2d8a4d]' : 'bg-[#5865f2] hover:bg-[#4752c4]',
           )}
         >
-          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Changes'}
+          {getSaveButtonLabel(saving, saved)}
         </button>
         {saveError && (
           <p role='alert' className='text-sm text-red-400'>
@@ -236,6 +239,12 @@ const CHANNEL_PERMISSIONS: PermissionRow[] = [
   { label: 'Manage channel visibility', allowedFrom: 'ADMIN' },
   { label: 'Create / delete channels', allowedFrom: 'ADMIN' },
 ];
+
+function getSaveButtonLabel(saving: boolean, saved: boolean): string {
+  if (saving) return 'Saving…';
+  if (saved) return 'Saved ✓';
+  return 'Save Changes';
+}
 
 const ROLE_LABELS: Record<PermissionRole, string> = {
   OWNER: 'Owner',
@@ -315,10 +324,7 @@ function PermissionsSection() {
           </thead>
           <tbody>
             {CHANNEL_PERMISSIONS.map((row, idx) => (
-              <tr
-                key={row.label}
-                className={idx % 2 === 0 ? 'bg-[#36393f]' : 'bg-[#2f3136]'}
-              >
+              <tr key={row.label} className={idx % 2 === 0 ? 'bg-[#36393f]' : 'bg-[#2f3136]'}>
                 <td className='px-4 py-2 text-gray-300'>{row.label}</td>
                 {ROLE_HIERARCHY.map(role => {
                   // Compute once per cell to avoid redundant calls across the 9×5 matrix
@@ -337,7 +343,8 @@ function PermissionsSection() {
       </div>
 
       <p className='text-xs text-gray-500'>
-        To change a member&apos;s role, go to <span className='text-gray-400'>Server Settings → Members</span>.
+        To change a member&apos;s role, go to{' '}
+        <span className='text-gray-400'>Server Settings → Members</span>.
       </p>
     </div>
   );
@@ -366,20 +373,20 @@ function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => {
-            const oldVis = (entry.oldValue as { visibility?: string }).visibility as ChannelVisibility | undefined;
-            const newVis = (entry.newValue as { visibility?: string }).visibility as ChannelVisibility | undefined;
+          {entries.map(entry => {
+            const oldVis = (entry.oldValue as { visibility?: string }).visibility as
+              | ChannelVisibility
+              | undefined;
+            const newVis = (entry.newValue as { visibility?: string }).visibility as
+              | ChannelVisibility
+              | undefined;
             return (
               <tr key={entry.id} className='border-b border-[#2f3136]'>
                 <td className='py-2 pr-4 whitespace-nowrap'>
                   {new Date(entry.timestamp).toLocaleString()}
                 </td>
-                <td className='py-2 pr-4'>
-                  {oldVis ? VISIBILITY_LABEL[oldVis] ?? oldVis : '—'}
-                </td>
-                <td className='py-2'>
-                  {newVis ? VISIBILITY_LABEL[newVis] ?? newVis : '—'}
-                </td>
+                <td className='py-2 pr-4'>{oldVis ? (VISIBILITY_LABEL[oldVis] ?? oldVis) : '—'}</td>
+                <td className='py-2'>{newVis ? (VISIBILITY_LABEL[newVis] ?? newVis) : '—'}</td>
               </tr>
             );
           })}
@@ -409,25 +416,28 @@ function VisibilitySection({
   // compare against this ref and discard their results if they are stale.
   const requestTokenRef = useRef(0);
 
-  const loadAuditLog = useCallback(async (offset: number) => {
-    const token = ++requestTokenRef.current;
-    setAuditLoading(true);
-    setAuditError(null);
-    try {
-      const page = await fetchAuditLog(serverSlug, channel.slug, {
-        limit: AUDIT_PAGE_SIZE,
-        offset,
-      });
-      if (requestTokenRef.current !== token) return; // stale — discard
-      setAuditLog(page);
-      setAuditOffset(offset); // commit offset only after a successful load — keeps range text in sync with displayed entries
-    } catch (err) {
-      if (requestTokenRef.current !== token) return;
-      setAuditError(getUserErrorMessage(err, 'Failed to load audit log.'));
-    } finally {
-      if (requestTokenRef.current === token) setAuditLoading(false);
-    }
-  }, [serverSlug, channel.slug]);
+  const loadAuditLog = useCallback(
+    async (offset: number) => {
+      const token = ++requestTokenRef.current;
+      setAuditLoading(true);
+      setAuditError(null);
+      try {
+        const page = await fetchAuditLog(serverSlug, channel.slug, {
+          limit: AUDIT_PAGE_SIZE,
+          offset,
+        });
+        if (requestTokenRef.current !== token) return; // stale — discard
+        setAuditLog(page);
+        setAuditOffset(offset); // commit offset only after a successful load — keeps range text in sync with displayed entries
+      } catch (err) {
+        if (requestTokenRef.current !== token) return;
+        setAuditError(getUserErrorMessage(err, 'Failed to load audit log.'));
+      } finally {
+        if (requestTokenRef.current === token) setAuditLoading(false);
+      }
+    },
+    [serverSlug, channel.slug],
+  );
 
   // Load audit log when section mounts or channel changes.
   useEffect(() => {
@@ -469,7 +479,13 @@ function VisibilitySection({
         {/* Initial load spinner — only shown before first data arrives */}
         {auditLoading && !auditLog && (
           <div className='flex items-center gap-2 text-sm text-gray-400'>
-            <svg className='h-4 w-4 animate-spin' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2}>
+            <svg
+              className='h-4 w-4 animate-spin'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth={2}
+            >
               <path d='M21 12a9 9 0 1 1-6.219-8.56' />
             </svg>
             Loading…
@@ -477,7 +493,9 @@ function VisibilitySection({
         )}
 
         {!auditLoading && auditError && (
-          <p role='alert' className='text-sm text-red-400'>{auditError}</p>
+          <p role='alert' className='text-sm text-red-400'>
+            {auditError}
+          </p>
         )}
 
         {/* Keep previous entries visible while paginating to avoid height collapse
@@ -496,7 +514,8 @@ function VisibilitySection({
                   ← Prev
                 </button>
                 <span>
-                  {auditOffset + 1}–{Math.min(auditOffset + AUDIT_PAGE_SIZE, auditLog.total)} of {auditLog.total}
+                  {auditOffset + 1}–{Math.min(auditOffset + AUDIT_PAGE_SIZE, auditLog.total)} of{' '}
+                  {auditLog.total}
                 </span>
                 <button
                   type='button'
@@ -540,7 +559,11 @@ export interface ChannelSettingsPageProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ChannelSettingsPage({ channel, serverSlug, serverOwnerId }: ChannelSettingsPageProps) {
+export function ChannelSettingsPage({
+  channel,
+  serverSlug,
+  serverOwnerId,
+}: ChannelSettingsPageProps) {
   const { isAdmin, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('overview');
@@ -635,8 +658,18 @@ export function ChannelSettingsPage({ channel, serverSlug, serverOwnerId }: Chan
             aria-expanded={isSidebarOpen}
             aria-controls='settings-sidebar'
           >
-            <svg className='h-5 w-5' viewBox='0 0 20 20' fill='currentColor' aria-hidden='true' focusable='false'>
-              <path fillRule='evenodd' d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' clipRule='evenodd' />
+            <svg
+              className='h-5 w-5'
+              viewBox='0 0 20 20'
+              fill='currentColor'
+              aria-hidden='true'
+              focusable='false'
+            >
+              <path
+                fillRule='evenodd'
+                d='M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z'
+                clipRule='evenodd'
+              />
             </svg>
           </button>
           <button

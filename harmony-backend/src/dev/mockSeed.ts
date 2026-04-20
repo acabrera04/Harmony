@@ -81,7 +81,7 @@ const ALICE_ADMIN_HASH =
   'v1$00112233445566778899aabbccddeeff$$2b$12$7dsAhX/sljIDw06Uqxs/WeqI0pnUJn.IcWyoSbO29nuvXbepdwGrq';
 
 export function legacyIdToUuid(legacyId: string): string {
-  const hash = createHash('sha1').update(`${MOCK_SEED_NAMESPACE}:${legacyId}`).digest();
+  const hash = createHash('sha256').update(`${MOCK_SEED_NAMESPACE}:${legacyId}`).digest();
   const bytes = Buffer.from(hash.subarray(0, 16));
   bytes[6] = (bytes[6] & 0x0f) | 0x50;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;

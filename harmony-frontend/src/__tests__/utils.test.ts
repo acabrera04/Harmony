@@ -13,7 +13,7 @@ import {
 describe('utils', () => {
   describe('cn', () => {
     it('merges conditional and conflicting Tailwind classes', () => {
-      expect(cn('px-2 py-1', false && 'hidden', 'px-4')).toBe('py-1 px-4');
+      expect(cn('px-2 py-1', undefined, 'px-4')).toBe('py-1 px-4');
     });
   });
 

@@ -24,6 +24,21 @@ function notifyRefreshQueue(token: string | null) {
   _refreshQueue = [];
 }
 
+function getRequestMetadata(
+  originalRequest: (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined,
+  error: unknown,
+) {
+  const statusCode =
+    typeof (error as { response?: { status?: unknown } })?.response?.status === 'number'
+      ? (error as { response: { status: number } }).response.status
+      : undefined;
+  const method =
+    typeof originalRequest?.method === 'string' ? originalRequest.method.toUpperCase() : undefined;
+  const route = typeof originalRequest?.url === 'string' ? originalRequest.url : undefined;
+
+  return { statusCode, method, route };
+}
+
 export function setTokens(accessToken: string, refreshToken: string): void {
   _accessToken = accessToken;
   if (typeof window !== 'undefined') {
@@ -95,13 +110,7 @@ class ApiClient {
       response => response,
       async error => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-        const statusCode =
-          typeof error.response?.status === 'number' ? error.response.status : undefined;
-        const method =
-          typeof originalRequest?.method === 'string'
-            ? originalRequest.method.toUpperCase()
-            : undefined;
-        const route = typeof originalRequest?.url === 'string' ? originalRequest.url : undefined;
+        const { statusCode, method, route } = getRequestMetadata(originalRequest, error);
 
         if (statusCode === 401 && !originalRequest._retry) {
           const refreshToken = getRefreshToken();

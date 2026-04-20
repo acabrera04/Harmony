@@ -26,7 +26,7 @@ interface RegisteredUser extends AuthTokens {
 }
 
 function createCredentials(label: string) {
-  const suffix = `${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const suffix = `${label}-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
   return {
     email: `auth-flow-${suffix}@example.com`,
     username: `auth_flow_${suffix}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32),

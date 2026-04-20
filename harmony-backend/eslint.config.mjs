@@ -1,9 +1,11 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import prettierConfig from 'eslint-config-prettier';
+import sonarjs from 'eslint-plugin-sonarjs';
 
 const eslintConfig = defineConfig([
   ...tsPlugin.configs['flat/recommended'],
+  sonarjs.configs.recommended,
   {
     files: ['src/**/*.ts', 'tests/**/*.ts'],
     rules: {

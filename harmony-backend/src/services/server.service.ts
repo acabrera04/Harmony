@@ -36,7 +36,7 @@ export function generateSlug(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/[\s]+/g, '-')
+    .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 }
@@ -96,7 +96,10 @@ export const serverService = {
 
   /** Returns only the servers the given user is a member of. */
   async getMemberServers(userId: string, limit = 50): Promise<Server[]> {
-    const memberships = await serverMemberRepository.findByUserIdWithServer(userId, Math.min(limit, 100));
+    const memberships = await serverMemberRepository.findByUserIdWithServer(
+      userId,
+      Math.min(limit, 100),
+    );
     return memberships.map((m) => m.server);
   },
 
@@ -142,13 +145,15 @@ export const serverService = {
       updated = await serverRepository.update(id, data);
     }
 
-    void eventBus.publish(EventChannels.SERVER_UPDATED, {
-      serverId: id,
-      name: updated.name,
-      iconUrl: updated.iconUrl ?? null,
-      description: updated.description ?? null,
-      timestamp: new Date().toISOString(),
-    });
+    eventBus
+      .publish(EventChannels.SERVER_UPDATED, {
+        serverId: id,
+        name: updated.name,
+        iconUrl: updated.iconUrl ?? null,
+        description: updated.description ?? null,
+        timestamp: new Date().toISOString(),
+      })
+      .catch(() => undefined);
 
     return updated;
   },

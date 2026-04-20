@@ -16,6 +16,12 @@ interface VisibilitySectionProps {
   serverSlug: string;
 }
 
+function getSaveButtonLabel(saving: boolean, saved: boolean): string {
+  if (saving) return 'Saving…';
+  if (saved) return 'Saved ✓';
+  return 'Save Changes';
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function VisibilitySection({ server, serverSlug }: VisibilitySectionProps) {
@@ -103,7 +109,7 @@ export function VisibilitySection({ server, serverSlug }: VisibilitySectionProps
             saved ? 'bg-[#3ba55c] hover:bg-[#2d8a4d]' : 'bg-[#5865f2] hover:bg-[#4752c4]',
           )}
         >
-          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Changes'}
+          {getSaveButtonLabel(saving, saved)}
         </button>
         {saveError && (
           <p role='alert' className='text-sm text-red-400'>

@@ -1,6 +1,6 @@
 /**
  * AppLayout — wraps all /channels/* authenticated routes.
- * TODO: add authentication guard here (redirect to login if unauthenticated).
+ * Authentication guard note: the route tree currently relies on page-level auth handling.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;

@@ -47,10 +47,14 @@ async function waitForCondition(check, label, timeoutMs = 30_000) {
 }
 
 async function waitFor(url, predicate, label, timeoutMs = 30_000) {
-  await waitForCondition(async () => {
-    const response = await fetch(url);
-    return predicate(response);
-  }, label, timeoutMs);
+  await waitForCondition(
+    async () => {
+      const response = await fetch(url);
+      return predicate(response);
+    },
+    label,
+    timeoutMs,
+  );
 }
 
 async function verifySeedPreconditions() {
@@ -119,8 +123,7 @@ async function verifySeedPreconditions() {
 
     const authPayload = await loginResponse.json();
     return (
-      typeof authPayload.accessToken === 'string' &&
-      typeof authPayload.refreshToken === 'string'
+      typeof authPayload.accessToken === 'string' && typeof authPayload.refreshToken === 'string'
     );
   }, 'dev admin login fixture');
 }
@@ -154,6 +157,7 @@ async function main() {
     cwd: backendDir,
     env: {
       ...backendEnv(),
+      PATH: process.env.PATH,
       NODE_ENV: 'e2e',
     },
     stdio: 'inherit',
@@ -187,4 +191,4 @@ async function main() {
   });
 }
 
-void main().catch(handleFatal);
+main().catch(handleFatal);

@@ -8,14 +8,14 @@
  *  - ToastStateContext:   toasts array (changes on every push/pop) — used only by ToastContainer
  */
 
-"use client";
+'use client';
 
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type ToastType = "success" | "error" | "info" | "warning";
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface Toast {
   id: string;
@@ -47,6 +47,14 @@ export interface ToastStateContextValue {
 export const ToastActionsContext = createContext<ToastActionsContextValue | null>(null);
 export const ToastStateContext = createContext<ToastStateContextValue | null>(null);
 
+function createToastId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `toast-${crypto.randomUUID()}`;
+  }
+
+  return `toast-${Date.now().toString(36)}`;
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -59,7 +67,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const currentTimers = timers.current;
     return () => {
-      currentTimers.forEach((timer) => clearTimeout(timer));
+      currentTimers.forEach(timer => clearTimeout(timer));
       currentTimers.clear();
     };
   }, []);
@@ -70,7 +78,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       clearTimeout(timer);
       timers.current.delete(id);
     }
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
   // Cancels the auto-dismiss timer without removing the toast — used by ToastItem
@@ -88,13 +96,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       // Normalize duration: coerce to a finite number, clamp to >= 0, default to 3000ms.
       // Guards against NaN / Infinity / negative values that would leave the toast stuck.
       let normalizedDuration =
-        typeof duration === "number" && Number.isFinite(duration) ? duration : 3000;
+        typeof duration === 'number' && Number.isFinite(duration) ? duration : 3000;
       if (normalizedDuration < 0) normalizedDuration = 0;
 
-      const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const id = createToastId();
       const toast: Toast = { id, message, type, duration: normalizedDuration };
 
-      setToasts((prev) => [...prev, toast]);
+      setToasts(prev => [...prev, toast]);
 
       // Only schedule auto-dismiss when duration is positive.
       if (normalizedDuration > 0) {
@@ -102,21 +110,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         timers.current.set(id, timer);
       }
     },
-    [dismissToast]
+    [dismissToast],
   );
 
   // Memoize so the actions context value reference stays stable across re-renders
   // caused by toasts state changes — fulfilling the "no unnecessary re-renders" goal.
   const actionsValue = useMemo(
     () => ({ showToast, dismissToast, cancelAutoDismiss }),
-    [showToast, dismissToast, cancelAutoDismiss]
+    [showToast, dismissToast, cancelAutoDismiss],
   );
 
   return (
     <ToastActionsContext.Provider value={actionsValue}>
-      <ToastStateContext.Provider value={{ toasts }}>
-        {children}
-      </ToastStateContext.Provider>
+      <ToastStateContext.Provider value={{ toasts }}>{children}</ToastStateContext.Provider>
     </ToastActionsContext.Provider>
   );
 }

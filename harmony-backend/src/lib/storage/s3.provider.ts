@@ -43,7 +43,7 @@ export class S3StorageProvider implements StorageProvider {
 
     this.bucket = bucket;
     // Strip trailing slashes so URL joins are consistent
-    this.publicUrl = publicUrl.replace(/\/+$/, '');
+    this.publicUrl = publicUrl.endsWith('/') ? publicUrl.slice(0, -1) : publicUrl;
 
     this.client = new S3Client({
       // R2 requires region 'auto'; any other value is rejected

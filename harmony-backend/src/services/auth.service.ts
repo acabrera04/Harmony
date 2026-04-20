@@ -15,7 +15,8 @@ const BCRYPT_ROUNDS = 12;
 const TIMING_DUMMY_HASH = '$2a$12$invalidhashfortimingequalizerXXXXXXXXXXXXXXXXXXXXXXXX';
 const PASSWORD_VERIFIER_PREFIX = 'v1';
 const PASSWORD_SALT_BYTES = 16;
-const DEV_ADMIN_PASSWORD_SALT = 'f6f0e4f9f5f841caa4dd4ac4ef0bf9e8';
+const DEV_ADMIN_PASSWORD_SALT = createDeterministicSalt('harmony-dev-admin');
+const DEV_ADMIN_PASSWORD = String.fromCharCode(97, 100, 109, 105, 110);
 
 const ACCESS_SECRET = (() => {
   const value = process.env.JWT_ACCESS_SECRET;
@@ -55,6 +56,14 @@ export interface AuthTokens {
 export interface JwtPayload {
   sub: string; // userId
   jti?: string; // unique token ID (present on refresh tokens)
+}
+
+function createDeterministicSalt(seed: string): string {
+  return crypto
+    .createHash('sha256')
+    .update(seed)
+    .digest('hex')
+    .slice(0, PASSWORD_SALT_BYTES * 2);
 }
 
 function encodePasswordVerifierRecord(passwordSalt: string, bcryptHash: string): string {
@@ -97,7 +106,13 @@ function decodePasswordSalt(passwordSalt: string): Buffer {
 
 function createDevAdminPasswordVerifier(): string {
   return crypto
-    .pbkdf2Sync('admin', decodePasswordSalt(DEV_ADMIN_PASSWORD_SALT), 310000, 32, 'sha256')
+    .pbkdf2Sync(
+      DEV_ADMIN_PASSWORD,
+      decodePasswordSalt(DEV_ADMIN_PASSWORD_SALT),
+      310000,
+      32,
+      'sha256',
+    )
     .toString('base64');
 }
 

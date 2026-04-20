@@ -34,7 +34,15 @@
 
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react';
 import type { Channel, ChannelVisibility } from '@/types/channel';
 import type { Message } from '@/types/message';
 import type { User, UserStatus } from '@/types/user';
@@ -47,6 +55,20 @@ const logger = createFrontendLogger({ component: 'use-server-events' });
 
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY_MS = 2_000;
+
+function scheduleReconnect(
+  reconnectCountRef: MutableRefObject<number>,
+  setReconnectKey: Dispatch<SetStateAction<number>>,
+): ReturnType<typeof setTimeout> {
+  reconnectCountRef.current += 1;
+  const delay = RECONNECT_DELAY_MS * reconnectCountRef.current;
+
+  return setTimeout(() => {
+    refreshAccessToken().finally(() => {
+      setReconnectKey(key => key + 1);
+    });
+  }, delay);
+}
 
 export interface UseServerEventsOptions {
   serverId: string;
@@ -351,13 +373,7 @@ export function useServerEvents({
       const attempt = reconnectCountRef.current;
       if (attempt >= MAX_RECONNECT_ATTEMPTS) return;
 
-      reconnectCountRef.current += 1;
-      const delay = RECONNECT_DELAY_MS * reconnectCountRef.current;
-      reconnectTimer = setTimeout(() => {
-        refreshAccessToken().finally(() => {
-          setReconnectKey(k => k + 1);
-        });
-      }, delay);
+      reconnectTimer = scheduleReconnect(reconnectCountRef, setReconnectKey);
     };
 
     return () => {

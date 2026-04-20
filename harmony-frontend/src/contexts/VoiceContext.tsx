@@ -47,6 +47,25 @@ interface JoinResponse {
   participants: VoiceParticipant[];
 }
 
+function getJoinErrorToastMessage(err: unknown): string {
+  const isDeviceError =
+    err instanceof DOMException &&
+    (err.name === 'NotFoundError' ||
+      err.name === 'NotReadableError' ||
+      err.name === 'OverconstrainedError' ||
+      err.name === 'NotAllowedError');
+
+  if (!isDeviceError) {
+    return 'Could not connect to voice channel. Please try again.';
+  }
+
+  if (err instanceof DOMException && err.name === 'NotAllowedError') {
+    return 'Microphone access denied. Click the lock icon in your address bar and allow microphone permission, then try again.';
+  }
+
+  return 'Microphone not found. Check System Settings → Privacy & Security → Microphone and grant access to your browser.';
+}
+
 export interface VoiceContextValue {
   /** Id of the voice channel the user is currently connected to, or null. */
   connectedChannelId: string | null;
@@ -151,7 +170,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
   useEffect(() => {
     if (!serverId || !voiceChannelIdsKey) return;
     const ids = voiceChannelIdsKey.split(',');
-    void Promise.all(
+    Promise.all(
       ids.map(channelId =>
         apiClient
           .trpcQuery<VoiceParticipant[]>('voice.getParticipants', { serverId, channelId })
@@ -165,7 +184,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
             });
           }),
       ),
-    );
+    ).catch(() => undefined);
   }, [serverId, voiceChannelIdsKey]);
 
   const resetVoiceState = useCallback(() => {
@@ -201,7 +220,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
       speakingTimeoutRef.current = null;
     }
     if (audioContextRef.current) {
-      void audioContextRef.current.close();
+      audioContextRef.current.close().catch(() => undefined);
       audioContextRef.current = null;
     }
     analyserRef.current = null;
@@ -486,17 +505,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
           error: err,
         });
         // Distinguish getUserMedia device errors from Twilio server errors for actionable toasts.
-        const isDeviceError =
-          err instanceof DOMException &&
-          (err.name === 'NotFoundError' ||
-            err.name === 'NotReadableError' ||
-            err.name === 'OverconstrainedError' ||
-            err.name === 'NotAllowedError');
-        const toastMessage = isDeviceError
-          ? err instanceof DOMException && err.name === 'NotAllowedError'
-            ? 'Microphone access denied. Click the lock icon in your address bar and allow microphone permission, then try again.'
-            : 'Microphone not found. Check System Settings → Privacy & Security → Microphone and grant access to your browser.'
-          : 'Could not connect to voice channel. Please try again.';
+        const toastMessage = getJoinErrorToastMessage(err);
         showToast({ message: toastMessage, type: 'error' });
         // If voice.join succeeded (refs were written) but Twilio connect failed,
         // notify the backend so Redis state is not left stale.
@@ -558,14 +567,12 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
           setParticipants(prev =>
             prev.map(p => (p.userId === localIdentity ? { ...p, muted: !muted } : p)),
           );
-          if (channelId) {
-            setChannelParticipants(prev => ({
-              ...prev,
-              [channelId]: (prev[channelId] ?? []).map(p =>
-                p.userId === localIdentity ? { ...p, muted: !muted } : p,
-              ),
-            }));
-          }
+          setChannelParticipants(prev => ({
+            ...prev,
+            [channelId]: (prev[channelId] ?? []).map(p =>
+              p.userId === localIdentity ? { ...p, muted: !muted } : p,
+            ),
+          }));
         }
         logger.warn('Voice mute update failed', {
           feature: 'voice',
@@ -629,14 +636,12 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
           setParticipants(prev =>
             prev.map(p => (p.userId === localIdentity ? { ...p, deafened: !deafened } : p)),
           );
-          if (channelId) {
-            setChannelParticipants(prev => ({
-              ...prev,
-              [channelId]: (prev[channelId] ?? []).map(p =>
-                p.userId === localIdentity ? { ...p, deafened: !deafened } : p,
-              ),
-            }));
-          }
+          setChannelParticipants(prev => ({
+            ...prev,
+            [channelId]: (prev[channelId] ?? []).map(p =>
+              p.userId === localIdentity ? { ...p, deafened: !deafened } : p,
+            ),
+          }));
         }
         logger.warn('Voice deafen update failed', {
           feature: 'voice',

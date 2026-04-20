@@ -34,7 +34,7 @@ async function main(): Promise<void> {
 }
 
 if (require.main === module) {
-  void main().catch((error: unknown) => {
+  main().catch((error: unknown) => {
     logger.error({ err: error }, 'Demo seed failed');
     process.exitCode = 1;
   });

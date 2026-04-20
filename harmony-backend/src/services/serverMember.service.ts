@@ -19,7 +19,12 @@ const INCR_WITH_EXPIRE_LUA = `
 
 export async function enforceJoinRateLimit(userId: string): Promise<void> {
   const key = `rl:join:${userId}`;
-  const count = (await redis.eval(INCR_WITH_EXPIRE_LUA, 1, key, String(JOIN_RATE_WINDOW_SECS))) as number;
+  const count = (await redis.eval(
+    INCR_WITH_EXPIRE_LUA,
+    1,
+    key,
+    String(JOIN_RATE_WINDOW_SECS),
+  )) as number;
   if (count > JOIN_RATE_MAX) {
     throw new TRPCError({
       code: 'TOO_MANY_REQUESTS',
@@ -53,7 +58,11 @@ export const serverMemberService = {
    * Add the server owner as an OWNER member. Called when a server is created.
    * Accepts an optional transaction client so callers can include this work in a larger transaction.
    */
-  async addOwner(userId: string, serverId: string, tx?: Prisma.TransactionClient): Promise<ServerMember> {
+  async addOwner(
+    userId: string,
+    serverId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<ServerMember> {
     const run = async (client: Prisma.TransactionClient) => {
       const member = await serverMemberRepository.create(
         { userId, serverId, role: 'OWNER' },
@@ -88,12 +97,14 @@ export const serverMemberService = {
         return created;
       });
 
-      void eventBus.publish(EventChannels.MEMBER_JOINED, {
-        userId,
-        serverId,
-        role: 'MEMBER' as RoleType,
-        timestamp: new Date().toISOString(),
-      });
+      eventBus
+        .publish(EventChannels.MEMBER_JOINED, {
+          userId,
+          serverId,
+          role: 'MEMBER' as RoleType,
+          timestamp: new Date().toISOString(),
+        })
+        .catch(() => undefined);
 
       return member;
     } catch (err) {
@@ -109,9 +120,13 @@ export const serverMemberService = {
    */
   async leaveServer(userId: string, serverId: string): Promise<void> {
     const membership = await serverMemberRepository.findByUserAndServer(userId, serverId);
-    if (!membership) throw new TRPCError({ code: 'NOT_FOUND', message: 'Not a member of this server' });
+    if (!membership)
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Not a member of this server' });
     if (membership.role === 'OWNER') {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Server owner cannot leave. Transfer ownership or delete the server.' });
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Server owner cannot leave. Transfer ownership or delete the server.',
+      });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -119,12 +134,14 @@ export const serverMemberService = {
       await serverRepository.update(serverId, { memberCount: { decrement: 1 } }, tx);
     });
 
-    void eventBus.publish(EventChannels.MEMBER_LEFT, {
-      userId,
-      serverId,
-      reason: 'LEFT',
-      timestamp: new Date().toISOString(),
-    });
+    eventBus
+      .publish(EventChannels.MEMBER_LEFT, {
+        userId,
+        serverId,
+        reason: 'LEFT',
+        timestamp: new Date().toISOString(),
+      })
+      .catch(() => undefined);
   },
 
   /**
@@ -152,7 +169,10 @@ export const serverMemberService = {
     actorId: string,
   ): Promise<ServerMember> {
     if (newRole === 'OWNER') {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot assign OWNER role. Use ownership transfer.' });
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Cannot assign OWNER role. Use ownership transfer.',
+      });
     }
 
     const [actorMembership, targetMembership] = await Promise.all([
@@ -160,18 +180,32 @@ export const serverMemberService = {
       serverMemberRepository.findByUserAndServer(targetUserId, serverId),
     ]);
 
-    if (!actorMembership) throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not a member of this server' });
-    if (!targetMembership) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target user is not a member of this server' });
+    if (!actorMembership)
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not a member of this server' });
+    if (!targetMembership)
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Target user is not a member of this server',
+      });
     if (targetMembership.role === 'OWNER') {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot change the role of the server owner' });
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot change the role of the server owner',
+      });
     }
 
     // Actor must outrank the target's current role and the new role
     if (roleRank(actorMembership.role) >= roleRank(targetMembership.role)) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot change role of a member with equal or higher privilege' });
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot change role of a member with equal or higher privilege',
+      });
     }
     if (roleRank(actorMembership.role) >= roleRank(newRole)) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot assign a role equal to or higher than your own' });
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot assign a role equal to or higher than your own',
+      });
     }
 
     return serverMemberRepository.update(targetUserId, serverId, newRole);
@@ -187,13 +221,21 @@ export const serverMemberService = {
       serverMemberRepository.findByUserAndServer(targetUserId, serverId),
     ]);
 
-    if (!actorMembership) throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not a member of this server' });
-    if (!targetMembership) throw new TRPCError({ code: 'NOT_FOUND', message: 'Target user is not a member of this server' });
+    if (!actorMembership)
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not a member of this server' });
+    if (!targetMembership)
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Target user is not a member of this server',
+      });
     if (targetMembership.role === 'OWNER') {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot remove the server owner' });
     }
     if (roleRank(actorMembership.role) >= roleRank(targetMembership.role)) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot remove a member with equal or higher privilege' });
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot remove a member with equal or higher privilege',
+      });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -201,11 +243,13 @@ export const serverMemberService = {
       await serverRepository.update(serverId, { memberCount: { decrement: 1 } }, tx);
     });
 
-    void eventBus.publish(EventChannels.MEMBER_LEFT, {
-      userId: targetUserId,
-      serverId,
-      reason: 'KICKED',
-      timestamp: new Date().toISOString(),
-    });
+    eventBus
+      .publish(EventChannels.MEMBER_LEFT, {
+        userId: targetUserId,
+        serverId,
+        reason: 'KICKED',
+        timestamp: new Date().toISOString(),
+      })
+      .catch(() => undefined);
   },
 };

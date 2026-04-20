@@ -37,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-sonarjs": "^4.0.3",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "prettier": "^3.8.1",

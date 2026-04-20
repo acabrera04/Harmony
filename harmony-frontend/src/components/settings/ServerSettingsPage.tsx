@@ -35,6 +35,12 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: 'danger-zone', label: 'Danger Zone' },
 ];
 
+function getSaveButtonLabel(saving: boolean, saved: boolean): string {
+  if (saving) return 'Saving…';
+  if (saved) return 'Saved ✓';
+  return 'Save Changes';
+}
+
 // ─── Overview section ─────────────────────────────────────────────────────────
 
 function OverviewSection({
@@ -165,7 +171,7 @@ function OverviewSection({
             saved ? 'bg-[#3ba55c] hover:bg-[#2d8a4d]' : 'bg-[#5865f2] hover:bg-[#4752c4]',
           )}
         >
-          {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Changes'}
+          {getSaveButtonLabel(saving, saved)}
         </button>
         {saveError && (
           <p role='alert' className='text-sm text-red-400'>

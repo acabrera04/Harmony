@@ -19,34 +19,53 @@ import {
 import type { Server, ServerMemberInfo } from '@/types';
 import { requireServerSettingsAccess } from './settings-access';
 
-export async function saveServerSettings(
-  serverSlug: string,
-  patch: Partial<Pick<Server, 'name' | 'description' | 'icon' | 'isPublic'>>,
-): Promise<void> {
-  const server = await requireServerSettingsAccess(serverSlug, 'throw');
+type ServerSettingsPatch = Partial<Pick<Server, 'name' | 'description' | 'icon' | 'isPublic'>>;
 
-  // Build an explicit whitelist so callers cannot sneak in extra fields
-  const sanitizedPatch: Partial<Pick<Server, 'name' | 'description' | 'icon' | 'isPublic'>> = {};
+function sanitizeName(name: unknown): string {
+  if (typeof name !== 'string') throw new Error('Invalid server name');
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Server name cannot be empty');
+  if (trimmed.length > 100) throw new Error('Server name must be 100 characters or fewer.');
+  return trimmed;
+}
+
+function sanitizeTrimmedString(value: unknown, errorMessage: string): string {
+  if (typeof value !== 'string') throw new Error(errorMessage);
+  return value.trim();
+}
+
+function sanitizeServerSettingsPatch(patch: ServerSettingsPatch): ServerSettingsPatch {
+  const sanitizedPatch: ServerSettingsPatch = {};
 
   if (patch.name !== undefined) {
-    if (typeof patch.name !== 'string') throw new Error('Invalid server name');
-    const trimmed = patch.name.trim();
-    if (!trimmed) throw new Error('Server name cannot be empty');
-    if (trimmed.length > 100) throw new Error('Server name must be 100 characters or fewer.');
-    sanitizedPatch.name = trimmed;
+    sanitizedPatch.name = sanitizeName(patch.name);
   }
+
   if (patch.description !== undefined) {
-    if (typeof patch.description !== 'string') throw new Error('Invalid server description');
-    sanitizedPatch.description = patch.description.trim();
+    sanitizedPatch.description = sanitizeTrimmedString(
+      patch.description,
+      'Invalid server description',
+    );
   }
+
   if (patch.icon !== undefined) {
-    if (typeof patch.icon !== 'string') throw new Error('Invalid server icon');
-    sanitizedPatch.icon = patch.icon.trim();
+    sanitizedPatch.icon = sanitizeTrimmedString(patch.icon, 'Invalid server icon');
   }
+
   if (patch.isPublic !== undefined) {
     if (typeof patch.isPublic !== 'boolean') throw new Error('Invalid visibility');
     sanitizedPatch.isPublic = patch.isPublic;
   }
+
+  return sanitizedPatch;
+}
+
+export async function saveServerSettings(
+  serverSlug: string,
+  patch: ServerSettingsPatch,
+): Promise<void> {
+  const server = await requireServerSettingsAccess(serverSlug, 'throw');
+  const sanitizedPatch = sanitizeServerSettingsPatch(patch);
 
   // The backend updateServer takes the server ID, not slug
   await updateServer(server.id, sanitizedPatch);
