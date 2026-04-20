@@ -15,28 +15,26 @@ production deploy authority — only `main` promotes to production.
 4. CI must pass and at least one review must be approved before merge.
 5. Prefer squash-merge for a clean linear history on `main`.
 
-Direct pushes to `main` are blocked for non-admins by branch protection, and
-all normal changes land via pull request. Repository administrators retain
-bypass ability (`enforce_admins: false`) so course staff can land emergency
-hotfixes; admin bypasses should be rare and called out in the PR or an
-equivalent record.
+Direct pushes to `main` are blocked by branch protection, including for
+administrators (`enforce_admins: true`). All changes land via pull request.
 
 ## 2. Branch Protection Rules (`main`)
 
 Configured via GitHub branch protection on the `main` branch:
 
-- **Direct pushes blocked for non-admins** — all normal changes arrive through
-  pull requests. `enforce_admins` is currently `false`, so repository
-  administrators can still push directly when necessary.
+- **Direct pushes blocked** — all changes arrive through pull requests.
+  `enforce_admins` is `true`, so repository administrators are also subject
+  to these rules.
 - **Required pull request reviews** — at least **1** approving review.
-- **Required status checks** (must be green and up to date with `main`):
+- **Required status checks** (must be green before merge):
   - `Backend Lint and Build` — `.github/workflows/ci.yml`
   - `Frontend Lint and Build` — `.github/workflows/ci.yml`
   - `Run Backend Tests` — `.github/workflows/run-backend-tests.yml`
   - `Run Frontend Tests` — `.github/workflows/run-frontend-tests.yml`
   - `Run Integration Tests` — `.github/workflows/run-integration-tests.yml`
-- **Strict status checks** — branches must be up to date with `main` before
-  merge.
+- **Strict status checks disabled** (`required_status_checks.strict: false`)
+  — branches are not required to be up to date with `main` before merge.
+  Rebasing before merge is a team norm, not an enforced rule.
 - **Force pushes disabled** on `main`.
 - **Branch deletion disabled** on `main`.
 
