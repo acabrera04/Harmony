@@ -20,13 +20,14 @@ export interface TwitterCardTags {
 export interface StructuredData {
   '@context': string;
   '@type': string;
-  headline: string;
-  description: string;
+  headline?: string;
+  description?: string;
   author?: object;
   datePublished?: string;
   dateModified?: string;
   mainEntity?: object;
   breadcrumb?: object;
+  [key: string]: unknown;
 }
 
 export interface MetaTagSet {

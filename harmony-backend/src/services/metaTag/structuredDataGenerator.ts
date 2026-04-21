@@ -23,8 +23,8 @@ export const StructuredDataGenerator = {
     };
   },
 
-  // Spec §9.1.5: generateBreadcrumbList(server, channel)
-  generateBreadcrumbList(_server: unknown, channel: ChannelContext): object {
+  // Spec §9.1.5: generateBreadcrumbList(server, channel): StructuredData
+  generateBreadcrumbList(_server: unknown, channel: ChannelContext): StructuredData {
     return {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -33,7 +33,7 @@ export const StructuredDataGenerator = {
           '@type': 'ListItem',
           position: 1,
           name: channel.serverName,
-          item: `${BASE_URL}/s/${channel.serverSlug}`,
+          item: `${BASE_URL}/s/${encodeURIComponent(channel.serverSlug)}`,
         },
         {
           '@type': 'ListItem',
@@ -45,8 +45,8 @@ export const StructuredDataGenerator = {
     };
   },
 
-  // Spec §9.1.5: generateOrganization(server)
-  generateOrganization(_server: unknown): object {
+  // Spec §9.1.5: generateOrganization(server): StructuredData
+  generateOrganization(_server: unknown): StructuredData {
     return {
       '@context': 'https://schema.org',
       '@type': 'Organization',
