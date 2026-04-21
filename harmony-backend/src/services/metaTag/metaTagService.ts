@@ -14,6 +14,7 @@ import type {
   ContentAnalysis,
 } from './types';
 import { createLogger } from '../../lib/logger';
+import { metaTagUpdateQueue } from '../../workers/metaTagUpdate.queue';
 
 const logger = createLogger({ component: 'meta-tag-service' });
 
@@ -98,7 +99,7 @@ export const metaTagService = {
 
   /**
    * Spec-aligned stub: generateMetaTags(channelId, options?).
-   * Full implementation wired by M4 (MetaTagUpdateWorker, issue #356).
+   * Full implementation wired by M4 (MetaTagUpdateWorker, issue #354).
    */
   async generateMetaTags(
     _channelId: string,
@@ -129,7 +130,7 @@ export const metaTagService = {
 
   /**
    * Spec-aligned stub: getOrGenerateCached(channelId).
-   * Full implementation wired by M4 (MetaTagUpdateWorker, issue #356).
+   * Full implementation wired by M4 (MetaTagUpdateWorker, issue #354).
    */
   async getOrGenerateCached(_channelId: string): Promise<MetaTagSet> {
     throw new Error('getOrGenerateCached(channelId) not yet implemented — wired by M4 (issue #356)');
@@ -139,29 +140,28 @@ export const metaTagService = {
     await MetaTagCache.invalidate(channelId);
   },
 
-  // scheduleRegeneration and getRegenerationJobStatus are stubs —
-  // full implementation depends on M4 (worker/queue) from issue #356
   async scheduleRegeneration(
     channelId: string,
-    _priority?: 'high' | 'normal' | 'low',
-    _idempotencyKey?: string,
+    priority: 'high' | 'normal' | 'low' = 'normal',
+    idempotencyKey?: string,
   ): Promise<{ jobId: string; status: 'queued' | 'deduplicated' }> {
-    // Queuing logic wired by M4 MetaTagUpdateWorker
-    return {
-      jobId: `meta-tag-regeneration:${channelId}`,
-      status: 'queued',
-    };
+    return metaTagUpdateQueue.scheduleUpdate({
+      channelId,
+      triggeredBy: 'manual',
+      priority,
+      idempotencyKey,
+    });
   },
 
   async getRegenerationJobStatus(
     _channelId: string,
     _jobId: string,
   ): Promise<MetaTagJobStatus> {
-    throw new Error('getRegenerationJobStatus not yet implemented — wired by M4 (issue #356)');
+    throw new Error('getRegenerationJobStatus not yet implemented — wired by M4 (issue #354)');
   },
 
   async getMetaTagsForPreview(_channelId: string): Promise<MetaTagPreview> {
-    throw new Error('getMetaTagsForPreview(channelId) not yet implemented — wired by M4 (issue #356)');
+    throw new Error('getMetaTagsForPreview(channelId) not yet implemented — wired by M4 (issue #354)');
   },
 
   buildCanonicalUrl(serverSlug: string, channelSlug: string): string {
