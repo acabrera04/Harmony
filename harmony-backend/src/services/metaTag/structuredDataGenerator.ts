@@ -1,15 +1,17 @@
 // CL-C2.5 StructuredDataGenerator — generates JSON-LD structured data
-import type { ChannelContext, StructuredData } from './types';
+import type { ChannelContext, MessageContext, MetaTagSet, StructuredData } from './types';
 
 const BASE_URL = process.env.BASE_URL ?? 'https://harmony.chat';
 
 export const StructuredDataGenerator = {
-  generateDiscussionForum(channel: ChannelContext, title: string, description: string): StructuredData {
+  // Spec §9.1.5: generateDiscussionForum(channel, messages, server)
+  // M2 skeleton: derived from channel context; message/server integration by M4
+  generateDiscussionForum(channel: ChannelContext, _messages: MessageContext[], _server: unknown): StructuredData {
     return {
       '@context': 'https://schema.org',
       '@type': 'DiscussionForumPosting',
-      headline: title,
-      description,
+      headline: `${channel.name} — ${channel.serverName}`,
+      description: `Discussions in #${channel.name} on ${channel.serverName}.`,
       // author and datePublished are stub fields — populated by M4 when message data is available
       author: undefined,
       datePublished: undefined,
@@ -21,7 +23,8 @@ export const StructuredDataGenerator = {
     };
   },
 
-  generateBreadcrumbList(channel: ChannelContext): object {
+  // Spec §9.1.5: generateBreadcrumbList(server, channel)
+  generateBreadcrumbList(_server: unknown, channel: ChannelContext): object {
     return {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -42,21 +45,23 @@ export const StructuredDataGenerator = {
     };
   },
 
-  generateOrganization(): object {
+  // Spec §9.1.5: generateOrganization(server)
+  generateOrganization(_server: unknown): object {
     return {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'Harmony',
-      url: 'https://harmony.chat',
+      url: BASE_URL,
     };
   },
 
-  generateWebPage(channel: ChannelContext, title: string, description: string): StructuredData {
+  // Spec §9.1.5: generateWebPage(channel, metaTags)
+  generateWebPage(channel: ChannelContext, metaTags: MetaTagSet): StructuredData {
     return {
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      headline: title,
-      description,
+      headline: metaTags.title,
+      description: metaTags.description,
       mainEntity: {
         '@type': 'WebPage',
         url: channel.canonicalUrl,

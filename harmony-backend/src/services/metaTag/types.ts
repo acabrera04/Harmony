@@ -74,6 +74,8 @@ export interface MetaTagJobStatus {
   attempts: number;
   startedAt: string | null;
   completedAt: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
 }
 
 export interface ChannelContext {

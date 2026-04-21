@@ -146,17 +146,34 @@ describe('DescriptionGenerator', () => {
     expect(desc.length).toBeLessThanOrEqual(160);
   });
 
-  it('extractKeyPhrases returns non-empty array for non-empty messages', () => {
-    const phrases = DescriptionGenerator.extractKeyPhrases(messages);
+  it('extractKeyPhrases returns non-empty array for non-empty content', () => {
+    const content = messages.map((m) => m.content).join(' ');
+    const phrases = DescriptionGenerator.extractKeyPhrases(content, 5);
     expect(Array.isArray(phrases)).toBe(true);
     expect(phrases.length).toBeGreaterThan(0);
   });
 
-  it('summarizeThread falls back to channel description when no messages', () => {
-    const summary = DescriptionGenerator.summarizeThread([], channel);
-    expect(summary).toContain(channel.name);
-    expect(summary.length).toBeGreaterThanOrEqual(50);
-    expect(summary.length).toBeLessThanOrEqual(160);
+  it('extractKeyPhrases respects maxPhrases limit', () => {
+    const content = messages.map((m) => m.content).join(' ');
+    const phrases = DescriptionGenerator.extractKeyPhrases(content, 2);
+    expect(phrases.length).toBeLessThanOrEqual(2);
+  });
+
+  it('summarizeThread returns empty string for no messages', () => {
+    const summary = DescriptionGenerator.summarizeThread([]);
+    expect(summary).toBe('');
+  });
+
+  it('summarizeThread returns first message content for non-empty messages', () => {
+    const summary = DescriptionGenerator.summarizeThread(messages);
+    expect(summary.length).toBeGreaterThan(0);
+  });
+
+  it('generateFromMessages includes channel info for empty messages', () => {
+    const desc = DescriptionGenerator.generateFromMessages([], channel);
+    expect(desc).toContain(channel.name);
+    expect(desc.length).toBeGreaterThanOrEqual(50);
+    expect(desc.length).toBeLessThanOrEqual(160);
   });
 });
 
@@ -249,6 +266,19 @@ describe('metaTagService', () => {
     const tags = await metaTagService.getOrGenerateCachedFromContext(channel, messages);
     expect(tags.title.length).toBeGreaterThan(0);
     expect(mockCacheService.set).toHaveBeenCalled();
+  });
+
+  it('getOrGenerateCachedFromContext does not cache fallback tags on generation failure', async () => {
+    mockCacheService.get.mockResolvedValue(null);
+    const spy = jest
+      .spyOn(TitleGenerator, 'generateFromThread')
+      .mockImplementation(() => { throw new Error('NLP timeout'); });
+
+    const tags = await metaTagService.getOrGenerateCachedFromContext(channel, messages);
+    spy.mockRestore();
+
+    expect(tags.needsRegeneration).toBe(true);
+    expect(mockCacheService.set).not.toHaveBeenCalled();
   });
 
   it('invalidateCache delegates to MetaTagCache.invalidate', async () => {

@@ -10,6 +10,7 @@ import type {
   MessageContext,
   MetaTagPreview,
   MetaTagJobStatus,
+  ContentAnalysis,
 } from './types';
 import { createLogger } from '../../lib/logger';
 
@@ -29,14 +30,21 @@ function buildFallbackTags(channel: ChannelContext): MetaTagSet {
   const safe = sanitizeChannelContext(channel);
   const title = `${safe.name} — ${safe.serverName}`;
   const description = `Discussions in #${safe.name} on ${safe.serverName}.`;
+  const analysis: ContentAnalysis = {
+    keywords: [],
+    topics: [TitleGenerator.truncateWithEllipsis(title)],
+    summary: DescriptionGenerator.enforceLength(description),
+    sentiment: 'neutral',
+    readingLevel: 'basic',
+  };
   return {
     title: TitleGenerator.truncateWithEllipsis(title),
     description: DescriptionGenerator.enforceLength(description),
     canonical: safe.canonicalUrl,
     robots: 'index, follow',
-    openGraph: OpenGraphGenerator.generateOGTags(safe, title, description),
-    twitter: OpenGraphGenerator.generateTwitterCard(safe, title, description),
-    structuredData: StructuredDataGenerator.generateDiscussionForum(safe, title, description),
+    openGraph: OpenGraphGenerator.generateOGTags(safe, {}, analysis),
+    twitter: OpenGraphGenerator.generateTwitterCard(safe, {}, analysis),
+    structuredData: StructuredDataGenerator.generateDiscussionForum(safe, [], {}),
     keywords: [],
     needsRegeneration: true,
   };
@@ -51,14 +59,17 @@ export const metaTagService = {
     try {
       const title = TitleGenerator.generateFromThread(messages, channel);
       const description = DescriptionGenerator.generateFromMessages(messages, channel);
-      const og = OpenGraphGenerator.generateOGTags(channel, title, description);
-      const twitter = OpenGraphGenerator.generateTwitterCard(channel, title, description, og.ogImage);
-      const structuredData = StructuredDataGenerator.generateDiscussionForum(
-        channel,
-        title,
-        description,
-      );
-      const keywords = DescriptionGenerator.extractKeyPhrases(messages);
+      const keywords = DescriptionGenerator.extractKeyPhrases(messages.map((m) => m.content).join(' '), 5);
+      const analysis: ContentAnalysis = {
+        keywords,
+        topics: [title],
+        summary: description,
+        sentiment: 'neutral',
+        readingLevel: 'basic',
+      };
+      const og = OpenGraphGenerator.generateOGTags(channel, {}, analysis);
+      const twitter = OpenGraphGenerator.generateTwitterCard(channel, {}, analysis, og.ogImage);
+      const structuredData = StructuredDataGenerator.generateDiscussionForum(channel, messages, {});
 
       return {
         title,
@@ -101,7 +112,10 @@ export const metaTagService = {
     if (cached) return cached;
 
     const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
-    await MetaTagCache.set(channel.id, tags, ttl);
+    // Do not cache fallback tags — a transient failure must not poison the cache for the full TTL
+    if (!tags.needsRegeneration) {
+      await MetaTagCache.set(channel.id, tags, ttl);
+    }
     return tags;
   },
 
@@ -134,8 +148,8 @@ export const metaTagService = {
   async getRegenerationJobStatus(
     _channelId: string,
     _jobId: string,
-  ): Promise<MetaTagJobStatus | null> {
-    return null;
+  ): Promise<MetaTagJobStatus> {
+    throw new Error('getRegenerationJobStatus not yet implemented — wired by M4 (issue #356)');
   },
 
   async getMetaTagsForPreview(_channelId: string): Promise<MetaTagPreview> {
