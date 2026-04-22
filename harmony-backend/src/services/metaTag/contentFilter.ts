@@ -3,10 +3,16 @@
 // PII patterns
 const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
 // Covers common formats: (555) 123-4567, 555-123-4567, +1-555-123-4567, 5551234567
+// TODO: tighten this pattern — currently matches digit sequences that are not phone numbers
+// (e.g., long numeric IDs, dates like "2026-04-21"). Consider requiring 10+ digits after
+// stripping separators or using a phone-parsing library. Track as a follow-up issue.
 const PHONE_RE = /(\+?\d[\d\s\-().]{6,}\d)/g;
 const MENTION_RE = /@[\w.]+/g;
 
 // Profanity word list (representative; extend as needed)
+// TODO: this list is bypassable via leetspeak, unicode homoglyphs, or internal spaces.
+// Add a follow-up issue to integrate a more robust profanity detection approach before
+// treating this as complete coverage.
 const PROFANITY_LIST = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'crap', 'damn', 'hell',
   'cunt', 'dick', 'piss', 'cock', 'pussy', 'asshole', 'bullshit',

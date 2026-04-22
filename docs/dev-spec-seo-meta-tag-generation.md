@@ -3012,7 +3012,7 @@ This section needed reprompting to ensure alignment across the data schemas in e
 | Filter Type | Implementation | Purpose |
 |-------------|----------------|---------|
 | PII Detection | Regex for emails, phones, @mentions — `ContentFilter.filterPII` | Prevent personal info in search results |
-| Profanity Filter | Word list + pattern matching, replaced with `***` — `ContentFilter.filterProfanity` | Prevent inappropriate previews |
+| Profanity Filter | Word list + pattern matching, replaced with asterisks matching the word length (e.g., `damn` → `****`) — `ContentFilter.filterProfanity` | Prevent inappropriate previews |
 | Private Mention Redaction | `@mention` → `[user]` via `ContentFilter.filterPII` | Respect user privacy settings |
 | URL Sanitization | Remove internal/private links | Prevent link leakage |
 | HTML Entity Encoding | `ContentFilter.escapeHtml` / `ContentFilter.sanitizeForHead` | Prevent XSS in `<head>` |

@@ -273,4 +273,29 @@ describe('metaTagService — generated tags exclude flagged content (AC-8)', () 
     expect(result).not.toContain('@');
     expect(result).toContain('[email]');
   });
+
+  it('sanitizeCustomOverride blocks tag-splitting profanity bypass', () => {
+    // "f<b>u</b>ck" splits the word across HTML tags — must be caught after stripping tags
+    const result = metaTagService.sanitizeCustomOverride('f<b>u</b>ck this');
+    expect(result).not.toMatch(/fuck/i);
+    expect(result).not.toContain('<');
+    expect(result).not.toContain('>');
+  });
+
+  it('sanitizeCustomOverride blocks tag-splitting email bypass', () => {
+    const result = metaTagService.sanitizeCustomOverride('alice@<b>example</b>.com');
+    expect(result).not.toContain('@');
+    expect(result).not.toContain('<');
+  });
+
+  it('generated keywords do not contain PII fragments', async () => {
+    const messages: MessageContext[] = [
+      { content: 'Email me at secret@corp.com or call 555-123-4567 for support', createdAt: new Date() },
+    ];
+    const tags = await metaTagService.generateMetaTagsFromContext(channel, messages);
+    const keywordStr = tags.keywords.join(' ');
+    expect(keywordStr).not.toContain('secret');
+    expect(keywordStr).not.toContain('corp');
+    expect(keywordStr).not.toContain('555');
+  });
 });
