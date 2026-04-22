@@ -107,6 +107,12 @@ export const metaTagUpdateQueue = {
         return { jobId, status: 'deduplicated' };
       }
 
+      if (state === 'completed' || state === 'failed') {
+        await existingJob.remove();
+        await jobQueue.add(META_TAG_UPDATE_QUEUE_NAME, jobData, addOptions);
+        return { jobId, status: 'queued' };
+      }
+
       logger.info({ jobId, channelId: input.channelId, state }, 'Meta tag update already in flight');
       return { jobId, status: 'deduplicated' };
     }

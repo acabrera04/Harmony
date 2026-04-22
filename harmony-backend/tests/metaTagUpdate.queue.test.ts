@@ -69,4 +69,24 @@ describe('metaTagUpdateQueue.scheduleUpdate', () => {
       }),
     );
   });
+
+  it('requeues work after a prior job completed', async () => {
+    const existingJob = {
+      remove: removeMock,
+      getState: jest.fn().mockResolvedValue('completed'),
+    };
+    getJobMock.mockResolvedValue(existingJob);
+
+    const result = await metaTagUpdateQueue.scheduleUpdate({
+      channelId: 'channel-3',
+      triggeredBy: 'message',
+    });
+
+    expect(removeMock).toHaveBeenCalledTimes(1);
+    expect(addMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      jobId: 'meta-tag-update:channel-3:channel',
+      status: 'queued',
+    });
+  });
 });
