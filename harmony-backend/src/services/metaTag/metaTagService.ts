@@ -2,6 +2,7 @@
 import { createHash } from 'crypto';
 import { Prisma, type GeneratedMetaTags } from '@prisma/client';
 import { prisma } from '../../db/prisma';
+import { redis } from '../../db/redis';
 import { TitleGenerator } from './titleGenerator';
 import { DescriptionGenerator } from './descriptionGenerator';
 import { OpenGraphGenerator } from './openGraphGenerator';
