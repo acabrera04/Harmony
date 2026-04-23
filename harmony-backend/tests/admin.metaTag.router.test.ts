@@ -14,7 +14,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app';
 import type { Express } from 'express';
-import { processRegenerationJob } from '../src/routes/admin.metaTag.router';
+import { processAdminRegenerationJob } from '../src/services/metaTag/metaTagService';
 import type { MetaTagJobStatus } from '../src/services/metaTag/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -573,7 +573,7 @@ describe('processRegenerationJob terminal states (AC-5)', () => {
   it('transitions job to succeeded after successful regeneration', async () => {
     seedQueuedJob(JOB_ID);
 
-    await processRegenerationJob(CHANNEL_ID, JOB_ID);
+    await processAdminRegenerationJob(CHANNEL_ID, JOB_ID);
 
     const stored = redisStore.get(`meta-tag:job:${JOB_ID}`);
     const parsed = JSON.parse(stored!) as MetaTagJobStatus;
@@ -599,7 +599,7 @@ describe('processRegenerationJob terminal states (AC-5)', () => {
       return origSet(key, value);
     });
 
-    await processRegenerationJob(CHANNEL_ID, JOB_ID);
+    await processAdminRegenerationJob(CHANNEL_ID, JOB_ID);
 
     expect(states).toContain('processing');
     expect(states).toContain('succeeded');
@@ -612,7 +612,7 @@ describe('processRegenerationJob terminal states (AC-5)', () => {
     seedQueuedJob(JOB_ID);
     mockPrisma.channel.findUnique.mockResolvedValue(null);
 
-    await processRegenerationJob(CHANNEL_ID, JOB_ID);
+    await processAdminRegenerationJob(CHANNEL_ID, JOB_ID);
 
     const stored = redisStore.get(`meta-tag:job:${JOB_ID}`);
     const parsed = JSON.parse(stored!) as MetaTagJobStatus;
@@ -625,7 +625,7 @@ describe('processRegenerationJob terminal states (AC-5)', () => {
     seedQueuedJob(JOB_ID);
     mockMetaTagRepo.saveGeneratedFields.mockRejectedValue(new Error('DB write error'));
 
-    await processRegenerationJob(CHANNEL_ID, JOB_ID);
+    await processAdminRegenerationJob(CHANNEL_ID, JOB_ID);
 
     const stored = redisStore.get(`meta-tag:job:${JOB_ID}`);
     const parsed = JSON.parse(stored!) as MetaTagJobStatus;
@@ -636,7 +636,7 @@ describe('processRegenerationJob terminal states (AC-5)', () => {
 
   it('GET job endpoint returns succeeded state after processRegenerationJob resolves', async () => {
     seedQueuedJob(JOB_ID);
-    await processRegenerationJob(CHANNEL_ID, JOB_ID);
+    await processAdminRegenerationJob(CHANNEL_ID, JOB_ID);
 
     const res = await request(app)
       .get(`/api/admin/channels/${CHANNEL_ID}/meta-tags/jobs/${JOB_ID}`)
