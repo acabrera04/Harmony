@@ -75,53 +75,6 @@ jest.mock('../src/middleware/rate-limit.middleware', () => ({
 
 type SubscriberHandler = (payload: unknown) => void;
 
-/**
- * Collect SSE data from an open streaming connection for a window of time,
- * optionally triggering an event bus publish mid-stream, then resolve with
- * all received text chunks concatenated.
- */
-function sseGetWithEvent(
-  server: http.Server,
-  path: string,
-  onConnected: (triggerEvent: () => void) => void,
-  timeoutMs = 600,
-): Promise<{ statusCode: number; body: string }> {
-  return new Promise((resolve, reject) => {
-    const addr = server.address();
-    if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
-    const port = addr.port;
-
-    let body = '';
-
-    const req = http.get({ hostname: 'localhost', port, path }, (res) => {
-      const statusCode = res.statusCode ?? 0;
-
-      res.on('data', (chunk: Buffer) => {
-        body += chunk.toString();
-      });
-
-      // Allow caller to trigger the event once connected
-      onConnected(() => {});
-
-      const timer = setTimeout(() => {
-        res.destroy();
-        resolve({ statusCode, body });
-      }, timeoutMs);
-
-      res.on('close', () => {
-        clearTimeout(timer);
-        resolve({ statusCode, body });
-      });
-    });
-
-    req.on('error', reject);
-    req.setTimeout(timeoutMs + 500, () => {
-      req.destroy();
-      reject(new Error('Request timed out'));
-    });
-  });
-}
-
 // ─── Test setup ───────────────────────────────────────────────────────────────
 
 const mockSubscribe = eventBus.subscribe as jest.Mock;
