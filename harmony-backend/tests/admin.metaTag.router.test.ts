@@ -86,6 +86,19 @@ const mockMetaTagRepo = metaTagRepository as unknown as {
   saveGeneratedFields: jest.Mock;
 };
 
+// ─── Audit log service mock ───────────────────────────────────────────────────
+
+jest.mock('../src/services/auditLog.service', () => ({
+  auditLogService: {
+    logChannelAuditAction: jest.fn(),
+  },
+}));
+
+import { auditLogService } from '../src/services/auditLog.service';
+const mockAuditLogService = auditLogService as unknown as {
+  logChannelAuditAction: jest.Mock;
+};
+
 // ─── Redis mock ───────────────────────────────────────────────────────────────
 
 const redisStore = new Map<string, string>();
@@ -158,6 +171,9 @@ beforeEach(() => {
 
   // Default: saveGeneratedFields succeeds
   mockMetaTagRepo.saveGeneratedFields.mockResolvedValue(1);
+
+  // Default: audit log insert succeeds
+  mockAuditLogService.logChannelAuditAction.mockResolvedValue(undefined);
 
   // Default: admin user has permission; non-admin does not
   mockPermission.checkPermission.mockImplementation(async (userId: string) => {
@@ -289,6 +305,23 @@ describe('PUT /api/admin/channels/:channelId/meta-tags', () => {
     expect(mockMetaTagRepo.updateCustomOverrides).toHaveBeenCalledWith(CHANNEL_ID, {
       customTitle: 'My Title',
       customDescription: 'My Desc',
+    });
+    expect(mockAuditLogService.logChannelAuditAction).toHaveBeenCalledWith({
+      channelId: CHANNEL_ID,
+      actorId: ADMIN_USER_ID,
+      action: 'META_TAG_OVERRIDE_UPDATED',
+      oldValue: {
+        customTitle: null,
+        customDescription: null,
+        customOgImage: null,
+      },
+      newValue: {
+        customTitle: 'My Title',
+        customDescription: 'My Desc',
+        customOgImage: null,
+      },
+      ipAddress: '::ffff:127.0.0.1',
+      userAgent: undefined,
     });
   });
 
