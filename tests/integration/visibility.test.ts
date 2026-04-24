@@ -6,7 +6,7 @@
  * Classification: cloud-read-only
  */
 
-import { BACKEND_URL, LOCAL_SEEDS, isCloud, localOnlyDescribe, getCloudFixture } from './env';
+import { BACKEND_URL, FRONTEND_URL, LOCAL_SEEDS, isCloud, localOnlyDescribe, getCloudFixture } from './env';
 import { login } from './helpers/auth';
 
 const serverSlug = LOCAL_SEEDS.server.slug;
@@ -211,12 +211,13 @@ localOnlyDescribe('Visibility Change Impact (local-only)', () => {
   }
 
   test('VIS-8: PUBLIC_INDEXABLE → PUBLIC_NO_INDEX removes from sitemap; channel stays publicly reachable', async () => {
-    await setVisibility('PUBLIC_INDEXABLE');
-    // Confirm channel is in sitemap first
+    expect((await setVisibility('PUBLIC_INDEXABLE')).ok).toBe(true);
+    // Confirm channel is in sitemap before toggling away
     const target = `/c/${serverSlug}/${LOCAL_SEEDS.channels.publicIndexable}`;
-    await pollSitemapFor(target, true);
+    const preSitemap = await pollSitemapFor(target, true);
+    expect(preSitemap).toContain(target);
 
-    await setVisibility('PUBLIC_NO_INDEX');
+    expect((await setVisibility('PUBLIC_NO_INDEX')).ok).toBe(true);
 
     // Sitemap cache must be invalidated — channel should no longer appear
     const sitemap = await pollSitemapFor(target, false);
@@ -230,12 +231,12 @@ localOnlyDescribe('Visibility Change Impact (local-only)', () => {
   });
 
   test('VIS-9: PUBLIC_NO_INDEX → PUBLIC_INDEXABLE adds channel back to sitemap', async () => {
-    await setVisibility('PUBLIC_NO_INDEX');
+    expect((await setVisibility('PUBLIC_NO_INDEX')).ok).toBe(true);
     const target = `/c/${serverSlug}/${LOCAL_SEEDS.channels.publicIndexable}`;
     // Confirm channel is out of sitemap first
     await pollSitemapFor(target, false);
 
-    await setVisibility('PUBLIC_INDEXABLE');
+    expect((await setVisibility('PUBLIC_INDEXABLE')).ok).toBe(true);
 
     // Sitemap cache must be invalidated — channel should reappear
     const sitemap = await pollSitemapFor(target, true);
@@ -248,11 +249,11 @@ localOnlyDescribe('Visibility Change Impact (local-only)', () => {
   });
 
   test('VIS-10: PRIVATE → PUBLIC_NO_INDEX makes channel publicly reachable but excluded from sitemap', async () => {
-    await setVisibility('PRIVATE');
-    await setVisibility('PUBLIC_NO_INDEX');
+    expect((await setVisibility('PRIVATE')).ok).toBe(true);
+    expect((await setVisibility('PUBLIC_NO_INDEX')).ok).toBe(true);
 
     const target = `/c/${serverSlug}/${LOCAL_SEEDS.channels.publicIndexable}`;
-    const sitemap = await getSitemapText();
+    const sitemap = await pollSitemapFor(target, false);
     expect(sitemap).not.toContain(target);
 
     // Channel is publicly accessible but not indexed
@@ -263,8 +264,8 @@ localOnlyDescribe('Visibility Change Impact (local-only)', () => {
   });
 
   test('VIS-11: PRIVATE → PUBLIC_INDEXABLE adds channel to sitemap', async () => {
-    await setVisibility('PRIVATE');
-    await setVisibility('PUBLIC_INDEXABLE');
+    expect((await setVisibility('PRIVATE')).ok).toBe(true);
+    expect((await setVisibility('PUBLIC_INDEXABLE')).ok).toBe(true);
 
     const target = `/c/${serverSlug}/${LOCAL_SEEDS.channels.publicIndexable}`;
     const sitemap = await pollSitemapFor(target, true);
@@ -272,20 +273,20 @@ localOnlyDescribe('Visibility Change Impact (local-only)', () => {
   });
 
   test('VIS-12: PUBLIC_NO_INDEX → PRIVATE removes public access (backend returns 403)', async () => {
-    await setVisibility('PUBLIC_NO_INDEX');
-    await setVisibility('PRIVATE');
+    expect((await setVisibility('PUBLIC_NO_INDEX')).ok).toBe(true);
+    expect((await setVisibility('PRIVATE')).ok).toBe(true);
 
     const channelRes = await getPublicChannelResponse();
     expect(channelRes.status).toBe(403);
 
     const target = `/c/${serverSlug}/${LOCAL_SEEDS.channels.publicIndexable}`;
-    const sitemap = await getSitemapText();
+    const sitemap = await pollSitemapFor(target, false);
     expect(sitemap).not.toContain(target);
   });
 
   test('VIS-13: PUBLIC_INDEXABLE → PRIVATE removes public access and MetaTagCache invalidated (backend returns 403)', async () => {
-    await setVisibility('PUBLIC_INDEXABLE');
-    await setVisibility('PRIVATE');
+    expect((await setVisibility('PUBLIC_INDEXABLE')).ok).toBe(true);
+    expect((await setVisibility('PRIVATE')).ok).toBe(true);
 
     // Backend must deny public access after de-indexing
     const channelRes = await getPublicChannelResponse();
@@ -296,4 +297,37 @@ localOnlyDescribe('Visibility Change Impact (local-only)', () => {
     const sitemap = await pollSitemapFor(target, false);
     expect(sitemap).not.toContain(target);
   });
+
+  test(
+    'VIS-14: frontend SSR emits noindex after PUBLIC_INDEXABLE → PUBLIC_NO_INDEX, restores index,follow after toggle back',
+    async () => {
+      const channelPath = `/c/${serverSlug}/${LOCAL_SEEDS.channels.publicIndexable}`;
+
+      expect((await setVisibility('PUBLIC_INDEXABLE')).ok).toBe(true);
+      expect((await setVisibility('PUBLIC_NO_INDEX')).ok).toBe(true);
+
+      // Poll the frontend SSR page until the noindex directive appears
+      let html = '';
+      for (let i = 0; i < 6; i++) {
+        const res = await fetch(`${FRONTEND_URL}${channelPath}`);
+        html = await res.text();
+        if (/noindex/i.test(html)) break;
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      expect(html).toMatch(/noindex/i);
+      expect(html).not.toMatch(/content=["']index,\s*follow["']/i);
+
+      expect((await setVisibility('PUBLIC_INDEXABLE')).ok).toBe(true);
+
+      // Poll until index, follow is restored
+      for (let i = 0; i < 6; i++) {
+        const res = await fetch(`${FRONTEND_URL}${channelPath}`);
+        html = await res.text();
+        if (/index,\s*follow/i.test(html)) break;
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      expect(html).toMatch(/index,\s*follow/i);
+    },
+    20000,
+  );
 });
