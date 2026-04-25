@@ -44,10 +44,55 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: canonicalUrl,
       ...(publicMetaTags?.ogImage ? { images: [{ url: publicMetaTags.ogImage }] } : {}),
     },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
   };
 }
 
 export default async function GuestChannelPage({ params }: PageProps) {
   const { serverSlug, channelSlug } = await params;
-  return <GuestChannelView serverSlug={serverSlug} channelSlug={channelSlug} />;
+
+  // Fetch data for JSON-LD; React cache deduplicates these within the same render pass
+  const [server, channelResult] = await Promise.all([
+    fetchPublicServer(serverSlug),
+    fetchPublicChannel(serverSlug, channelSlug),
+  ]);
+
+  const channel = channelResult && !channelResult.isPrivate ? channelResult.channel : null;
+  const isIndexable = channel?.visibility === ChannelVisibility.PUBLIC_INDEXABLE;
+
+  const jsonLd = isIndexable
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'DiscussionForumPosting',
+        name: `${channel?.name ?? channelSlug} - ${server?.name ?? serverSlug} | Harmony`,
+        url: getChannelUrl(serverSlug, channelSlug),
+        description:
+          channel?.topic ??
+          server?.description ??
+          `Join ${server?.name ?? serverSlug} on Harmony`,
+        ...(channel?.createdAt && { datePublished: channel.createdAt }),
+      }
+    : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          // Escape </script> breakout sequences per OWASP JSON-LD injection guidance
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd)
+              .replace(/</g, '\\u003c')
+              .replace(/>/g, '\\u003e')
+              .replace(/&/g, '\\u0026'),
+          }}
+        />
+      )}
+      <GuestChannelView serverSlug={serverSlug} channelSlug={channelSlug} />
+    </>
+  );
 }
