@@ -169,7 +169,7 @@ export function createPublicRouter(store?: Store) {
   router.get('/servers/:serverSlug', async (req: Request, res: Response) => {
     try {
       const server = await prisma.server.findUnique({
-        where: { slug: req.params.serverSlug },
+        where: { slug: req.params.serverSlug, isPublic: true },
         select: {
           id: true,
           name: true,
@@ -224,7 +224,7 @@ export function createPublicRouter(store?: Store) {
   router.get('/servers/:serverSlug/channels', async (req: Request, res: Response) => {
     try {
       const server = await prisma.server.findUnique({
-        where: { slug: req.params.serverSlug },
+        where: { slug: req.params.serverSlug, isPublic: true },
         select: { id: true },
       });
 
@@ -276,7 +276,7 @@ export function createPublicRouter(store?: Store) {
   router.get('/servers/:serverSlug/channels/:channelSlug', async (req: Request, res: Response) => {
     try {
       const server = await prisma.server.findUnique({
-        where: { slug: req.params.serverSlug },
+        where: { slug: req.params.serverSlug, isPublic: true },
         select: { id: true },
       });
 
