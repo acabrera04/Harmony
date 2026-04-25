@@ -65,6 +65,9 @@ describe('Guest Public Channel — cloud-read-only', () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toMatch(/noindex/i);
+    // JSON-LD must be absent for non-indexable channels
+    expect(html).not.toMatch(/<script[^>]+type=["']application\/ld\+json["']/i);
+    expect(html).not.toContain('DiscussionForumPosting');
   });
 
   test('GPC-5: messages pagination — page=2 returns page field equal to 2', async () => {
@@ -130,6 +133,9 @@ localOnlyDescribe('Guest Public Channel — local-only (PRIVATE access)', () => 
     // The access-denied component renders a lock icon / login CTA — no channel content
     // We verify absence of channel-specific content. The page should NOT redirect.
     expect(html).not.toMatch(/<meta[^>]+content=["']index,\s*follow["']/i);
+    // JSON-LD must be absent for PRIVATE channels
+    expect(html).not.toMatch(/<script[^>]+type=["']application\/ld\+json["']/i);
+    expect(html).not.toContain('DiscussionForumPosting');
   });
 
   test('GPC-6: public messages endpoint returns 404 for PRIVATE channel', async () => {

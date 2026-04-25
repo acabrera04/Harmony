@@ -73,7 +73,13 @@ export default async function GuestChannelPage({ params }: PageProps) {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          // Escape </script> breakout sequences per OWASP JSON-LD injection guidance
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd)
+              .replace(/</g, '\\u003c')
+              .replace(/>/g, '\\u003e')
+              .replace(/&/g, '\\u0026'),
+          }}
         />
       )}
       <GuestChannelView serverSlug={serverSlug} channelSlug={channelSlug} />
