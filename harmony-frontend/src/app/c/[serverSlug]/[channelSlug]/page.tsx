@@ -12,6 +12,31 @@ interface PageProps {
   params: Promise<{ serverSlug: string; channelSlug: string }>;
 }
 
+function getSeoContent(
+  serverSlug: string,
+  channelSlug: string,
+  server: Awaited<ReturnType<typeof fetchPublicServer>>,
+  channelResult: Awaited<ReturnType<typeof fetchPublicChannel>>,
+  publicMetaTags: Awaited<ReturnType<typeof fetchPublicMetaTags>>,
+) {
+  const channel = channelResult && !channelResult.isPrivate ? channelResult.channel : null;
+  const channelName = channel?.name ?? channelSlug;
+  const serverName = server?.name ?? serverSlug;
+  const title = publicMetaTags?.title ?? `${channelName} - ${serverName} | Harmony`;
+  const description =
+    publicMetaTags?.description ??
+    channel?.topic ??
+    server?.description ??
+    `Join ${serverName} on Harmony`;
+
+  return {
+    channel,
+    serverName,
+    title,
+    description,
+  };
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { serverSlug, channelSlug } = await params;
   const [server, channelResult, publicMetaTags] = await Promise.all([
@@ -20,16 +45,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     fetchPublicMetaTags(serverSlug, channelSlug),
   ]);
 
-  const channel = channelResult && !channelResult.isPrivate ? channelResult.channel : null;
-  const channelName = channel?.name ?? channelSlug;
-  const serverName = server?.name ?? serverSlug;
+  const { channel, title, description } = getSeoContent(
+    serverSlug,
+    channelSlug,
+    server,
+    channelResult,
+    publicMetaTags,
+  );
   const isIndexable = channel?.visibility === ChannelVisibility.PUBLIC_INDEXABLE;
-  const description =
-    publicMetaTags?.description ??
-    channel?.topic ??
-    server?.description ??
-    `Join ${serverName} on Harmony`;
-  const title = publicMetaTags?.title ?? `${channelName} - ${serverName} | Harmony`;
   const canonicalUrl = getChannelUrl(serverSlug, channelSlug);
 
   return {
@@ -56,24 +79,34 @@ export default async function GuestChannelPage({ params }: PageProps) {
   const { serverSlug, channelSlug } = await params;
 
   // Fetch data for JSON-LD; React cache deduplicates these within the same render pass
-  const [server, channelResult] = await Promise.all([
+  const [server, channelResult, publicMetaTags] = await Promise.all([
     fetchPublicServer(serverSlug),
     fetchPublicChannel(serverSlug, channelSlug),
+    fetchPublicMetaTags(serverSlug, channelSlug),
   ]);
 
-  const channel = channelResult && !channelResult.isPrivate ? channelResult.channel : null;
+  const { channel, serverName, title, description } = getSeoContent(
+    serverSlug,
+    channelSlug,
+    server,
+    channelResult,
+    publicMetaTags,
+  );
   const isIndexable = channel?.visibility === ChannelVisibility.PUBLIC_INDEXABLE;
 
   const jsonLd = isIndexable
     ? {
         '@context': 'https://schema.org',
         '@type': 'DiscussionForumPosting',
-        name: `${channel?.name ?? channelSlug} - ${server?.name ?? serverSlug} | Harmony`,
-        url: getChannelUrl(serverSlug, channelSlug),
-        description:
-          channel?.topic ??
-          server?.description ??
-          `Join ${server?.name ?? serverSlug} on Harmony`,
+        'name': title,
+        'headline': title,
+        'url': getChannelUrl(serverSlug, channelSlug),
+        'description': description,
+        'text': description,
+        'author': {
+          '@type': 'Organization',
+          'name': serverName,
+        },
         ...(channel?.createdAt && { datePublished: channel.createdAt }),
       }
     : null;
@@ -82,7 +115,7 @@ export default async function GuestChannelPage({ params }: PageProps) {
     <>
       {jsonLd && (
         <script
-          type="application/ld+json"
+          type='application/ld+json'
           // Escape </script> breakout sequences per OWASP JSON-LD injection guidance
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(jsonLd)
