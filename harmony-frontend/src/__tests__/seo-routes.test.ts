@@ -1,6 +1,7 @@
 import { GET as getRobots } from '@/app/robots.txt/route';
 import { GET as getSitemapIndex } from '@/app/sitemap.xml/route';
-import { GET as getServerSitemap } from '@/app/sitemap/[serverSlug]/route';
+import { GET as getLegacyServerSitemap } from '@/app/sitemap/[serverSlug]/route';
+import { GET as getServerSitemap } from '@/app/sitemap/[serverSlug].xml/route';
 
 const originalEnv = process.env;
 const originalFetch = global.fetch;
@@ -72,7 +73,7 @@ describe('frontend SEO route handlers', () => {
   it('rewrites the sitemap index to the current frontend host', async () => {
     (global.fetch as jest.Mock).mockResolvedValue(
       new Response(
-        '<?xml version="1.0"?><sitemapindex><sitemap><loc>https://harmony.chat/sitemap/harmony-hq</loc></sitemap></sitemapindex>',
+        '<?xml version="1.0"?><sitemapindex><sitemap><loc>https://harmony.chat/sitemap/harmony-hq.xml</loc></sitemap></sitemapindex>',
         { status: 200 },
       ),
     );
@@ -80,10 +81,10 @@ describe('frontend SEO route handlers', () => {
     const response = await getSitemapIndex(new Request('http://localhost:3000/sitemap.xml'));
 
     expect(global.fetch).toHaveBeenCalledWith('https://api.harmony.chat/sitemap-index.xml', {
-      cache: 'no-store',
+      next: { revalidate: 300 },
     });
     await expect(response.text()).resolves.toContain(
-      '<loc>http://localhost:3000/sitemap/harmony-hq</loc>',
+      '<loc>http://localhost:3000/sitemap/harmony-hq.xml</loc>',
     );
     expect(response.headers.get('content-type')).toContain('application/xml');
   });
@@ -96,12 +97,12 @@ describe('frontend SEO route handlers', () => {
       ),
     );
 
-    const response = await getServerSitemap(new Request('https://harmony.chat/sitemap/demo'), {
+    const response = await getServerSitemap(new Request('https://harmony.chat/sitemap/demo.xml'), {
       params: Promise.resolve({ serverSlug: 'demo' }),
     });
 
     expect(global.fetch).toHaveBeenCalledWith('https://api.harmony.chat/sitemap/demo.xml', {
-      cache: 'no-store',
+      next: { revalidate: 300 },
     });
     await expect(response.text()).resolves.toContain(
       '<loc>https://harmony.chat/c/demo/general</loc>',
@@ -116,12 +117,24 @@ describe('frontend SEO route handlers', () => {
       ),
     );
 
-    const response = await getServerSitemap(new Request('http://localhost:3000/sitemap/demo'), {
+    const response = await getServerSitemap(new Request('http://localhost:3000/sitemap/demo.xml'), {
       params: Promise.resolve({ serverSlug: 'demo' }),
     });
 
     await expect(response.text()).resolves.toContain(
       '<loc>http://localhost:3000/c/demo/general</loc>',
     );
+  });
+
+  it('redirects legacy non-.xml sitemap URLs to the canonical endpoint', async () => {
+    const response = await getLegacyServerSitemap(
+      new Request('https://harmony.chat/sitemap/demo'),
+      {
+        params: Promise.resolve({ serverSlug: 'demo' }),
+      },
+    );
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get('location')).toBe('https://harmony.chat/sitemap/demo.xml');
   });
 });
