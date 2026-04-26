@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   metadataBase: getPublicMetadataBase(),
   title: APP_NAME,
   description: APP_DESCRIPTION,
+  verification: {
+    google: 'sUOU9XWdawp5Dst-TvIXIP19maguCss4UTQzbP2PNjo',
+  },
 };
 
 export default function RootLayout({
