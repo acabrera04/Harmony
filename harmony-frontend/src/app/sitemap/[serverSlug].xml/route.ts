@@ -1,5 +1,7 @@
 import { proxySitemapXml } from '@/lib/sitemap-response';
 
+// Next route segment config must stay a literal so the build can statically
+// analyze it; keep this in sync with SITEMAP_REVALIDATE_SECONDS.
 export const revalidate = 300;
 
 interface RouteContext {
@@ -7,9 +9,9 @@ interface RouteContext {
 }
 
 /**
- * Per-server sitemap entrypoints stay on the frontend host and proxy the
- * backend XML generator through a revalidated frontend cache so crawlers never
- * need the API domain as the primary SEO surface.
+ * Per-server sitemap entrypoints stay on the frontend host and serve a cached
+ * proxy of the backend XML generator, revalidating periodically, so crawlers
+ * never need the API domain as the primary SEO surface.
  */
 export async function GET(request: Request, context?: RouteContext) {
   const params = await context?.params;

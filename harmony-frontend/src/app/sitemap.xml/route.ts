@@ -1,5 +1,7 @@
 import { proxySitemapXml } from '@/lib/sitemap-response';
 
+// Next route segment config must stay a literal so the build can statically
+// analyze it; keep this in sync with SITEMAP_REVALIDATE_SECONDS.
 export const revalidate = 300;
 
 /**

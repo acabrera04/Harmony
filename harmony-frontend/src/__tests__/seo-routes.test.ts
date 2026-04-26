@@ -2,6 +2,7 @@ import { GET as getRobots } from '@/app/robots.txt/route';
 import { GET as getSitemapIndex } from '@/app/sitemap.xml/route';
 import { GET as getLegacyServerSitemap } from '@/app/sitemap/[serverSlug]/route';
 import { GET as getServerSitemap } from '@/app/sitemap/[serverSlug].xml/route';
+import { SITEMAP_REVALIDATE_SECONDS } from '@/lib/sitemap-response';
 
 const originalEnv = process.env;
 const originalFetch = global.fetch;
@@ -81,7 +82,7 @@ describe('frontend SEO route handlers', () => {
     const response = await getSitemapIndex(new Request('http://localhost:3000/sitemap.xml'));
 
     expect(global.fetch).toHaveBeenCalledWith('https://api.harmony.chat/sitemap-index.xml', {
-      next: { revalidate: 300 },
+      next: { revalidate: SITEMAP_REVALIDATE_SECONDS },
     });
     await expect(response.text()).resolves.toContain(
       '<loc>http://localhost:3000/sitemap/harmony-hq.xml</loc>',
@@ -102,7 +103,7 @@ describe('frontend SEO route handlers', () => {
     });
 
     expect(global.fetch).toHaveBeenCalledWith('https://api.harmony.chat/sitemap/demo.xml', {
-      next: { revalidate: 300 },
+      next: { revalidate: SITEMAP_REVALIDATE_SECONDS },
     });
     await expect(response.text()).resolves.toContain(
       '<loc>https://harmony.chat/c/demo/general</loc>',

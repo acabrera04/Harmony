@@ -9,8 +9,9 @@ const XML_HEADERS = {
 };
 
 /**
- * Cache sitemap responses at the frontend edge so transient backend failures do
- * not turn every crawler request into a live dependency on the API origin.
+ * Cache sitemap responses via frontend/platform caching so transient backend
+ * failures do not turn every crawler request into a live dependency on the API
+ * origin.
  */
 export async function proxySitemapXml(request: Request, apiPath: string): Promise<Response> {
   let response: Response;
