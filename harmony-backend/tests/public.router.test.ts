@@ -148,6 +148,19 @@ describe('GET /api/public/servers/:serverSlug', () => {
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error');
   });
+
+  it('CWE-862: returns 404 for a private server slug (isPublic filter enforced)', async () => {
+    // Prisma returns null because isPublic: true is in the where clause and server is private
+    mockPrisma.server.findUnique.mockResolvedValue(null);
+
+    const res = await request(app).get('/api/public/servers/private-server');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Server not found');
+    expect(mockPrisma.server.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ isPublic: true }) }),
+    );
+  });
 });
 
 // ─── GET /api/public/servers/:serverSlug/channels ────────────────────────────
@@ -195,6 +208,18 @@ describe('GET /api/public/servers/:serverSlug/channels', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error');
+  });
+
+  it('CWE-862: returns 404 for a private server (isPublic filter enforced on channels endpoint)', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(null);
+
+    const res = await request(app).get('/api/public/servers/private-server/channels');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Server not found');
+    expect(mockPrisma.server.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ isPublic: true }) }),
+    );
   });
 });
 
@@ -788,6 +813,18 @@ describe('GET /api/public/servers/:serverSlug/channels/:channelSlug', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty('error', 'Server not found');
+  });
+
+  it('CWE-862: returns 404 for a private server on channel slug lookup (isPublic filter enforced)', async () => {
+    mockPrisma.server.findUnique.mockResolvedValue(null);
+
+    const res = await request(app).get('/api/public/servers/private-server/channels/general');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error', 'Server not found');
+    expect(mockPrisma.server.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ isPublic: true }) }),
+    );
   });
 
   it('PR-45: returns 404 when the channel slug does not exist within the server', async () => {
