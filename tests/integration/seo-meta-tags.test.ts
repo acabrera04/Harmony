@@ -8,7 +8,7 @@
  *
  * Write-path ACs (AC-3 through AC-7, AC-10) fall back to local evidence because
  * an isolated Sprint 5 staging environment was not provisioned in time. This
- * limitation is documented in docs/deployment/deployment-architecture.md §8.
+ * limitation is documented in docs/deployment/deployment-architecture.md §12.2.
  */
 
 import {
@@ -45,6 +45,7 @@ function extractJsonLd(html: string): Record<string, unknown> | null {
   try {
     return JSON.parse(m[1]) as Record<string, unknown>;
   } catch {
+    console.error('extractJsonLd: failed to parse JSON-LD:', m[1]);
     return null;
   }
 }
@@ -68,10 +69,12 @@ async function pollUntil<T>(
 
 // PII / profanity patterns mirrored from contentFilter.ts for assertion
 const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/;
+const PHONE_RE = /(?:\+?\d[\d\s\-().]{6,}\d)/;
 const MENTION_RE = /@[\w.]+/;
 const PROFANITY_LIST = [
   'fuck', 'shit', 'ass', 'bitch', 'bastard', 'crap', 'cunt',
   'dick', 'piss', 'cock', 'pussy', 'asshole', 'bullshit',
+  'damn', 'hell',
 ];
 const PROFANITY_RE = new RegExp(`\\b(${PROFANITY_LIST.join('|')})\\b`, 'i');
 
@@ -94,25 +97,39 @@ describe('SEO Meta Tags — cloud-read-only', () => {
    * <meta name="description"> tags.
    */
   describe('AC-1: <title> and <meta name="description"> present on public channel pages', () => {
-    test.each(
-      isCloud
-        ? [[LOCAL_SEEDS.channels.publicIndexable]]
-        : LOCAL_SEEDS.channels.publicIndexableAll.map((c) => [c]),
-    )('AC-1: channel "%s" has non-empty <title> and description meta', async (channelSlug) => {
-      // Use the runtime value; beforeAll may have updated serverSlug for cloud
-      const slug = isCloud ? channels[0] : (channelSlug as string);
-      const res = await fetch(`${FRONTEND_URL}/c/${serverSlug}/${slug}`);
-      expect(res.status).toBe(200);
-      const html = await res.text();
+    if (isCloud) {
+      test('AC-1: discovered cloud public channel has non-empty <title> and description meta', async () => {
+        const slug = channels[0];
+        const res = await fetch(`${FRONTEND_URL}/c/${serverSlug}/${slug}`);
+        expect(res.status).toBe(200);
+        const html = await res.text();
 
-      const title = extractTitle(html);
-      expect(title).not.toBeNull();
-      expect((title ?? '').length).toBeGreaterThan(0);
+        const title = extractTitle(html);
+        expect(title).not.toBeNull();
+        expect((title ?? '').length).toBeGreaterThan(0);
 
-      const desc = extractMetaContent(html, 'description');
-      expect(desc).not.toBeNull();
-      expect((desc ?? '').length).toBeGreaterThan(0);
-    });
+        const desc = extractMetaContent(html, 'description');
+        expect(desc).not.toBeNull();
+        expect((desc ?? '').length).toBeGreaterThan(0);
+      });
+    } else {
+      test.each(
+        LOCAL_SEEDS.channels.publicIndexableAll.map((c) => [c]),
+      )('AC-1: channel "%s" has non-empty <title> and description meta', async (channelSlug) => {
+        const slug = channelSlug as string;
+        const res = await fetch(`${FRONTEND_URL}/c/${serverSlug}/${slug}`);
+        expect(res.status).toBe(200);
+        const html = await res.text();
+
+        const title = extractTitle(html);
+        expect(title).not.toBeNull();
+        expect((title ?? '').length).toBeGreaterThan(0);
+
+        const desc = extractMetaContent(html, 'description');
+        expect(desc).not.toBeNull();
+        expect((desc ?? '').length).toBeGreaterThan(0);
+      });
+    }
   });
 
   /**
@@ -210,6 +227,10 @@ describe('SEO Meta Tags — cloud-read-only', () => {
       expect(title).not.toMatch(EMAIL_RE);
       expect(description).not.toMatch(EMAIL_RE);
 
+      // No phone numbers
+      expect(title).not.toMatch(PHONE_RE);
+      expect(description).not.toMatch(PHONE_RE);
+
       // No @mention patterns
       expect(title).not.toMatch(MENTION_RE);
       expect(description).not.toMatch(MENTION_RE);
@@ -231,6 +252,7 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
 
   beforeAll(async () => {
     const tokens = await login(LOCAL_SEEDS.alice.email, LOCAL_SEEDS.alice.password);
+    if (!tokens.accessToken) throw new Error('login failed: no accessToken returned');
     accessToken = tokens.accessToken;
 
     const serverRes = await fetch(`${BACKEND_URL}/api/public/servers/${serverSlug}`);
@@ -250,7 +272,7 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
     if (!accessToken || !channelId || !serverId) return;
 
     // Restore channel visibility to PUBLIC_INDEXABLE
-    await fetch(`${BACKEND_URL}/trpc/channel.setVisibility`, {
+    const visRes = await fetch(`${BACKEND_URL}/trpc/channel.setVisibility`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -258,9 +280,12 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
       },
       body: JSON.stringify({ serverId, channelId, visibility: 'PUBLIC_INDEXABLE' }),
     });
+    if (!visRes.ok) {
+      console.error(`afterAll: setVisibility cleanup failed with status ${visRes.status}`);
+    }
 
     // Clear any custom overrides written during tests
-    await fetch(`${BACKEND_URL}/api/admin/channels/${channelId}/meta-tags`, {
+    const clearRes = await fetch(`${BACKEND_URL}/api/admin/channels/${channelId}/meta-tags`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -268,6 +293,9 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
       },
       body: JSON.stringify({ customTitle: null, customDescription: null, customOgImage: null }),
     });
+    if (!clearRes.ok) {
+      console.error(`afterAll: meta-tag override cleanup failed with status ${clearRes.status}`);
+    }
   });
 
   async function setVisibility(visibility: string): Promise<Response> {
@@ -353,6 +381,7 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
 
   test('AC-5: job status endpoint returns a valid job record', async () => {
     const postRes = await postRegenJob();
+    expect(postRes.status).toBe(202);
     const { jobId } = (await postRes.json()) as { jobId: string };
 
     const statusRes = await fetch(
@@ -374,6 +403,7 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
     'AC-5: job eventually reaches terminal state (succeeded or failed)',
     async () => {
       const postRes = await postRegenJob();
+      expect(postRes.status).toBe(202);
       const { jobId } = (await postRes.json()) as { jobId: string };
 
       const job = await pollUntil(
