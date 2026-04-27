@@ -88,8 +88,7 @@ describe('SEO Meta Tags — cloud-read-only', () => {
     if (!isCloud) return;
     const fixture = await getCloudFixture();
     serverSlug = fixture.serverSlug;
-    // In cloud mode we only have one discovered channel; test what we can
-    channels = [fixture.publicChannel] as const;
+    channels = fixture.publicChannels;
   });
 
   /**
@@ -133,16 +132,15 @@ describe('SEO Meta Tags — cloud-read-only', () => {
   });
 
   /**
-   * Crawler-UA: Googlebot fetch of at least 3 local / 1 cloud public channels
-   * returns non-empty <title>, <meta name="description">, and valid JSON-LD.
+   * Crawler-UA: Googlebot fetch of at least 3 public channels returns non-empty
+   * <title>, <meta name="description">, and valid JSON-LD.
+   *
+   * In cloud mode a single test iterates all discovered channels and asserts
+   * that at least 3 were found — satisfying the full AC-crawler-UA requirement.
+   * In local mode each seed channel runs as a separate test.each case.
    */
   describe('Crawler-UA: Googlebot sees SEO tags and valid JSON-LD', () => {
-    test.each(
-      isCloud
-        ? [[LOCAL_SEEDS.channels.publicIndexable]]
-        : LOCAL_SEEDS.channels.publicIndexableAll.map((c) => [c]),
-    )('Googlebot fetch of "%s" returns title, description, and JSON-LD', async (channelSlug) => {
-      const slug = isCloud ? channels[0] : (channelSlug as string);
+    async function assertCrawlerUa(slug: string): Promise<void> {
       const res = await fetch(`${FRONTEND_URL}/c/${serverSlug}/${slug}`, {
         headers: {
           'User-Agent':
@@ -165,7 +163,25 @@ describe('SEO Meta Tags — cloud-read-only', () => {
       expect(jsonLd?.['@type']).toBe('DiscussionForumPosting');
       expect(typeof (jsonLd as Record<string, unknown>)?.headline).toBe('string');
       expect(((jsonLd as Record<string, unknown>)?.headline as string).length).toBeGreaterThan(0);
-    });
+    }
+
+    if (isCloud) {
+      test(
+        'Crawler-UA: Googlebot fetches ≥3 cloud public channels with SEO tags and JSON-LD',
+        async () => {
+          expect(channels.length).toBeGreaterThanOrEqual(3);
+          for (const slug of channels) {
+            await assertCrawlerUa(slug);
+          }
+        },
+      );
+    } else {
+      test.each(
+        LOCAL_SEEDS.channels.publicIndexableAll.map((c) => [c]),
+      )('Googlebot fetch of "%s" returns title, description, and JSON-LD', async (channelSlug) => {
+        await assertCrawlerUa(channelSlug as string);
+      });
+    }
   });
 
   /**
@@ -256,6 +272,7 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
     accessToken = tokens.accessToken;
 
     const serverRes = await fetch(`${BACKEND_URL}/api/public/servers/${serverSlug}`);
+    if (!serverRes.ok) throw new Error(`Could not fetch server ${serverSlug}: HTTP ${serverRes.status}`);
     const serverBody = (await serverRes.json()) as { id?: string };
     if (!serverBody.id) throw new Error('Could not resolve serverId for harmony-hq');
     serverId = serverBody.id;
@@ -263,6 +280,7 @@ localOnlyDescribe('SEO Meta Tags — local-only (write path)', () => {
     const channelRes = await fetch(
       `${BACKEND_URL}/api/public/servers/${serverSlug}/channels/${LOCAL_SEEDS.channels.publicIndexable}`,
     );
+    if (!channelRes.ok) throw new Error(`Could not fetch channel ${LOCAL_SEEDS.channels.publicIndexable}: HTTP ${channelRes.status}`);
     const channelBody = (await channelRes.json()) as { id?: string };
     if (!channelBody.id) throw new Error('Could not resolve channelId for general channel');
     channelId = channelBody.id;
