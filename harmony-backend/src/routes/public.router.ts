@@ -348,7 +348,21 @@ export function createPublicRouter(store?: Store) {
           return;
         }
 
-        const preview = await metaTagService.getMetaTagsForPreview(channel.id);
+        let preview;
+        try {
+          preview = await metaTagService.getMetaTagsForPreview(channel.id);
+        } catch (previewErr) {
+          logger.warn(
+            {
+              err: previewErr,
+              serverSlug: req.params.serverSlug,
+              channelSlug: req.params.channelSlug,
+              channelId: channel.id,
+            },
+            'Primary public meta tag preview failed; falling back to on-the-fly generation',
+          );
+          preview = await metaTagService.getFallbackMetaTagsForPreview(channel.id);
+        }
         res.set('Cache-Control', 'public, max-age=60');
         res.json({
           ...preview,
