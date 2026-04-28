@@ -146,6 +146,25 @@ describe('authService password transport hardening', () => {
     expect(window.localStorage.getItem('harmony_manual_status:user-1')).toBe('offline');
   });
 
+  it('persists manual idle override when saving settings', async () => {
+    mockedApiClient.trpcMutation.mockResolvedValueOnce({
+      id: 'user-1',
+      email: 'user@example.com',
+      username: 'alice',
+      displayName: 'Alice',
+      avatarUrl: null,
+      publicProfile: true,
+      status: 'IDLE',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      isSystemAdmin: false,
+    });
+
+    const updated = await updateCurrentUser({ status: 'idle' });
+
+    expect(updated.status).toBe('idle');
+    expect(window.localStorage.getItem('harmony_manual_status:user-1')).toBe('idle');
+  });
+
   it('clears manual override when saving online status', async () => {
     window.localStorage.setItem('harmony_manual_status:user-1', 'offline');
     mockedApiClient.trpcMutation.mockResolvedValueOnce({
@@ -174,6 +193,12 @@ describe('authService password transport hardening', () => {
     window.localStorage.setItem('harmony_manual_status:user-1', 'offline');
 
     expect(shouldEnablePresenceTracking({ id: 'user-1', status: 'offline' })).toBe(false);
+  });
+
+  it('disables presence tracking when the current browser stored an idle override', () => {
+    window.localStorage.setItem('harmony_manual_status:user-1', 'idle');
+
+    expect(shouldEnablePresenceTracking({ id: 'user-1', status: 'online' })).toBe(false);
   });
 
   it('disables presence tracking for dnd status', () => {

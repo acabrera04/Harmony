@@ -21,6 +21,12 @@ Shared knowledge base for the Harmony team. Add an entry whenever a mistake is c
 **Date:** 2026-04-28  
 **Caught by:** [Human: user]  
 **Related Issue:** N/A  
+**Mistake / Situation:** I implemented persistent manual overrides for `offline` and `dnd` but left manual `idle` under automatic presence control, so a user-selected idle state would not be preserved.  
+**Rule / Fix:** In Harmony, treat manual `idle`, `dnd`, and `offline` as persistent user-chosen statuses that suppress automatic presence updates until the user explicitly switches back to `online`.
+
+**Date:** 2026-04-28  
+**Caught by:** [Human: user]  
+**Related Issue:** N/A  
 **Mistake / Situation:** I fixed the current user's status mismatch by coercing backend `offline` to `online`, which hid the real difference between an active session and an expired presence lease.  
 **Rule / Fix:** In Harmony, do not fake `online` from a persisted backend `offline` value; establish live presence from a mounted authenticated-session tracker, and let expired leases stay `offline` in member lists.
 

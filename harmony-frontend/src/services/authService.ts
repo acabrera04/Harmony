@@ -79,16 +79,16 @@ function getManualStatusStorageKey(userId: string): string {
 
 export function getManualStatusOverride(
   userId: string,
-): Extract<UserStatus, 'dnd' | 'offline'> | null {
+): Extract<UserStatus, 'idle' | 'dnd' | 'offline'> | null {
   if (typeof window === 'undefined') return null;
   const stored = window.localStorage.getItem(getManualStatusStorageKey(userId));
-  return stored === 'dnd' || stored === 'offline' ? stored : null;
+  return stored === 'idle' || stored === 'dnd' || stored === 'offline' ? stored : null;
 }
 
 function writeManualStatusOverride(userId: string, status: UserStatus | undefined): void {
   if (typeof window === 'undefined') return;
   const key = getManualStatusStorageKey(userId);
-  if (status === 'dnd' || status === 'offline') {
+  if (status === 'idle' || status === 'dnd' || status === 'offline') {
     window.localStorage.setItem(key, status);
     return;
   }
@@ -105,8 +105,9 @@ function applyStoredManualStatusOverride(user: User): User {
 
 export function shouldEnablePresenceTracking(user: Pick<User, 'id' | 'status'> | null): boolean {
   if (!user) return false;
+  if (getManualStatusOverride(user.id)) return false;
   if (user.status === 'dnd') return false;
-  return getManualStatusOverride(user.id) !== 'offline';
+  return true;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
