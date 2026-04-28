@@ -12,6 +12,8 @@ import { cn, getUserErrorMessage } from '@/lib/utils';
 import { saveServerSettings, deleteServerAction } from '@/app/settings/[serverSlug]/actions';
 import { MembersSection } from '@/components/settings/MembersSection';
 import { VisibilitySection } from '@/components/settings/VisibilitySection';
+import { PermissionsSection } from '@/components/settings/PermissionsSection';
+import type { PermissionMatrix } from '@/components/settings/PermissionsSection';
 import type { Server } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -25,12 +27,13 @@ const BG = {
 
 // ─── Sidebar sections ─────────────────────────────────────────────────────────
 
-type Section = 'overview' | 'members' | 'privacy' | 'danger-zone';
+type Section = 'overview' | 'members' | 'privacy' | 'permissions' | 'danger-zone';
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'members', label: 'Members' },
   { id: 'privacy', label: 'Privacy' },
+  { id: 'permissions', label: 'Permissions' },
   { id: 'danger-zone', label: 'Danger Zone' },
 ];
 
@@ -254,6 +257,7 @@ export interface ServerSettingsPageProps {
   server: Server;
   serverSlug: string;
   canDeleteServer?: boolean;
+  permissionMatrix?: PermissionMatrix;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -262,6 +266,7 @@ export function ServerSettingsPage({
   server,
   serverSlug,
   canDeleteServer = false,
+  permissionMatrix = {},
 }: ServerSettingsPageProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('overview');
@@ -382,6 +387,9 @@ export function ServerSettingsPage({
           {activeSection === 'members' && <MembersSection serverSlug={serverSlug} />}
           {activeSection === 'privacy' && (
             <VisibilitySection server={server} serverSlug={serverSlug} />
+          )}
+          {activeSection === 'permissions' && (
+            <PermissionsSection matrix={permissionMatrix} />
           )}
           {activeSection === 'danger-zone' &&
             (canDeleteServer ? (
