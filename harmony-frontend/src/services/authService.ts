@@ -48,6 +48,8 @@ interface BackendUser {
   isSystemAdmin?: boolean;
 }
 
+const MANUAL_STATUS_KEY_PREFIX = 'harmony_manual_status';
+
 // ─── Mapping helpers ──────────────────────────────────────────────────────────
 
 /** Convert backend uppercase UserStatus to frontend lowercase. */
@@ -71,6 +73,42 @@ function mapBackendUser(b: BackendUser): User {
   };
 }
 
+function getManualStatusStorageKey(userId: string): string {
+  return `${MANUAL_STATUS_KEY_PREFIX}:${userId}`;
+}
+
+function readManualStatusOverride(userId: string): Extract<UserStatus, 'dnd' | 'offline'> | null {
+  if (typeof window === 'undefined') return null;
+  const stored = window.localStorage.getItem(getManualStatusStorageKey(userId));
+  return stored === 'dnd' || stored === 'offline' ? stored : null;
+}
+
+function writeManualStatusOverride(userId: string, status: UserStatus | undefined): void {
+  if (typeof window === 'undefined') return;
+  const key = getManualStatusStorageKey(userId);
+  if (status === 'dnd' || status === 'offline') {
+    window.localStorage.setItem(key, status);
+    return;
+  }
+  window.localStorage.removeItem(key);
+}
+
+function applyCurrentUserStatusPolicy(user: User): User {
+  const manualOverride = readManualStatusOverride(user.id);
+  if (manualOverride) {
+    return { ...user, status: manualOverride };
+  }
+
+  // Backend users default to OFFLINE in the database. For the current signed-in
+  // browser session, treat that default as "not yet initialized" and show ONLINE
+  // unless the user explicitly chose a manual status override.
+  if (user.status === 'offline') {
+    return { ...user, status: 'online' };
+  }
+
+  return user;
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 /**
@@ -84,7 +122,7 @@ export async function getCurrentUser(): Promise<User | null> {
   if (!getAccessToken() && !getRefreshToken()) return null;
   try {
     const user = await apiClient.trpcQuery<BackendUser>('user.getCurrentUser');
-    return mapBackendUser(user);
+    return applyCurrentUserStatusPolicy(mapBackendUser(user));
   } catch {
     return null;
   }
@@ -109,7 +147,7 @@ export async function login(email: string, password: string): Promise<User> {
   setTokens(tokens.accessToken, tokens.refreshToken);
 
   const user = await apiClient.trpcQuery<BackendUser>('user.getCurrentUser');
-  return mapBackendUser(user);
+  return applyCurrentUserStatusPolicy(mapBackendUser(user));
 }
 
 /**
@@ -142,7 +180,7 @@ export async function register(
     user = await apiClient.trpcMutation<BackendUser>('user.updateUser', { displayName });
   }
 
-  return mapBackendUser(user);
+  return applyCurrentUserStatusPolicy(mapBackendUser(user));
 }
 
 /**
@@ -175,7 +213,11 @@ export async function updateCurrentUser(
   }
 
   const updated = await apiClient.trpcMutation<BackendUser>('user.updateUser', input);
-  return mapBackendUser(updated);
+  const mapped = mapBackendUser(updated);
+  if (patch.status !== undefined) {
+    writeManualStatusOverride(mapped.id, patch.status);
+  }
+  return applyCurrentUserStatusPolicy(mapped);
 }
 
 /**

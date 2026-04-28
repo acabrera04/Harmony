@@ -163,6 +163,7 @@ export function HarmonyShell({
     isAuthenticated,
     isLoading: isAuthLoading,
     isAdmin: checkIsAdmin,
+    setLocalUserStatus,
   } = useAuth();
 
   const router = useRouter();
@@ -323,10 +324,24 @@ export function HarmonyShell({
   const handleOwnPresenceChanged = useCallback(
     (status: Extract<UserStatus, 'online' | 'idle'>) => {
       if (!authUser?.id) return;
+      setLocalUserStatus(status);
       setLocalMembers(prev => prev.map(m => (m.id === authUser.id ? { ...m, status } : m)));
     },
-    [authUser],
+    [authUser, setLocalUserStatus],
   );
+
+  const authUserStatusKey = authUser ? `${authUser.id}:${authUser.status}:${authUser.role}` : null;
+  const [prevAuthUserStatusKey, setPrevAuthUserStatusKey] = useState(authUserStatusKey);
+  if (authUserStatusKey !== prevAuthUserStatusKey) {
+    setPrevAuthUserStatusKey(authUserStatusKey);
+    if (authUser?.id) {
+      setLocalMembers(prev =>
+        prev.map(m =>
+          m.id === authUser.id ? { ...m, status: authUser.status, role: authUser.role } : m,
+        ),
+      );
+    }
+  }
 
   // ── Real-time visibility changes ──────────────────────────────────────────
 
@@ -391,7 +406,10 @@ export function HarmonyShell({
     enabled: isAuthenticated,
   });
 
-  usePresenceTracker(isAuthenticated, handleOwnPresenceChanged);
+  usePresenceTracker(
+    isAuthenticated && authUser?.status !== 'dnd' && authUser?.status !== 'offline',
+    handleOwnPresenceChanged,
+  );
 
   // #c10/#c23: single global Ctrl+K / Cmd+K handler — SearchModal no longer needs its own
   useEffect(() => {

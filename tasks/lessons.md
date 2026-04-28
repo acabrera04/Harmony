@@ -18,6 +18,12 @@ Shared knowledge base for the Harmony team. Add an entry whenever a mistake is c
 
 <!-- Most recent entries at the top -->
 
+**Date:** 2026-04-28  
+**Caught by:** [Human: user]  
+**Related Issue:** N/A  
+**Mistake / Situation:** I let the current user's manual status shown in settings diverge from the sidebar presence state, and I treated the backend's default `OFFLINE` value as a real user choice.  
+**Rule / Fix:** In Harmony, the signed-in user's settings view and sidebar row must share the same effective status source; treat the database default `OFFLINE` status as `ONLINE` for the active session unless the user explicitly saved a manual override such as `dnd` or `offline`.
+
 **Date:** 2026-04-23  
 **Caught by:** [Human: user]  
 **Related Issue:** #354  

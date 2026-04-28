@@ -22,6 +22,7 @@ export interface AuthContextValue {
   ) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<Pick<User, 'displayName' | 'status'>>) => Promise<void>;
+  setLocalUserStatus: (status: User['status']) => void;
   /**
    * Returns true if the current user has admin-level access.
    * Pass `serverOwnerId` to check ownership of a specific server — this is the
@@ -92,6 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }, []);
 
+  const setLocalUserStatus = useCallback((status: User['status']) => {
+    setUser(prev => (prev ? { ...prev, status } : prev));
+  }, []);
+
   const isAdmin = useCallback(
     (serverOwnerId?: string) => {
       if (!user) return false;
@@ -111,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     updateUser,
+    setLocalUserStatus,
     isAdmin,
   };
 
