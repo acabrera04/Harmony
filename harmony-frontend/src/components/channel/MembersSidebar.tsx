@@ -1,6 +1,6 @@
 /**
  * Channel Component: MembersSidebar
- * Right-side panel listing server members grouped by role with status indicators.
+ * Right-side panel listing server members with Discord-style online/offline sections.
  * Toggleable from TopBar; renders as an overlay on mobile.
  * Ref: dev-spec-guest-public-channel-view.md — C1.7 MembersSidebar
  */
@@ -33,42 +33,39 @@ function StatusDot({ status }: { status: UserStatus }) {
 
 const ROLE_ORDER: UserRole[] = ['owner', 'admin', 'moderator', 'member', 'guest'];
 
-const ROLE_LABEL: Record<UserRole, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  moderator: 'Moderator',
-  member: 'Members',
-  guest: 'Guests',
+const ONLINE_STATUSES: UserStatus[] = ['online', 'idle', 'dnd'];
+
+type MemberSection = {
+  key: 'online' | 'offline';
+  label: 'Online' | 'Offline';
+  users: User[];
 };
 
-// ─── Group members by role, online-first within each group ───────────────────
+function roleRank(role: UserRole): number {
+  return ROLE_ORDER.indexOf(role);
+}
 
-function groupMembers(members: User[]): { role: UserRole; users: User[] }[] {
-  const map = new Map<UserRole, User[]>();
+function compareMembers(a: User, b: User): number {
+  const roleDelta = roleRank(a.role) - roleRank(b.role);
+  if (roleDelta !== 0) return roleDelta;
 
-  for (const user of members) {
-    const group = map.get(user.role) ?? [];
-    group.push(user);
-    map.set(user.role, group);
-  }
+  const aName = (a.displayName ?? a.username).toLowerCase();
+  const bName = (b.displayName ?? b.username).toLowerCase();
+  return aName.localeCompare(bName);
+}
 
-  // Within each group: online/idle/dnd first, offline last
-  const ONLINE_STATUSES: UserStatus[] = ['online', 'idle', 'dnd'];
-  for (const [role, users] of map) {
-    map.set(
-      role,
-      users.sort((a, b) => {
-        const aOnline = ONLINE_STATUSES.includes(a.status) ? 0 : 1;
-        const bOnline = ONLINE_STATUSES.includes(b.status) ? 0 : 1;
-        return aOnline - bOnline;
-      }),
-    );
-  }
+function groupMembers(members: User[]): MemberSection[] {
+  const onlineUsers = members
+    .filter(member => ONLINE_STATUSES.includes(member.status))
+    .sort(compareMembers);
+  const offlineUsers = members.filter(member => member.status === 'offline').sort(compareMembers);
 
-  return ROLE_ORDER.filter(r => map.has(r)).map(role => ({
-    role,
-    users: map.get(role)!,
-  }));
+  const sections: MemberSection[] = [
+    { key: 'online', label: 'Online', users: onlineUsers },
+    { key: 'offline', label: 'Offline', users: offlineUsers },
+  ];
+
+  return sections.filter(section => section.users.length > 0);
 }
 
 // ─── Member row ───────────────────────────────────────────────────────────────
@@ -170,10 +167,10 @@ export function MembersSidebar({ members, isOpen, onClose }: MembersSidebarProps
 
         {/* Member groups */}
         <div className='flex-1 overflow-y-auto p-3'>
-          {groups.map(({ role, users }) => (
-            <div key={role} className='mb-4'>
+          {groups.map(({ key, label, users }) => (
+            <div key={key} className='mb-4'>
               <p className='mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400'>
-                {ROLE_LABEL[role]} — {users.length}
+                {label} — {users.length}
               </p>
               <ul className='list-none space-y-0.5'>
                 {users.map(user => (
