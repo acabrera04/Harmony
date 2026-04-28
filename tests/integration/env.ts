@@ -90,7 +90,13 @@ export const CLOUD_KNOWN = {
 export type CloudFixture = {
   serverId?: string;
   serverSlug: string;
+  /** First/primary public channel slug (backwards-compat shorthand). */
   publicChannel: string;
+  /**
+   * All discovered public channel slugs for this server (up to 3).
+   * AC-crawler-UA requires testing at least 3 channels in cloud mode.
+   */
+  publicChannels: readonly string[];
 };
 
 let cloudFixturePromise: Promise<CloudFixture> | null = null;
@@ -116,13 +122,17 @@ async function resolveCloudFixtureFromPublicApi(): Promise<CloudFixture> {
     const channelsBody = (await channelsRes.json()) as {
       channels?: Array<{ slug?: string }>;
     };
-    const publicChannel = channelsBody.channels?.find((channel) => channel.slug)?.slug;
-    if (!publicChannel) continue;
+    const publicChannels = (channelsBody.channels ?? [])
+      .filter((ch): ch is { slug: string } => typeof ch.slug === 'string' && ch.slug.length > 0)
+      .slice(0, 3)
+      .map((ch) => ch.slug);
+    if (!publicChannels.length) continue;
 
     return {
       serverId: server.id,
       serverSlug: server.slug,
-      publicChannel,
+      publicChannel: publicChannels[0],
+      publicChannels,
     };
   }
 
@@ -136,15 +146,22 @@ export async function getCloudFixture(): Promise<CloudFixture> {
     return {
       serverSlug: LOCAL_SEEDS.server.slug,
       publicChannel: LOCAL_SEEDS.channels.publicIndexable,
+      publicChannels: LOCAL_SEEDS.channels.publicIndexableAll,
     };
   }
 
   const envServerSlug = process.env.CLOUD_TEST_SERVER_SLUG;
   const envPublicChannel = process.env.CLOUD_TEST_PUBLIC_CHANNEL;
   if (envServerSlug && envPublicChannel) {
+    // CLOUD_TEST_PUBLIC_CHANNELS is a comma-separated list of channel slugs for
+    // the 3-channel crawler-UA requirement. Falls back to the single-channel var.
+    const envPublicChannels = process.env.CLOUD_TEST_PUBLIC_CHANNELS
+      ? process.env.CLOUD_TEST_PUBLIC_CHANNELS.split(',').map((s) => s.trim()).filter(Boolean)
+      : [envPublicChannel];
     return {
       serverSlug: envServerSlug,
       publicChannel: envPublicChannel,
+      publicChannels: envPublicChannels,
       serverId: process.env.CLOUD_TEST_SERVER_ID,
     };
   }

@@ -24,10 +24,11 @@
 # GitHub Actions environment. Configure these environment-scoped settings:
 #   vars.CLOUD_TEST_BACKEND_URL    required (deployed backend base URL)
 #   vars.CLOUD_TEST_FRONTEND_URL   required (deployed frontend base URL)
-#   vars.CLOUD_TEST_SERVER_SLUG    optional (defaults to test code fallback)
-#   vars.CLOUD_TEST_PUBLIC_CHANNEL optional (defaults to test code fallback)
-#   vars.CLOUD_TEST_SERVER_ID      optional (enables authenticated SSE smoke)
-#   secrets.CLOUD_TEST_ACCESS_TOKEN optional (enables authenticated smoke cases)
+#   vars.CLOUD_TEST_SERVER_SLUG      optional (defaults to test code fallback)
+#   vars.CLOUD_TEST_PUBLIC_CHANNEL   optional (defaults to test code fallback)
+#   vars.CLOUD_TEST_PUBLIC_CHANNELS  optional (comma-separated list for 3-channel crawler-UA AC; defaults to CLOUD_TEST_PUBLIC_CHANNEL)
+#   vars.CLOUD_TEST_SERVER_ID        optional (enables authenticated SSE smoke)
+#   secrets.CLOUD_TEST_ACCESS_TOKEN  optional (enables authenticated smoke cases)
 #
 # Environment contract reference: docs/deployment/deployment-architecture.md
 # Replica-sensitive exclusions: docs/deployment/replica-readiness-audit.md
@@ -214,7 +215,15 @@ jobs:
           TEST_TARGET: local
           BACKEND_URL: http://localhost:4000
           FRONTEND_URL: http://localhost:3000
-        run: npm test
+        run: npm test 2>&1 | tee /tmp/integration-test-output.log; exit ${PIPESTATUS[0]}
+
+      - name: Upload integration test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-output
+          path: /tmp/integration-test-output.log
+          retention-days: 7
 
       - name: Upload service logs on failure
         if: failure()
@@ -238,6 +247,7 @@ jobs:
       FRONTEND_URL: ${{ vars.CLOUD_TEST_FRONTEND_URL }}
       CLOUD_TEST_SERVER_SLUG: ${{ vars.CLOUD_TEST_SERVER_SLUG }}
       CLOUD_TEST_PUBLIC_CHANNEL: ${{ vars.CLOUD_TEST_PUBLIC_CHANNEL }}
+      CLOUD_TEST_PUBLIC_CHANNELS: ${{ vars.CLOUD_TEST_PUBLIC_CHANNELS }}
       CLOUD_TEST_SERVER_ID: ${{ vars.CLOUD_TEST_SERVER_ID }}
       CLOUD_TEST_ACCESS_TOKEN: ${{ secrets.CLOUD_TEST_ACCESS_TOKEN }}
 
