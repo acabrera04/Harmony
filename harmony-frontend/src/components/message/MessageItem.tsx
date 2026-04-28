@@ -284,6 +284,7 @@ export function MessageItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [isSaving, setIsSaving] = useState(false);
+  const [localContent, setLocalContent] = useState<string | undefined>(undefined);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Render-phase derived-state reset: when the avatar URL changes (including A→B→A),
@@ -299,24 +300,33 @@ export function MessageItem({
   if (!isEditing && prevContent !== message.content) {
     setPrevContent(message.content);
     setEditContent(message.content);
+    if (localContent !== undefined) setLocalContent(undefined);
   }
 
   const isOwnMessage = !!user && user.id === message.author.id;
 
   const handleEditClick = useCallback(() => {
-    setEditContent(message.content);
+    const current = localContent ?? message.content;
+    setEditContent(current);
     setIsEditing(true);
-    setTimeout(() => editTextareaRef.current?.focus(), 0);
-  }, [message.content]);
+    setTimeout(() => {
+      const el = editTextareaRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }, 0);
+  }, [localContent, message.content]);
 
   const handleEditCancel = useCallback(() => {
     setIsEditing(false);
-    setEditContent(message.content);
-  }, [message.content]);
+    setEditContent(localContent ?? message.content);
+  }, [localContent, message.content]);
 
   const handleEditSave = useCallback(async () => {
     const trimmed = editContent.trim();
-    if (!trimmed || trimmed === message.content || !serverId) {
+    const currentContent = localContent ?? message.content;
+    if (!trimmed || trimmed === currentContent || !serverId) {
       setIsEditing(false);
       return;
     }
@@ -325,13 +335,14 @@ export function MessageItem({
     setIsSaving(false);
     if (result.ok) {
       setIsEditing(false);
+      setLocalContent(result.message.content);
     } else {
       const msg = result.forbidden
         ? "You don't have permission to edit this message."
         : 'Failed to edit message. Please try again.';
       showToast({ message: msg, type: 'error' });
     }
-  }, [editContent, message.content, message.id, serverId, showToast]);
+  }, [editContent, localContent, message.content, message.id, serverId, showToast]);
 
   const handleEditKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -415,8 +426,8 @@ export function MessageItem({
             editUi
           ) : (
             <p className='whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
-              {message.content}
-              {message.editedAt && <span className='ml-1 text-[10px] text-gray-500'>(edited)</span>}
+              {localContent ?? message.content}
+              {(message.editedAt || localContent !== undefined) && <span className='ml-1 text-[10px] text-gray-500'>(edited)</span>}
             </p>
           )}
           <AttachmentList attachments={message.attachments} />
@@ -456,13 +467,13 @@ export function MessageItem({
           <span className='text-[11px] text-gray-400'>
             {formatMessageTimestamp(message.timestamp)}
           </span>
-          {message.editedAt && <span className='text-[10px] text-gray-500'>(edited)</span>}
+          {(message.editedAt || localContent !== undefined) && <span className='text-[10px] text-gray-500'>(edited)</span>}
         </div>
         {isEditing ? (
           editUi
         ) : (
           <p className='mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
-            {message.content}
+            {localContent ?? message.content}
           </p>
         )}
         <AttachmentList attachments={message.attachments} />
