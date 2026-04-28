@@ -20,6 +20,13 @@ const MEMBERS: User[] = [
     status: 'online',
   },
   {
+    id: '5',
+    username: 'admin-online',
+    displayName: 'Admin Online',
+    role: 'admin',
+    status: 'online',
+  },
+  {
     id: '2',
     username: 'member-idle',
     displayName: 'Member Idle',
@@ -46,28 +53,57 @@ describe('MembersSidebar', () => {
   it('separates online and offline users into distinct sections', () => {
     render(<MembersSidebar members={MEMBERS} isOpen />);
 
-    expect(screen.getByText('Online — 2')).toBeInTheDocument();
+    expect(screen.getByText('Online — 3')).toBeInTheDocument();
     expect(screen.getByText('Offline — 2')).toBeInTheDocument();
-    expect(screen.queryByText('Members — 1')).not.toBeInTheDocument();
+    expect(screen.getByText('Owners — 1')).toBeInTheDocument();
+    expect(screen.getAllByText('Admins — 1')).toHaveLength(2);
+    expect(screen.getByText('Members — 1')).toBeInTheDocument();
+    expect(screen.getByText('Guests — 1')).toBeInTheDocument();
   });
 
-  it('keeps role priority within each section', () => {
+  it('separates each presence section by role priority', () => {
     render(<MembersSidebar members={MEMBERS} isOpen />);
 
-    const onlineHeading = screen.getByText('Online — 2');
+    const onlineHeading = screen.getByText('Online — 3');
     const offlineHeading = screen.getByText('Offline — 2');
-    const onlineList = onlineHeading.nextElementSibling;
-    const offlineList = offlineHeading.nextElementSibling;
+    const onlineSection = onlineHeading.parentElement;
+    const offlineSection = offlineHeading.parentElement;
 
-    expect(onlineList).not.toBeNull();
-    expect(offlineList).not.toBeNull();
+    expect(onlineSection).not.toBeNull();
+    expect(offlineSection).not.toBeNull();
 
-    const onlineRows = within(onlineList as HTMLElement).getAllByRole('listitem');
-    const offlineRows = within(offlineList as HTMLElement).getAllByRole('listitem');
+    const onlineOwnersHeading = within(onlineSection as HTMLElement).getByText('Owners — 1');
+    const onlineAdminsHeading = within(onlineSection as HTMLElement).getByText('Admins — 1');
+    const onlineMembersHeading = within(onlineSection as HTMLElement).getByText('Members — 1');
+    const offlineAdminsHeading = within(offlineSection as HTMLElement).getByText('Admins — 1');
+    const offlineGuestsHeading = within(offlineSection as HTMLElement).getByText('Guests — 1');
 
-    expect(onlineRows[0]).toHaveTextContent('Owner Online');
-    expect(onlineRows[1]).toHaveTextContent('Member Idle');
-    expect(offlineRows[0]).toHaveTextContent('Admin Offline');
-    expect(offlineRows[1]).toHaveTextContent('Guest Offline');
+    const onlineOwnersList = onlineOwnersHeading.nextElementSibling;
+    const onlineAdminsList = onlineAdminsHeading.nextElementSibling;
+    const onlineMembersList = onlineMembersHeading.nextElementSibling;
+    const offlineAdminsList = offlineAdminsHeading.nextElementSibling;
+    const offlineGuestsList = offlineGuestsHeading.nextElementSibling;
+
+    expect(onlineOwnersList).not.toBeNull();
+    expect(onlineAdminsList).not.toBeNull();
+    expect(onlineMembersList).not.toBeNull();
+    expect(offlineAdminsList).not.toBeNull();
+    expect(offlineGuestsList).not.toBeNull();
+
+    expect(within(onlineOwnersList as HTMLElement).getByRole('listitem')).toHaveTextContent(
+      'Owner Online',
+    );
+    expect(within(onlineAdminsList as HTMLElement).getByRole('listitem')).toHaveTextContent(
+      'Admin Online',
+    );
+    expect(within(onlineMembersList as HTMLElement).getByRole('listitem')).toHaveTextContent(
+      'Member Idle',
+    );
+    expect(within(offlineAdminsList as HTMLElement).getByRole('listitem')).toHaveTextContent(
+      'Admin Offline',
+    );
+    expect(within(offlineGuestsList as HTMLElement).getByRole('listitem')).toHaveTextContent(
+      'Guest Offline',
+    );
   });
 });

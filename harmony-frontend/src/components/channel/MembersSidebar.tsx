@@ -32,13 +32,26 @@ function StatusDot({ status }: { status: UserStatus }) {
 // ─── Role ordering and labels ─────────────────────────────────────────────────
 
 const ROLE_ORDER: UserRole[] = ['owner', 'admin', 'moderator', 'member', 'guest'];
+const ROLE_LABEL: Record<UserRole, string> = {
+  owner: 'Owners',
+  admin: 'Admins',
+  moderator: 'Moderators',
+  member: 'Members',
+  guest: 'Guests',
+};
 
 const ONLINE_STATUSES: UserStatus[] = ['online', 'idle', 'dnd'];
+
+type RoleGroup = {
+  key: UserRole;
+  label: string;
+  users: User[];
+};
 
 type MemberSection = {
   key: 'online' | 'offline';
   label: 'Online' | 'Offline';
-  users: User[];
+  roleGroups: RoleGroup[];
 };
 
 function roleRank(role: UserRole): number {
@@ -54,18 +67,27 @@ function compareMembers(a: User, b: User): number {
   return aName.localeCompare(bName);
 }
 
+function groupMembersByRole(members: User[]): RoleGroup[] {
+  return ROLE_ORDER.map(role => {
+    const users = members.filter(member => member.role === role).sort(compareMembers);
+    return {
+      key: role,
+      label: ROLE_LABEL[role],
+      users,
+    };
+  }).filter(group => group.users.length > 0);
+}
+
 function groupMembers(members: User[]): MemberSection[] {
-  const onlineUsers = members
-    .filter(member => ONLINE_STATUSES.includes(member.status))
-    .sort(compareMembers);
-  const offlineUsers = members.filter(member => member.status === 'offline').sort(compareMembers);
+  const onlineUsers = members.filter(member => ONLINE_STATUSES.includes(member.status));
+  const offlineUsers = members.filter(member => member.status === 'offline');
 
   const sections: MemberSection[] = [
-    { key: 'online', label: 'Online', users: onlineUsers },
-    { key: 'offline', label: 'Offline', users: offlineUsers },
+    { key: 'online', label: 'Online', roleGroups: groupMembersByRole(onlineUsers) },
+    { key: 'offline', label: 'Offline', roleGroups: groupMembersByRole(offlineUsers) },
   ];
 
-  return sections.filter(section => section.users.length > 0);
+  return sections.filter(section => section.roleGroups.length > 0);
 }
 
 // ─── Member row ───────────────────────────────────────────────────────────────
@@ -167,18 +189,25 @@ export function MembersSidebar({ members, isOpen, onClose }: MembersSidebarProps
 
         {/* Member groups */}
         <div className='flex-1 overflow-y-auto p-3'>
-          {groups.map(({ key, label, users }) => (
+          {groups.map(({ key, label, roleGroups }) => (
             <div key={key} className='mb-4'>
               <p className='mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400'>
-                {label} — {users.length}
+                {label} — {roleGroups.reduce((count, group) => count + group.users.length, 0)}
               </p>
-              <ul className='list-none space-y-0.5'>
-                {users.map(user => (
-                  <li key={user.id}>
-                    <MemberRow user={user} />
-                  </li>
-                ))}
-              </ul>
+              {roleGroups.map(group => (
+                <div key={`${key}-${group.key}`} className='mb-3 last:mb-0'>
+                  <p className='mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500'>
+                    {group.label} — {group.users.length}
+                  </p>
+                  <ul className='list-none space-y-0.5'>
+                    {group.users.map(user => (
+                      <li key={user.id}>
+                        <MemberRow user={user} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           ))}
 
