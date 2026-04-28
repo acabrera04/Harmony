@@ -99,7 +99,7 @@ describe('frontend SEO route handlers', () => {
     );
 
     const response = await getServerSitemap(new Request('https://harmony.chat/sitemap/demo.xml'), {
-      params: Promise.resolve({}),
+      params: Promise.resolve({ serverSlug: 'demo' }),
     });
 
     expect(global.fetch).toHaveBeenCalledWith('https://api.harmony.chat/sitemap/demo.xml', {
@@ -119,7 +119,7 @@ describe('frontend SEO route handlers', () => {
     );
 
     const response = await getServerSitemap(new Request('http://localhost:3000/sitemap/demo.xml'), {
-      params: Promise.resolve({}),
+      params: Promise.resolve({ serverSlug: 'demo' }),
     });
 
     await expect(response.text()).resolves.toContain(
