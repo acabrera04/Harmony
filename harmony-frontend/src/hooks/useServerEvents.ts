@@ -24,6 +24,12 @@
  *     onMemberStatusChanged: ({ id, status }) => setMembers(prev =>
  *       prev.map(m => m.id === id ? { ...m, status } : m)
  *     ),
+ *     onMemberProfileUpdated: ({ id, username, displayName, avatarUrl }) => {
+ *       setMembers(prev => prev.map(m => m.id === id ? { ...m, username, displayName, avatarUrl } : m));
+ *       setMessages(prev => prev.map(msg =>
+ *         msg.author.id === id ? { ...msg, author: { ...msg.author, username, displayName, avatarUrl } } : msg
+ *       ));
+ *     },
  *     onChannelVisibilityChanged: (ch, oldVis) => { ... },
  *     onMessageCreated: (msg) => { if (msg.channelId === activeChannelId) append(msg); },
  *     onMessageEdited: (msg) => { if (msg.channelId === activeChannelId) update(msg); },
@@ -59,6 +65,13 @@ export interface UseServerEventsOptions {
   onMemberLeft?: (userId: string) => void;
   /** Called when a member's presence status changes (online/idle/offline). Optional. */
   onMemberStatusChanged?: (data: { id: string; status: UserStatus }) => void;
+  /** Called when a member's display name, avatar, or username changes. Optional. */
+  onMemberProfileUpdated?: (data: {
+    id: string;
+    username: string;
+    displayName?: string;
+    avatarUrl?: string;
+  }) => void;
   /**
    * Called when a channel's visibility changes. The updated channel object is
    * provided along with the previous visibility so callers can detect access
@@ -85,6 +98,7 @@ export function useServerEvents({
   onMemberJoined,
   onMemberLeft,
   onMemberStatusChanged,
+  onMemberProfileUpdated,
   onChannelVisibilityChanged,
   onMessageCreated,
   onMessageEdited,
@@ -107,6 +121,7 @@ export function useServerEvents({
   const onMemberJoinedRef = useRef(onMemberJoined);
   const onMemberLeftRef = useRef(onMemberLeft);
   const onMemberStatusChangedRef = useRef(onMemberStatusChanged);
+  const onMemberProfileUpdatedRef = useRef(onMemberProfileUpdated);
   const onVisibilityChangedRef = useRef(onChannelVisibilityChanged);
   const onMessageCreatedRef = useRef(onMessageCreated);
   const onMessageEditedRef = useRef(onMessageEdited);
@@ -120,6 +135,7 @@ export function useServerEvents({
     onMemberJoinedRef.current = onMemberJoined;
     onMemberLeftRef.current = onMemberLeft;
     onMemberStatusChangedRef.current = onMemberStatusChanged;
+    onMemberProfileUpdatedRef.current = onMemberProfileUpdated;
     onVisibilityChangedRef.current = onChannelVisibilityChanged;
     onMessageCreatedRef.current = onMessageCreated;
     onMessageEditedRef.current = onMessageEdited;
@@ -259,6 +275,27 @@ export function useServerEvents({
       }
     };
 
+    const handleMemberProfileUpdated = (event: MessageEvent<string>) => {
+      try {
+        const payload = JSON.parse(event.data) as {
+          id: string;
+          username: string;
+          displayName?: string;
+          avatarUrl?: string;
+        };
+        onMemberProfileUpdatedRef.current?.(payload);
+      } catch (error) {
+        logger.warn('Dropped malformed server SSE payload', {
+          feature: 'server-events',
+          event: 'payload_parse_failed',
+          source: 'sse',
+          operation: 'member:profileUpdated',
+          target: '/api/events/server/[serverId]',
+          error,
+        });
+      }
+    };
+
     const handleVisibilityChanged = (event: MessageEvent<string>) => {
       try {
         // The backend sends the full updated channel object plus oldVisibility.
@@ -349,6 +386,7 @@ export function useServerEvents({
       es.addEventListener('member:joined', handleMemberJoined);
       es.addEventListener('member:left', handleMemberLeft);
       es.addEventListener('member:statusChanged', handleMemberStatusChanged);
+      es.addEventListener('member:profileUpdated', handleMemberProfileUpdated);
       es.addEventListener('channel:visibility-changed', handleVisibilityChanged);
       es.addEventListener('message:created', handleMessageCreated);
       es.addEventListener('message:edited', handleMessageEdited);
@@ -361,6 +399,7 @@ export function useServerEvents({
         ['member:joined', handleMemberJoined],
         ['member:left', handleMemberLeft],
         ['member:statusChanged', handleMemberStatusChanged],
+        ['member:profileUpdated', handleMemberProfileUpdated],
         ['channel:visibility-changed', handleVisibilityChanged],
         ['message:created', handleMessageCreated],
         ['message:edited', handleMessageEdited],

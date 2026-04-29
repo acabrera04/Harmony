@@ -33,6 +33,7 @@ import type {
   ChannelDeletedPayload,
   ServerUpdatedPayload,
   UserStatusChangedPayload,
+  UserProfileUpdatedPayload,
   MemberJoinedPayload,
   MemberLeftPayload,
   VisibilityChangedPayload,
@@ -742,6 +743,41 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     },
   );
   subscriptions.push(statusChangedSubscription);
+
+  const profileUpdatedSubscription = eventBus.subscribe(
+    EventChannels.USER_PROFILE_UPDATED,
+    async (payload: UserProfileUpdatedPayload) => {
+      if (payload.serverId !== serverId) return;
+
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.userId },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatarUrl: true,
+            publicProfile: true,
+          },
+        });
+        if (!user) return;
+
+        const isPublic = user.publicProfile;
+        writeEvent('member:profileUpdated', {
+          id: user.id,
+          username: isPublic ? user.username : 'Anonymous',
+          displayName: isPublic ? (user.displayName ?? undefined) : undefined,
+          avatarUrl: isPublic ? (user.avatarUrl ?? undefined) : undefined,
+        });
+      } catch (err) {
+        logger.warn(
+          { err, serverId, userId: payload.userId },
+          'Failed to hydrate SSE member:profileUpdated payload',
+        );
+      }
+    },
+  );
+  subscriptions.push(profileUpdatedSubscription);
 
   const memberJoinedSubscription = eventBus.subscribe(
     EventChannels.MEMBER_JOINED,
