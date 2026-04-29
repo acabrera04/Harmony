@@ -3,10 +3,5 @@ import { AuthGuard } from '@/components/layout/AuthGuard';
 
 /** Wraps all /channels/* authenticated routes. */
 export default function AppLayout({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <AuthGuard />
-      {children}
-    </>
-  );
+  return <AuthGuard>{children}</AuthGuard>;
 }
