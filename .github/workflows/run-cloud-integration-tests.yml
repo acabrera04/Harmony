@@ -7,16 +7,16 @@ on:
 jobs:
   run-cloud-integration-tests:
     name: Run Cloud Integration Tests
-    # Only run automatically for production/main deployment statuses.
-    # This avoids PR preview frontend deploys triggering cloud tests when
-    # backend PR deploys do not exist.
+    # Only run automatically for successful production deployment statuses.
+    # Vercel uses "Production" while Railway uses "<project> / production".
+    # Preview deployments use "Preview", so they are excluded.
     if: |
       github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'deployment_status' &&
         github.event.deployment_status.state == 'success' &&
-        contains(fromJson('["main","refs/heads/main"]'), github.event.deployment.ref) &&
-        contains(fromJson('["production","Production"]'), github.event.deployment.environment)
+        contains(toLower(github.event.deployment.environment), 'production') &&
+        !contains(toLower(github.event.deployment.environment), 'preview')
       )
     runs-on: ubuntu-latest
     environment: cloud-integration-tests
