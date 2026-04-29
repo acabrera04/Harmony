@@ -45,7 +45,7 @@ export function createPublicRouter(store?: Store) {
           select: { id: true, visibility: true },
         });
 
-        if (!channel || (channel.visibility !== ChannelVisibility.PUBLIC_INDEXABLE && channel.visibility !== ChannelVisibility.PUBLIC_NO_INDEX)) {
+        if (!channel || channel.visibility === ChannelVisibility.PRIVATE) {
           res.status(404).json({ error: 'Channel not found' });
           return;
         }
@@ -97,7 +97,7 @@ export function createPublicRouter(store?: Store) {
           select: { id: true, visibility: true },
         });
 
-        if (!channel || (channel.visibility !== ChannelVisibility.PUBLIC_INDEXABLE && channel.visibility !== ChannelVisibility.PUBLIC_NO_INDEX)) {
+        if (!channel || channel.visibility === ChannelVisibility.PRIVATE) {
           res.status(404).json({ error: 'Channel not found' });
           return;
         }

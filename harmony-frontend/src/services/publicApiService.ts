@@ -206,6 +206,7 @@ export interface PublicChannelListItem {
   id: string;
   name: string;
   slug: string;
+  /** Included for channel-type icon rendering in the sidebar. */
   type: ChannelType;
   topic?: string;
 }
