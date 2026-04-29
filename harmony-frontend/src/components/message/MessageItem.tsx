@@ -25,6 +25,7 @@ import { editMessageAction } from '@/app/actions/editMessage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { ThreadView } from '@/components/message/ThreadView';
+import { UserProfilePopover } from '@/components/shared/UserProfilePopover';
 import { apiClient } from '@/lib/api-client';
 import type { Message, Reaction } from '@/types';
 
@@ -514,6 +515,7 @@ export function MessageItem({
   const isTopLevel = !message.parentMessageId;
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(message.replyCount ?? 0);
+  const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null);
 
   // Render-phase derived-state reset: when the avatar URL changes (including A→B→A),
   // reset avatarError so the new URL is always attempted.
@@ -715,6 +717,10 @@ export function MessageItem({
     onReplyClick?.(message);
   }, [onReplyClick, message]);
 
+  const handleAuthorNameClick = useCallback((e: React.SyntheticEvent<HTMLSpanElement>) => {
+    setProfileAnchorRect(e.currentTarget.getBoundingClientRect());
+  }, []);
+
   const actionBar = (
     <ActionBar
       messageId={message.id}
@@ -876,7 +882,13 @@ export function MessageItem({
         {/* Content */}
         <div className='min-w-0 flex-1'>
           <div className='flex items-baseline gap-2'>
-            <span className={authorNameClass}>
+            <span
+              className={authorNameClass}
+              onClick={handleAuthorNameClick}
+              role='button'
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleAuthorNameClick(e); }}
+            >
               {message.author.displayName ?? message.author.username}
             </span>
             <span className='whitespace-nowrap text-[11px] text-gray-400'>
@@ -904,6 +916,18 @@ export function MessageItem({
         </div>
       </div>
       {threadView}
+      {profileAnchorRect && (
+        <UserProfilePopover
+          userId={message.author.id}
+          seed={{
+            username: message.author.username,
+            displayName: message.author.displayName,
+            avatarUrl: message.author.avatarUrl,
+          }}
+          anchorRect={profileAnchorRect}
+          onClose={() => setProfileAnchorRect(null)}
+        />
+      )}
     </div>
   );
 }
