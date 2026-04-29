@@ -31,6 +31,7 @@ import type {
   MemberJoinedPayload,
   MemberLeftPayload,
   VisibilityChangedPayload,
+  UserMentionedPayload,
 } from '../events/eventTypes';
 
 export const eventsRouter = Router();
@@ -800,4 +801,51 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     : undefined;
 
   await finalizeSseSetup(req, res, sseState, subscriptions, { route: 'server-events', serverId }, serverReplayFrames);
+});
+
+// ─── User-scoped notification SSE route ──────────────────────────────────────
+
+/**
+ * GET /api/events/user?token=<accessToken>
+ *
+ * Streams real-time mention notifications to the authenticated user.
+ * Each connected client only receives events addressed to their own userId.
+ */
+eventsRouter.get('/user', async (req: Request, res: Response) => {
+  const token = typeof req.query.token === 'string' ? req.query.token : null;
+  if (!token) {
+    res.status(401).json({ error: 'Missing token query parameter' });
+    return;
+  }
+
+  let userId: string;
+  try {
+    const payload = authService.verifyAccessToken(token);
+    userId = payload.sub;
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired access token' });
+    return;
+  }
+
+  const sseState = createBufferedSseState();
+  const writeEvent = createBufferedEventWriter(res, sseState);
+
+  const mentionSubscription = eventBus.subscribe(
+    EventChannels.USER_MENTIONED,
+    (payload: UserMentionedPayload) => {
+      if (payload.userId !== userId) return;
+      writeEvent('notification:mention', {
+        id: payload.notificationId,
+        messageId: payload.messageId,
+        channelId: payload.channelId,
+        serverId: payload.serverId,
+        authorId: payload.authorId,
+        authorUsername: payload.authorUsername,
+        timestamp: payload.timestamp,
+        read: false,
+      });
+    },
+  );
+
+  await finalizeSseSetup(req, res, sseState, [mentionSubscription], { route: 'user-events', userId });
 });

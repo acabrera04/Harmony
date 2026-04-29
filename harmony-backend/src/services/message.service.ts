@@ -6,6 +6,7 @@ import { permissionService } from './permission.service';
 import { eventBus, EventChannels } from '../events/eventBus';
 import { channelRepository } from '../repositories/channel.repository';
 import { messageRepository } from '../repositories/message.repository';
+import { processMentions } from './mention.service';
 import { pushNotificationService } from './pushNotification.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -184,21 +185,31 @@ export const messageService = {
         ),
       );
 
+    // Process @mentions — fire-and-forget, best-effort
+    const authorUsername = message.author.username;
+    processMentions({
+      messageId: message.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: message.id }, 'processMentions failed on sendMessage'),
+    );
+
     // Dispatch push notifications fire-and-forget
     (async () => {
       try {
-        const [author, server] = await Promise.all([
-          prisma.user.findUnique({ where: { id: authorId }, select: { username: true } }),
-          prisma.server.findUnique({ where: { id: serverId }, select: { slug: true } }),
-        ]);
-        if (!author || !server) return;
+        const server = await prisma.server.findUnique({ where: { id: serverId }, select: { slug: true } });
+        if (!server) return;
 
         const ctx = {
           authorId,
           channelId,
           serverId,
           channelName: channel.name,
-          authorUsername: author.username,
+          authorUsername,
           serverSlug: server.slug,
           channelSlug: channel.slug,
           content,
@@ -253,6 +264,19 @@ export const messageService = {
           'Failed to publish message edited event',
         ),
       );
+
+    // Re-process mentions on edit; both MessageMention and Notification rows have
+    // unique constraints so repeated calls are idempotent — no duplicate notifications.
+    processMentions({
+      messageId,
+      channelId: message.channelId,
+      serverId,
+      authorId,
+      authorUsername: updated.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId }, 'processMentions failed on editMessage'),
+    );
 
     return updated;
   },
@@ -488,6 +512,17 @@ export const messageService = {
           'Failed to publish reply created event',
         ),
       );
+
+    processMentions({
+      messageId: reply.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername: reply.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: reply.id }, 'processMentions failed on createReply'),
+    );
 
     return reply;
   },

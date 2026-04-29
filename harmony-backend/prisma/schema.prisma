@@ -83,6 +83,8 @@ model User {
   ownedServers            Server[]                  @relation("ServerOwner")
   serverMemberships       ServerMember[]
   createdInvites          ServerInvite[]            @relation("InviteCreator")
+  mentions                MessageMention[]
+  notifications           Notification[]
   pushSubscriptions       PushSubscription[]
   notificationPreferences NotificationPreference[]
 
@@ -191,6 +193,8 @@ model Message {
   parent      Message?         @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   /// Direct replies to this message.
   replies     Message[]        @relation("MessageReplies")
+  mentions    MessageMention[]
+  notifications Notification[]
 
   // idx_messages_channel_time (non-partial) and
   // idx_messages_channel_not_deleted (partial WHERE is_deleted = FALSE)
@@ -267,6 +271,43 @@ model ServerInvite {
 
   @@index([serverId], map: "idx_server_invites_server")
   @@map("server_invites")
+}
+
+/// A record of one user being mentioned in a specific message.
+model MessageMention {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId], map: "idx_message_mentions_unique")
+  @@index([userId], map: "idx_message_mentions_user")
+  @@map("message_mentions")
+}
+
+/// In-app notification for a user (currently only mention notifications).
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(50)
+  /// The message that triggered this notification.
+  messageId String   @map("message_id") @db.Uuid
+  channelId String   @map("channel_id") @db.Uuid
+  serverId  String   @map("server_id") @db.Uuid
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  /// Prevent duplicate mention notifications for the same user+message pair.
+  @@unique([userId, type, messageId], map: "idx_notifications_unique")
+  @@index([userId, read], map: "idx_notifications_user_read")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_notifications_user_created")
+  @@map("notifications")
 }
 
 model GeneratedMetaTags {

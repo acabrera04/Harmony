@@ -10,6 +10,7 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { truncate } from '@/lib/utils';
+import { NotificationBell } from '@/components/channel/NotificationBell';
 import type { Channel } from '@/types';
 
 // ─── Icons (inline SVG to avoid extra dependencies) ──────────────────────────
@@ -167,6 +168,8 @@ export interface TopBarProps {
   onPinsOpen?: () => void;
   /** Disable actions that would reveal message content while the channel is locked. */
   disableMessageActions?: boolean;
+  /** Authenticated user ID — enables the notification bell when present. */
+  userId?: string;
 }
 
 export function TopBar({
@@ -180,6 +183,7 @@ export function TopBar({
   onSearchOpen,
   onPinsOpen,
   disableMessageActions = false,
+  userId,
 }: TopBarProps) {
   const settingsHref = `/settings/${serverSlug}/${channel.slug}`;
 
@@ -239,6 +243,9 @@ export function TopBar({
         >
           <MembersIcon />
         </IconButton>
+
+        {/* Notification bell — authenticated users only */}
+        <NotificationBell userId={userId} />
 
         {/* Settings gear — admin/owner only */}
         {isAdmin && (

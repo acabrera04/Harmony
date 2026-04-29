@@ -3,6 +3,7 @@ import { NotificationLevel } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import { router, authedProcedure } from '../init';
 import { prisma } from '../../db/prisma';
+import { notificationService } from '../../services/notification.service';
 
 const NotificationLevelSchema = z.nativeEnum(NotificationLevel);
 
@@ -25,6 +26,32 @@ async function upsertPref(
 }
 
 export const notificationRouter = router({
+  // ─── In-app mention notifications ───────────────────────────────────────────
+
+  /** List the 50 most-recent notifications for the authenticated user. */
+  getNotifications: authedProcedure.query(({ ctx }) =>
+    notificationService.getNotifications(ctx.userId),
+  ),
+
+  /** Count of unread notifications. */
+  getUnreadCount: authedProcedure.query(({ ctx }) =>
+    notificationService.getUnreadCount(ctx.userId),
+  ),
+
+  /** Mark a single notification as read. */
+  markAsRead: authedProcedure
+    .input(z.object({ notificationId: z.string().uuid() }))
+    .mutation(({ ctx, input }) =>
+      notificationService.markAsRead(input.notificationId, ctx.userId),
+    ),
+
+  /** Mark all notifications as read. */
+  markAllAsRead: authedProcedure.mutation(({ ctx }) =>
+    notificationService.markAllAsRead(ctx.userId),
+  ),
+
+  // ─── Web Push subscriptions ─────────────────────────────────────────────────
+
   /** Return the VAPID public key so the frontend can subscribe. */
   getVapidPublicKey: authedProcedure.query(() => {
     const key = process.env.VAPID_PUBLIC_KEY;
@@ -69,6 +96,8 @@ export const notificationRouter = router({
       select: { id: true, endpoint: true, createdAt: true },
     });
   }),
+
+  // ─── Notification preferences ────────────────────────────────────────────────
 
   /** Get notification preferences for the current user. */
   getPreferences: authedProcedure.query(async ({ ctx }) => {

@@ -55,4 +55,16 @@ export const serverMemberRouter = router({
       await serverMemberService.removeMember(input.targetUserId, input.serverId, ctx.userId);
       return { success: true };
     }),
+
+  /** Search members by username prefix for @ mention autocomplete. */
+  searchMembers: authedProcedure
+    .input(
+      z.object({
+        serverId: z.string().uuid(),
+        query: z.string().max(32),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      return serverMemberService.searchMembers(input.serverId, ctx.userId, input.query);
+    }),
 });
