@@ -436,7 +436,7 @@ export function HarmonyShell({
   }, [isChannelLocked]);
 
   return (
-    <VoiceProvider serverId={currentServer.id} voiceChannelIds={voiceChannelIds}>
+    <VoiceProvider serverId={currentServer.id} voiceChannelIds={voiceChannelIds} currentUserId={authUser?.id}>
       <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
         {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
         <a
