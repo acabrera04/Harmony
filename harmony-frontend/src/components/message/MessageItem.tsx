@@ -26,6 +26,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { ThreadView } from '@/components/message/ThreadView';
 import { apiClient } from '@/lib/api-client';
+import { MentionTextWithSelf } from '@/components/message/MentionText';
 import type { Message, Reaction } from '@/types';
 
 const EmojiPickerPopover = dynamic(
@@ -795,7 +796,7 @@ export function MessageItem({
               editUi
             ) : (
               <p className='whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
-                {localContent ?? message.content}
+                <MentionTextWithSelf content={localContent ?? message.content} />
                 {(message.editedAt || localContent !== undefined) && (
                   <span className='ml-1 text-[10px] text-gray-500'>(edited)</span>
                 )}
@@ -859,7 +860,7 @@ export function MessageItem({
             editUi
           ) : (
             <p className='mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
-              {localContent ?? message.content}
+              <MentionTextWithSelf content={localContent ?? message.content} />
             </p>
           )}
           <AttachmentList attachments={message.attachments} />

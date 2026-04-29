@@ -13,7 +13,10 @@ import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { sendMessageAction } from '@/app/actions/sendMessage';
 import { createReplyAction } from '@/app/actions/createReply';
+import { apiClient } from '@/lib/api-client';
 import type { Message, AttachmentInput } from '@/types';
+import type { MentionCandidate } from '@/components/channel/MentionAutocomplete';
+import { MentionAutocomplete } from '@/components/channel/MentionAutocomplete';
 
 // Lazy-load the heavy emoji picker bundle so it doesn't block the initial render
 const EmojiPickerPopover = dynamic(
@@ -65,12 +68,22 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
+  // ── Mention autocomplete state ────────────────────────────────────────────
+  const [mentionCandidates, setMentionCandidates] = useState<MentionCandidate[]>([]);
+  const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
+  /** Character index in `value` where the active @ token starts. -1 = no active mention. */
+  const [mentionStart, setMentionStart] = useState(-1);
+  const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // On channel switch: clear draft, clear attachments, clear any send error, and autofocus
   useEffect(() => {
     setValue('');
     setSendError(null);
     setPendingAttachments([]);
     setShowEmojiPicker(false);
+    setMentionCandidates([]);
+    setMentionStart(-1);
+    setMentionSelectedIdx(0);
     textareaRef.current?.focus();
   }, [channelId]);
 
@@ -197,6 +210,7 @@ export function MessageInput({
       }
       setValue('');
       setPendingAttachments([]);
+      closeMentionDropdown();
       onMessageSent?.(msg);
     } catch {
       setSendError('Failed to send message. Please try again.');
@@ -217,6 +231,30 @@ export function MessageInput({
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // When mention dropdown is open, intercept navigation keys
+    if (mentionCandidates.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionSelectedIdx((i) => (i + 1) % mentionCandidates.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionSelectedIdx((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        handleMentionSelect(mentionCandidates[mentionSelectedIdx]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeMentionDropdown();
+        return;
+      }
+    }
+
     // Enter sends; Shift+Enter inserts a newline
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -224,11 +262,73 @@ export function MessageInput({
     }
   };
 
+  const closeMentionDropdown = useCallback(() => {
+    setMentionCandidates([]);
+    setMentionStart(-1);
+    setMentionSelectedIdx(0);
+  }, []);
+
+  const handleMentionSelect = useCallback(
+    (candidate: MentionCandidate) => {
+      if (mentionStart === -1) return;
+      const before = value.slice(0, mentionStart);
+      const after = value.slice(textareaRef.current?.selectionStart ?? value.length);
+      const inserted = `@${candidate.username} `;
+      const next = before + inserted + after;
+      if (next.length <= MAX_CHARS) {
+        setValue(next);
+        // Place cursor right after the inserted mention
+        requestAnimationFrame(() => {
+          const pos = before.length + inserted.length;
+          textareaRef.current?.focus();
+          textareaRef.current?.setSelectionRange(pos, pos);
+        });
+      }
+      closeMentionDropdown();
+    },
+    [value, mentionStart, closeMentionDropdown],
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = e.target.value;
     // Enforce hard character limit
-    if (e.target.value.length <= MAX_CHARS) {
-      setValue(e.target.value);
+    if (next.length > MAX_CHARS) return;
+    setValue(next);
+
+    // ── Mention detection ──────────────────────────────────────────────────
+    const cursor = e.target.selectionStart ?? next.length;
+    // Walk backwards from cursor to find the nearest @
+    const textToCursor = next.slice(0, cursor);
+    const atIdx = textToCursor.lastIndexOf('@');
+
+    if (atIdx === -1) {
+      closeMentionDropdown();
+      return;
     }
+
+    // The token after @ must not contain spaces or newlines
+    const token = textToCursor.slice(atIdx + 1);
+    if (/[\s\n]/.test(token)) {
+      closeMentionDropdown();
+      return;
+    }
+
+    setMentionStart(atIdx);
+    setMentionSelectedIdx(0);
+
+    // Debounce the network call
+    if (mentionDebounceRef.current) clearTimeout(mentionDebounceRef.current);
+    mentionDebounceRef.current = setTimeout(async () => {
+      try {
+        const results = await apiClient.trpcQuery<MentionCandidate[]>(
+          'serverMember.searchMembers',
+          { serverId, query: token },
+        );
+        setMentionCandidates(results ?? []);
+      } catch {
+        setMentionCandidates([]);
+      }
+    }, 120);
   };
 
   // ── Read-only / guest view ──────────────────────────────────────────────────
@@ -300,6 +400,16 @@ export function MessageInput({
             </span>
           ))}
         </div>
+      )}
+
+      {/* Mention autocomplete dropdown */}
+      {mentionCandidates.length > 0 && (
+        <MentionAutocomplete
+          candidates={mentionCandidates}
+          selectedIndex={mentionSelectedIdx}
+          onSelect={handleMentionSelect}
+          onClose={closeMentionDropdown}
+        />
       )}
 
       <div

@@ -487,6 +487,7 @@ export function HarmonyShell({
             disableMessageActions={isChannelLocked}
             isMenuOpen={isMenuOpen}
             onMenuToggle={() => setIsMenuOpen(v => !v)}
+            userId={authUser?.id}
           />
 
           <div className='flex flex-1 overflow-hidden'>

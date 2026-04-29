@@ -6,6 +6,7 @@ import { permissionService } from './permission.service';
 import { eventBus, EventChannels } from '../events/eventBus';
 import { channelRepository } from '../repositories/channel.repository';
 import { messageRepository } from '../repositories/message.repository';
+import { processMentions } from './mention.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,6 +187,19 @@ export const messageService = {
         ),
       );
 
+    // Process @mentions — fire-and-forget, best-effort
+    const authorUsername = message.author.username;
+    processMentions({
+      messageId: message.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: message.id }, 'processMentions failed on sendMessage'),
+    );
+
     return message;
   },
 
@@ -226,6 +240,18 @@ export const messageService = {
           'Failed to publish message edited event',
         ),
       );
+
+    // Re-process mentions on edit (skipDuplicates prevents duplicate notifications)
+    processMentions({
+      messageId,
+      channelId: message.channelId,
+      serverId,
+      authorId,
+      authorUsername: updated.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId }, 'processMentions failed on editMessage'),
+    );
 
     return updated;
   },
@@ -464,6 +490,17 @@ export const messageService = {
           'Failed to publish reply created event',
         ),
       );
+
+    processMentions({
+      messageId: reply.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername: reply.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: reply.id }, 'processMentions failed on createReply'),
+    );
 
     return reply;
   },
