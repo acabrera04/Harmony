@@ -45,7 +45,7 @@ export function createPublicRouter(store?: Store) {
           select: { id: true, visibility: true },
         });
 
-        if (!channel || channel.visibility !== ChannelVisibility.PUBLIC_INDEXABLE) {
+        if (!channel || (channel.visibility !== ChannelVisibility.PUBLIC_INDEXABLE && channel.visibility !== ChannelVisibility.PUBLIC_NO_INDEX)) {
           res.status(404).json({ error: 'Channel not found' });
           return;
         }
@@ -97,7 +97,7 @@ export function createPublicRouter(store?: Store) {
           select: { id: true, visibility: true },
         });
 
-        if (!channel || channel.visibility !== ChannelVisibility.PUBLIC_INDEXABLE) {
+        if (!channel || (channel.visibility !== ChannelVisibility.PUBLIC_INDEXABLE && channel.visibility !== ChannelVisibility.PUBLIC_NO_INDEX)) {
           res.status(404).json({ error: 'Channel not found' });
           return;
         }
@@ -233,7 +233,7 @@ export function createPublicRouter(store?: Store) {
         return;
       }
 
-      const cacheKey = `server:${sanitizeKeySegment(server.id)}:public_channels_v2`;
+      const cacheKey = `server:${sanitizeKeySegment(server.id)}:public_channels`;
       const cacheOpts = { ttl: CacheTTL.serverInfo, staleTtl: CacheTTL.serverInfo };
 
       const fetcher = async () => {
@@ -243,7 +243,7 @@ export function createPublicRouter(store?: Store) {
             visibility: { in: [ChannelVisibility.PUBLIC_INDEXABLE, ChannelVisibility.PUBLIC_NO_INDEX] },
           },
           orderBy: { position: 'asc' },
-          select: { id: true, name: true, slug: true, type: true, topic: true, visibility: true },
+          select: { id: true, name: true, slug: true, type: true, topic: true },
         });
         return { channels };
       };

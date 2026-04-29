@@ -1,18 +1,12 @@
 /**
  * Server Component: ServerSidebar
  * Displays server info and list of other public channels for navigation.
- * Used in both the guest public-channel view and the authenticated chat shell.
+ * Currently used in the guest public-channel view.
  * Based on dev spec C1.6 ServerSidebar.
  */
 
 import Link from 'next/link';
-
-interface Channel {
-  id: string;
-  name: string;
-  slug: string;
-  topic?: string;
-}
+import type { PublicChannelListItem } from '@/services/publicApiService';
 
 interface ServerSidebarProps {
   serverInfo: {
@@ -21,7 +15,7 @@ interface ServerSidebarProps {
     slug: string;
     description?: string;
   };
-  publicChannels: Channel[];
+  publicChannels: PublicChannelListItem[];
   currentChannelId?: string;
 }
 
