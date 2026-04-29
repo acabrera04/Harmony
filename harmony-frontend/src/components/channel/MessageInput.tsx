@@ -13,6 +13,7 @@ import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { sendMessageAction } from '@/app/actions/sendMessage';
 import type { Message, AttachmentInput } from '@/types';
+import type { GifResult } from '@/app/api/gifs/route';
 
 // Lazy-load heavy pickers so they don't block the initial render
 const EmojiPickerPopover = dynamic(
@@ -161,13 +162,20 @@ export function MessageInput({
   };
 
   const handleGifSelect = useCallback(
-    (gifUrl: string) => {
-      const next = value ? `${value} ${gifUrl}` : gifUrl;
-      if (next.length <= MAX_CHARS) setValue(next);
+    (gif: GifResult) => {
+      setPendingAttachments(prev => [
+        ...prev,
+        {
+          url: gif.url,
+          filename: gif.filename,
+          contentType: gif.contentType,
+          sizeBytes: gif.sizeBytes,
+        },
+      ]);
       setShowGifPicker(false);
       requestAnimationFrame(() => textareaRef.current?.focus());
     },
-    [value],
+    [],
   );
 
   const handleEmojiSelect = useCallback(

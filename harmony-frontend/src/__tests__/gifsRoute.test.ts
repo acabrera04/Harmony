@@ -45,8 +45,16 @@ function makePixabayHit(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
     tags: 'funny cat',
-    webformatURL: 'https://cdn.pixabay.com/gif1.gif',
-    previewURL: 'https://cdn.pixabay.com/gif1_preview.gif',
+    videos: {
+      tiny: {
+        url: 'https://cdn.pixabay.com/video/cat_tiny.mp4',
+        thumbnail: 'https://cdn.pixabay.com/video/cat_tiny.jpg',
+      },
+      small: {
+        url: 'https://cdn.pixabay.com/video/cat_small.mp4',
+        thumbnail: 'https://cdn.pixabay.com/video/cat_small.jpg',
+      },
+    },
     ...overrides,
   };
 }
@@ -100,8 +108,11 @@ describe('GET /api/gifs', () => {
     expect(body.gifs[0]).toMatchObject({
       id: '1',
       title: 'funny cat',
-      url: 'https://cdn.pixabay.com/gif1.gif',
-      previewUrl: 'https://cdn.pixabay.com/gif1_preview.gif',
+      url: 'https://cdn.pixabay.com/video/cat_tiny.mp4',
+      previewUrl: 'https://cdn.pixabay.com/video/cat_tiny.jpg',
+      filename: '1.mp4',
+      contentType: 'video/mp4',
+      sizeBytes: 1,
     });
   });
 
@@ -116,6 +127,10 @@ describe('GET /api/gifs', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('q=cats'),
+      expect.anything(),
+    );
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/videos/?'),
       expect.anything(),
     );
     expect(mockFetch).not.toHaveBeenCalledWith(
@@ -158,13 +173,29 @@ describe('GET /api/gifs', () => {
     expect((res as { _status: number })._status).toBe(500);
   });
 
-  it('filters out results with empty URLs', async () => {
+  it('filters out results with empty video URLs', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue(
         makePixabayResponse([
-          makePixabayHit({ id: 1, webformatURL: 'https://cdn.pixabay.com/ok.gif' }),
-          makePixabayHit({ id: 2, webformatURL: '' }),
+          makePixabayHit({
+            id: 1,
+            videos: {
+              tiny: {
+                url: 'https://cdn.pixabay.com/video/ok_tiny.mp4',
+                thumbnail: 'https://cdn.pixabay.com/video/ok_tiny.jpg',
+              },
+            },
+          }),
+          makePixabayHit({
+            id: 2,
+            videos: {
+              tiny: {
+                url: '',
+                thumbnail: 'https://cdn.pixabay.com/video/missing_tiny.jpg',
+              },
+            },
+          }),
         ]),
       ),
     });
@@ -174,5 +205,38 @@ describe('GET /api/gifs', () => {
     const body = (res as { _body: { gifs: unknown[] } })._body;
     expect(body.gifs).toHaveLength(1);
     expect((body.gifs[0] as { id: string }).id).toBe('1');
+  });
+
+  it('falls back from tiny to small video renditions', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(
+        makePixabayResponse([
+          makePixabayHit({
+            videos: {
+              tiny: {
+                url: '',
+                thumbnail: '',
+              },
+              small: {
+                url: 'https://cdn.pixabay.com/video/cat_small.mp4',
+                thumbnail: 'https://cdn.pixabay.com/video/cat_small.jpg',
+              },
+            },
+          }),
+        ]),
+      ),
+    });
+
+    const req = makeRequest('http://localhost/api/gifs?q=cats');
+    const res = await GET(req as never);
+    const body = (res as { _body: { gifs: unknown[] } })._body;
+
+    expect(body.gifs[0]).toMatchObject({
+      url: 'https://cdn.pixabay.com/video/cat_small.mp4',
+      previewUrl: 'https://cdn.pixabay.com/video/cat_small.jpg',
+      filename: '1.mp4',
+      contentType: 'video/mp4',
+    });
   });
 });

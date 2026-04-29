@@ -2,16 +2,16 @@
 
 /**
  * GifPickerPopover
- * Pixabay-powered GIF search popover for the message input toolbar.
- * Shows popular GIFs on open; switches to search results as the user types.
- * Click a GIF to fire onGifSelect with the full-quality URL.
+ * Pixabay-powered animation search popover for the message input toolbar.
+ * Shows popular animations on open; switches to search results as the user types.
+ * Click a result to fire onGifSelect with the playable video URL.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GifResult } from '@/app/api/gifs/route';
 
 export interface GifPickerPopoverProps {
-  onGifSelect: (url: string) => void;
+  onGifSelect: (gif: GifResult) => void;
 }
 
 function useGifSearch(query: string) {
@@ -69,8 +69,8 @@ export function GifPickerPopover({ onGifSelect }: GifPickerPopoverProps) {
   }, []);
 
   const handleSelect = useCallback(
-    (url: string) => {
-      onGifSelect(url);
+    (gif: GifResult) => {
+      onGifSelect(gif);
     },
     [onGifSelect],
   );
@@ -102,9 +102,9 @@ export function GifPickerPopover({ onGifSelect }: GifPickerPopoverProps) {
           type='text'
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder='Search Pixabay GIFs…'
+          placeholder='Search Pixabay animations…'
           className='flex-1 bg-transparent text-sm text-[#dcddde] placeholder-gray-500 outline-none'
-          aria-label='Search GIFs'
+          aria-label='Search animations'
         />
         {query && (
           <button
@@ -118,7 +118,7 @@ export function GifPickerPopover({ onGifSelect }: GifPickerPopoverProps) {
         )}
       </div>
 
-      {/* GIF grid */}
+      {/* Animation grid */}
       <div className='flex-1 overflow-y-auto p-2' aria-label='GIF results'>
         {isLoading && (
           <div className='flex items-center justify-center py-8'>
@@ -153,15 +153,19 @@ export function GifPickerPopover({ onGifSelect }: GifPickerPopoverProps) {
                 type='button'
                 title={gif.title || 'GIF'}
                 aria-label={gif.title || 'GIF'}
-                onClick={() => handleSelect(gif.url)}
+                onClick={() => handleSelect(gif)}
                 className='group relative overflow-hidden rounded bg-[#40444b] transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-indigo-500'
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={gif.previewUrl}
-                  alt={gif.title || 'GIF'}
-                  loading='lazy'
+                <video
+                  src={gif.url}
+                  poster={gif.previewUrl || undefined}
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                  preload='metadata'
                   className='h-24 w-full object-cover'
+                  aria-label={gif.title || 'GIF preview'}
                 />
               </button>
             ))}

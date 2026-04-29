@@ -8,35 +8,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const PIXABAY_BASE = 'https://pixabay.com/api/';
+const PIXABAY_BASE = 'https://pixabay.com/api/videos/';
 const RESULTS_LIMIT = 24;
+
+interface PixabayVideoRendition {
+  url: string;
+  thumbnail: string;
+  size?: number;
+}
 
 interface PixabayHit {
   id: number;
   tags: string;
-  webformatURL: string;
-  previewURL: string;
+  videos: {
+    tiny?: PixabayVideoRendition;
+    small?: PixabayVideoRendition;
+    medium?: PixabayVideoRendition;
+    large?: PixabayVideoRendition;
+  };
+}
+
+export interface GifResult {
+  id: string;
+  title: string;
+  /** Playable Pixabay animation URL inserted into the message */
+  url: string;
+  /** Poster thumbnail shown in the picker grid */
+  previewUrl: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
 }
 
 interface PixabayResponse {
   hits: PixabayHit[];
 }
 
-export interface GifResult {
-  id: string;
-  title: string;
-  /** Full-quality GIF URL inserted into the message */
-  url: string;
-  /** Small preview URL shown in the picker grid */
-  previewUrl: string;
+function pickVideo(hit: PixabayHit): PixabayVideoRendition | null {
+  const renditions = [hit.videos.tiny, hit.videos.small, hit.videos.medium, hit.videos.large];
+  return renditions.find(rendition => Boolean(rendition?.url)) ?? null;
 }
 
-function mapHit(hit: PixabayHit): GifResult {
+function mapHit(hit: PixabayHit): GifResult | null {
+  const rendition = pickVideo(hit);
+  if (!rendition?.url) {
+    return null;
+  }
+
   return {
     id: String(hit.id),
     title: hit.tags,
-    url: hit.webformatURL,
-    previewUrl: hit.previewURL || hit.webformatURL,
+    url: rendition.url,
+    previewUrl: rendition.thumbnail || '',
+    filename: `${hit.id}.${rendition.url.split('.').pop()?.split('?')[0] || 'mp4'}`,
+    contentType: 'video/mp4',
+    sizeBytes: rendition.size && rendition.size > 0 ? rendition.size : 1,
   };
 }
 
@@ -56,7 +82,7 @@ export async function GET(req: NextRequest) {
 
   const params = new URLSearchParams({
     key: apiKey,
-    image_type: 'animated_gif',
+    video_type: 'animation',
     safesearch: 'true',
     per_page: String(RESULTS_LIMIT),
   });
@@ -75,7 +101,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'GIF API error' }, { status: 502 });
     }
     const data: PixabayResponse = await res.json();
-    const gifs: GifResult[] = data.hits.map(mapHit).filter(g => g.url);
+    const gifs: GifResult[] = data.hits
+      .map(mapHit)
+      .filter((gif): gif is GifResult => Boolean(gif?.url));
     return NextResponse.json({ gifs });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch GIFs' }, { status: 500 });
