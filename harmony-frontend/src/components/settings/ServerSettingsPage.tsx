@@ -257,7 +257,7 @@ export interface ServerSettingsPageProps {
   server: Server;
   serverSlug: string;
   canDeleteServer?: boolean;
-  permissionMatrix?: PermissionMatrix;
+  permissionMatrix?: PermissionMatrix | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ export function ServerSettingsPage({
   server,
   serverSlug,
   canDeleteServer = false,
-  permissionMatrix = {},
+  permissionMatrix,
 }: ServerSettingsPageProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('overview');
@@ -389,7 +389,16 @@ export function ServerSettingsPage({
             <VisibilitySection server={server} serverSlug={serverSlug} />
           )}
           {activeSection === 'permissions' && (
-            <PermissionsSection matrix={permissionMatrix} />
+            permissionMatrix == null ? (
+              <div className='max-w-lg space-y-3'>
+                <h2 className='text-xl font-semibold text-white'>Permissions</h2>
+                <p className='text-sm text-red-400'>
+                  Failed to load the permission matrix. Please refresh the page.
+                </p>
+              </div>
+            ) : (
+              <PermissionsSection matrix={permissionMatrix} />
+            )
           )}
           {activeSection === 'danger-zone' &&
             (canDeleteServer ? (

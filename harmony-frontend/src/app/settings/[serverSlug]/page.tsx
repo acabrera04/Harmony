@@ -12,7 +12,7 @@ export default async function ServerSettingsRoute({ params }: PageProps) {
   const [server, sessionUser, permissionMatrix] = await Promise.all([
     requireServerSettingsAccess(serverSlug),
     getSessionUser(),
-    trpcQuery<PermissionMatrix>('permission.getMatrix').catch(() => ({})),
+    trpcQuery<PermissionMatrix>('permission.getMatrix').catch((): null => null),
   ]);
 
   return (
