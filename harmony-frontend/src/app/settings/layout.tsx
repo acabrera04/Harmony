@@ -1,7 +1,12 @@
-/**
- * AppLayout for /settings/* routes.
- * TODO: add authentication guard here (redirect to login if unauthenticated).
- */
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+import type { ReactNode } from 'react';
+import { AuthGuard } from '@/components/layout/AuthGuard';
+
+/** Wraps all /settings/* authenticated routes. */
+export default function SettingsLayout({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <AuthGuard />
+      {children}
+    </>
+  );
 }
