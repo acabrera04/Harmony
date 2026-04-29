@@ -204,7 +204,6 @@ function ActionBar({
   isOwnMessage,
   onEditClick,
   onReplyClick,
-  onPinActionStart,
   onPinToggle,
   onReactionAdd,
 }: {
@@ -216,7 +215,6 @@ function ActionBar({
   isOwnMessage?: boolean;
   onEditClick?: () => void;
   onReplyClick?: () => void;
-  onPinActionStart?: () => void;
   onPinToggle?: (messageId: string, pinned: boolean) => void;
   onReactionAdd?: (emoji: string) => void;
 }) {
@@ -292,7 +290,6 @@ function ActionBar({
   const handlePinToggle = useCallback(async () => {
     if (!serverId) return;
     const nextPinned = !isPinned;
-    onPinActionStart?.();
     setIsMoreOpen(false);
     setPinState('loading');
     const verb = isPinned ? 'unpin' : 'pin';
@@ -328,7 +325,7 @@ function ActionBar({
         setPinErrorMsg('');
       }, 3000);
     }
-  }, [isPinned, messageId, onPinActionStart, onPinToggle, serverId]);
+  }, [isPinned, messageId, onPinToggle, serverId]);
 
   return (
     <div className='absolute -top-3 right-4 z-10 flex items-center rounded-md border border-white/10 bg-[#2f3136] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto'>
@@ -480,7 +477,6 @@ export function MessageItem({
   canPin,
   serverId,
   onReplyClick,
-  onPinActionStart,
   onPinToggle,
 }: {
   message: Message;
@@ -492,8 +488,6 @@ export function MessageItem({
   serverId?: string;
   /** Called when the user clicks Reply on this message. */
   onReplyClick?: (message: Message) => void;
-  /** Called as soon as the user clicks pin/unpin for this message. */
-  onPinActionStart?: () => void;
   /** Called when the user triggers a pin/unpin action for this message. */
   onPinToggle?: (messageId: string, pinned: boolean) => void;
 }) {
@@ -722,7 +716,6 @@ export function MessageItem({
       isOwnMessage={isOwnMessage}
       onEditClick={handleEditClick}
       onReplyClick={isTopLevel ? handleReplyClick : undefined}
-      onPinActionStart={onPinActionStart}
       onPinToggle={onPinToggle}
       onReactionAdd={handleReactionAdd}
     />

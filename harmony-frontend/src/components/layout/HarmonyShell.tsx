@@ -232,10 +232,6 @@ export function HarmonyShell({
     setReplyingTo(message);
   }, []);
 
-  const handlePinActionStart = useCallback(() => {
-    setIsPinsOpen(false);
-  }, []);
-
   const handlePinToggle = useCallback((messageId: string, pinned: boolean) => {
     setLocalMessages(prev =>
       prev.map(message => (message.id === messageId ? { ...message, pinned } : message)),
@@ -503,7 +499,7 @@ export function HarmonyShell({
             isMembersOpen={isMembersOpen}
             onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
             onSearchOpen={isChannelLocked ? undefined : () => setIsSearchOpen(true)}
-            onPinsOpen={isChannelLocked ? undefined : () => setIsPinsOpen(true)}
+            onPinsOpen={isChannelLocked ? undefined : () => setIsPinsOpen(v => !v)}
             disableMessageActions={isChannelLocked}
             isMenuOpen={isMenuOpen}
             onMenuToggle={() => setIsMenuOpen(v => !v)}
@@ -522,7 +518,6 @@ export function HarmonyShell({
                     serverId={currentServer.id}
                     canPin={canPin}
                     onReplyClick={handleReplyClick}
-                    onPinActionStart={handlePinActionStart}
                     onPinToggle={handlePinToggle}
                   />
                   <MessageInput

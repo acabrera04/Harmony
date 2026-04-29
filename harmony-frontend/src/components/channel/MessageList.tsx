@@ -75,8 +75,6 @@ interface MessageListProps {
   canPin?: boolean;
   /** Called when the user clicks Reply on a message. */
   onReplyClick?: (message: Message) => void;
-  /** Called as soon as the user clicks pin/unpin on a message. */
-  onPinActionStart?: () => void;
   /** Called when the user clicks pin/unpin on a message. */
   onPinToggle?: (messageId: string, pinned: boolean) => void;
 }
@@ -87,7 +85,6 @@ export function MessageList({
   serverId,
   canPin,
   onReplyClick,
-  onPinActionStart,
   onPinToggle,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -169,7 +166,6 @@ export function MessageList({
                   serverId={serverId}
                   canPin={canPin}
                   onReplyClick={onReplyClick}
-                  onPinActionStart={onPinActionStart}
                   onPinToggle={onPinToggle}
                 />
               ))}
