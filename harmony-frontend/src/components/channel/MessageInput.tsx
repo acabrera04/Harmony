@@ -158,6 +158,32 @@ export function MessageInput({
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  const closeMentionDropdown = useCallback(() => {
+    setMentionCandidates([]);
+    setMentionStart(-1);
+    setMentionSelectedIdx(0);
+  }, []);
+
+  const handleMentionSelect = useCallback(
+    (candidate: MentionCandidate) => {
+      if (mentionStart === -1) return;
+      const before = value.slice(0, mentionStart);
+      const after = value.slice(textareaRef.current?.selectionStart ?? value.length);
+      const inserted = `@${candidate.username} `;
+      const next = before + inserted + after;
+      if (next.length <= MAX_CHARS) {
+        setValue(next);
+        requestAnimationFrame(() => {
+          const pos = before.length + inserted.length;
+          textareaRef.current?.focus();
+          textareaRef.current?.setSelectionRange(pos, pos);
+        });
+      }
+      closeMentionDropdown();
+    },
+    [value, mentionStart, closeMentionDropdown],
+  );
+
   const handleEmojiSelect = useCallback(
     (emoji: { native: string }) => {
       const textarea = textareaRef.current;
@@ -262,33 +288,6 @@ export function MessageInput({
       handleSend();
     }
   };
-
-  const closeMentionDropdown = useCallback(() => {
-    setMentionCandidates([]);
-    setMentionStart(-1);
-    setMentionSelectedIdx(0);
-  }, []);
-
-  const handleMentionSelect = useCallback(
-    (candidate: MentionCandidate) => {
-      if (mentionStart === -1) return;
-      const before = value.slice(0, mentionStart);
-      const after = value.slice(textareaRef.current?.selectionStart ?? value.length);
-      const inserted = `@${candidate.username} `;
-      const next = before + inserted + after;
-      if (next.length <= MAX_CHARS) {
-        setValue(next);
-        // Place cursor right after the inserted mention
-        requestAnimationFrame(() => {
-          const pos = before.length + inserted.length;
-          textareaRef.current?.focus();
-          textareaRef.current?.setSelectionRange(pos, pos);
-        });
-      }
-      closeMentionDropdown();
-    },
-    [value, mentionStart, closeMentionDropdown],
-  );
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;

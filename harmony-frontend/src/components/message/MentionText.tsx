@@ -9,8 +9,6 @@ interface MentionTextProps {
   currentUsername?: string;
 }
 
-const MENTION_RE = /@([\w]{1,32})/g;
-
 /**
  * Renders message content with @username tokens styled as inline mention pills.
  * Self-mentions receive an accent background; other mentions are styled dimly.
@@ -24,9 +22,9 @@ export function MentionText({ content, currentUsername }: MentionTextProps) {
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   let key = 0;
-
-  MENTION_RE.lastIndex = 0;
-  while ((match = MENTION_RE.exec(content)) !== null) {
+  // Create a fresh regex per call so shared lastIndex state never bleeds between renders.
+  const re = /@([\w]{1,32})/g;
+  while ((match = re.exec(content)) !== null) {
     const [full, username] = match;
     const start = match.index;
 
