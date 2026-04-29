@@ -228,8 +228,10 @@ function ActionBar({
   const [pinState, setPinState] = useState<PinState>('idle');
   const [pinErrorMsg, setPinErrorMsg] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiPickerOpenUpward, setEmojiPickerOpenUpward] = useState(true);
   const moreRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiTriggerRef = useRef<HTMLButtonElement>(null);
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -364,12 +366,19 @@ function ActionBar({
           type='button'
           aria-label='Add Reaction'
           title='Add Reaction'
+          ref={emojiTriggerRef}
           aria-expanded={isAuthenticated ? showEmojiPicker : undefined}
           aria-haspopup={isAuthenticated ? 'dialog' : undefined}
           onClick={
             !isAuthenticated
               ? () => router.push(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`)
-              : () => setShowEmojiPicker(prev => !prev)
+              : () => {
+                  if (!showEmojiPicker && emojiTriggerRef.current) {
+                    const rect = emojiTriggerRef.current.getBoundingClientRect();
+                    setEmojiPickerOpenUpward(rect.top > 435);
+                  }
+                  setShowEmojiPicker(prev => !prev);
+                }
           }
           className='flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors'
         >
@@ -387,7 +396,7 @@ function ActionBar({
           <div
             role='dialog'
             aria-label='Emoji picker'
-            className='absolute bottom-full right-0 z-50 mb-2'
+            className={`absolute right-0 z-50 ${emojiPickerOpenUpward ? 'bottom-full mb-2' : 'top-full mt-2'}`}
           >
             <EmojiPickerPopover onEmojiSelect={handleEmojiSelect} />
           </div>
