@@ -557,7 +557,7 @@ describe('GET /api/events/server/:serverId — authorisation', () => {
 });
 
 describe('GET /api/events/server/:serverId — subscription readiness', () => {
-  it('returns 500 when first-batch subscriptions fail to become ready', async () => {
+  it('returns 503 when first-batch subscriptions fail to become ready', async () => {
     const firstUnsub = jest.fn();
     const failingReady = Promise.reject(new Error('redis subscribe failed'));
     failingReady.catch(() => undefined);
@@ -568,12 +568,12 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
       `/api/events/server/${VALID_SERVER_ID}?token=${VALID_TOKEN}`,
     );
 
-    expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: 'Failed to initialize event stream' });
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ error: 'Failed to establish event stream' });
     expect(firstUnsub).toHaveBeenCalled();
   });
 
-  it('returns 500 when second-batch subscriptions fail before headers are flushed', async () => {
+  it('returns 503 when second-batch subscriptions fail before headers are flushed', async () => {
     // Let CHANNEL_CREATED and CHANNEL_DELETED (first batch) succeed.
     const firstUnsub = jest.fn();
     const secondUnsub = jest.fn();
@@ -591,9 +591,9 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
       `/api/events/server/${VALID_SERVER_ID}?token=${VALID_TOKEN}`,
     );
 
-    // Headers must NOT have been flushed — client receives a proper 500 JSON response.
-    expect(res.status).toBe(500);
-    expect(res.body).toEqual({ error: 'Failed to initialize event stream' });
+    // Headers must NOT have been flushed — client receives a proper 503 JSON response.
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ error: 'Failed to establish event stream' });
     // Cleanup must have run — all registered unsubscribes are called.
     expect(firstUnsub).toHaveBeenCalled();
     expect(secondUnsub).toHaveBeenCalled();

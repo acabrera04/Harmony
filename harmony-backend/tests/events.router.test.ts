@@ -360,7 +360,7 @@ describe('GET /api/events/channel/:channelId — input validation', () => {
 });
 
 describe('GET /api/events/channel/:channelId — subscription readiness', () => {
-  it('returns 500 when SSE subscriptions fail to become ready', async () => {
+  it('returns 503 when SSE subscriptions fail to become ready', async () => {
     const failingReady = Promise.reject(new Error('redis subscribe failed'));
     // Mark as handled immediately so Jest doesn't flag an unhandled rejection
     // before the route awaits the readiness promise.
@@ -375,6 +375,6 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
       `/api/events/channel/550e8400-e29b-41d4-a716-446655440001?token=${VALID_TOKEN}`,
     );
 
-    expect(res.statusCode).toBe(500);
+    expect(res.statusCode).toBe(503);
   });
 });
