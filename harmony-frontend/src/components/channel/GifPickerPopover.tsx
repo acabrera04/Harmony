@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { GifResult } from '@/app/api/tenor/route';
+import type { GifResult } from '@/app/api/gifs/route';
 
 export interface GifPickerPopoverProps {
   onGifSelect: (url: string) => void;
@@ -22,8 +22,8 @@ function useGifSearch(query: string) {
   useEffect(() => {
     let cancelled = false;
     const url = query.trim()
-      ? `/api/tenor?q=${encodeURIComponent(query.trim())}`
-      : `/api/tenor`;
+      ? `/api/gifs?q=${encodeURIComponent(query.trim())}`
+      : `/api/gifs`;
 
     const timer = setTimeout(() => {
       // State updates inside the timer callback avoid triggering the
@@ -171,7 +171,7 @@ export function GifPickerPopover({ onGifSelect }: GifPickerPopoverProps) {
 
       {/* Tenor attribution (required by Tenor API ToS) */}
       <div className='border-t border-black/20 px-3 py-1.5 text-center'>
-        <span className='text-xs text-gray-500'>Powered by Tenor</span>
+        <span className='text-xs text-gray-500'>Powered by Pixabay</span>
       </div>
     </div>
   );

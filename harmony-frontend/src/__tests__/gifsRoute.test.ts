@@ -1,5 +1,5 @@
 /**
- * Unit tests for the Tenor GIF proxy API route.
+ * Unit tests for the Pixabay GIF proxy API route.
  * Issue #499 — GIF picker for message input.
  */
 
@@ -30,37 +30,35 @@ jest.mock('next/server', () => ({
   },
 }));
 
-import { GET } from '@/app/api/tenor/route';
+import { GET } from '@/app/api/gifs/route';
 import { NextRequest } from 'next/server';
 
 function makeRequest(url: string): InstanceType<typeof NextRequest> {
   return new NextRequest(url) as unknown as InstanceType<typeof NextRequest>;
 }
 
-function makeTenorResponse(results: unknown[]) {
-  return { results };
+function makePixabayResponse(hits: unknown[]) {
+  return { hits };
 }
 
-function makeTenorResult(overrides: Record<string, unknown> = {}) {
+function makePixabayHit(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'gif-1',
-    title: 'funny cat',
-    media_formats: {
-      gif: { url: 'https://media.tenor.com/gif1.gif' },
-      tinygif: { url: 'https://media.tenor.com/gif1_small.gif' },
-    },
+    id: 1,
+    tags: 'funny cat',
+    webformatURL: 'https://cdn.pixabay.com/gif1.gif',
+    previewURL: 'https://cdn.pixabay.com/gif1_preview.gif',
     ...overrides,
   };
 }
 
-describe('GET /api/tenor', () => {
+describe('GET /api/gifs', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
     jest.resetAllMocks();
     // jest.resetAllMocks() wipes mockResolvedValue on the cookies factory; restore it.
     (cookies as jest.Mock).mockResolvedValue({ get: mockCookiesGet });
-    process.env = { ...OLD_ENV, TENOR_API_KEY: 'test-key' };
+    process.env = { ...OLD_ENV, PIXABAY_API_KEY: 'test-key' };
     // Default: authenticated user
     mockCookiesGet.mockReturnValue({ value: 'token-abc' });
   });
@@ -71,57 +69,57 @@ describe('GET /api/tenor', () => {
 
   it('returns 401 when no auth_token cookie is present', async () => {
     mockCookiesGet.mockReturnValue(undefined);
-    const req = makeRequest('http://localhost/api/tenor');
+    const req = makeRequest('http://localhost/api/gifs');
     const res = await GET(req as never);
     expect((res as { _status: number })._status).toBe(401);
   });
 
-  it('returns 503 when TENOR_API_KEY is not set', async () => {
-    delete process.env.TENOR_API_KEY;
-    const req = makeRequest('http://localhost/api/tenor');
+  it('returns 503 when PIXABAY_API_KEY is not set', async () => {
+    delete process.env.PIXABAY_API_KEY;
+    const req = makeRequest('http://localhost/api/gifs');
     const res = await GET(req as never);
     expect((res as { _status: number })._status).toBe(503);
   });
 
-  it('calls the Tenor featured endpoint when no query is given', async () => {
+  it('uses editors_choice when no query is given', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: jest.fn().mockResolvedValue(makeTenorResponse([makeTenorResult()])),
+      json: jest.fn().mockResolvedValue(makePixabayResponse([makePixabayHit()])),
     });
 
-    const req = makeRequest('http://localhost/api/tenor');
+    const req = makeRequest('http://localhost/api/gifs');
     const res = await GET(req as never);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('tenor.googleapis.com/v2/featured'),
+      expect.stringContaining('editors_choice=true'),
       expect.anything(),
     );
     expect((res as { _status: number })._status).toBe(200);
     const body = (res as { _body: { gifs: unknown[] } })._body;
     expect(body.gifs).toHaveLength(1);
     expect(body.gifs[0]).toMatchObject({
-      id: 'gif-1',
+      id: '1',
       title: 'funny cat',
-      url: 'https://media.tenor.com/gif1.gif',
-      previewUrl: 'https://media.tenor.com/gif1_small.gif',
+      url: 'https://cdn.pixabay.com/gif1.gif',
+      previewUrl: 'https://cdn.pixabay.com/gif1_preview.gif',
     });
   });
 
-  it('calls the Tenor search endpoint when a query is given', async () => {
+  it('includes q param when a query is given', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: jest.fn().mockResolvedValue(makeTenorResponse([makeTenorResult()])),
+      json: jest.fn().mockResolvedValue(makePixabayResponse([makePixabayHit()])),
     });
 
-    const req = makeRequest('http://localhost/api/tenor?q=cats');
+    const req = makeRequest('http://localhost/api/gifs?q=cats');
     await GET(req as never);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('tenor.googleapis.com/v2/search'),
+      expect.stringContaining('q=cats'),
       expect.anything(),
     );
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('q=cats'),
+    expect(mockFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('editors_choice'),
       expect.anything(),
     );
   });
@@ -129,23 +127,23 @@ describe('GET /api/tenor', () => {
   it('URL-encodes special characters in the search query', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: jest.fn().mockResolvedValue(makeTenorResponse([])),
+      json: jest.fn().mockResolvedValue(makePixabayResponse([])),
     });
 
     // "hello world!" pre-encoded in the URL as "hello+world%21"
-    const req = makeRequest('http://localhost/api/tenor?q=hello+world%21');
+    const req = makeRequest('http://localhost/api/gifs?q=hello+world%21');
     await GET(req as never);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('q=hello%20world!'),
+      expect.stringContaining('q=hello+world%21'),
       expect.anything(),
     );
   });
 
-  it('returns 502 when Tenor API responds with an error', async () => {
+  it('returns 502 when Pixabay API responds with an error', async () => {
     mockFetch.mockResolvedValue({ ok: false, status: 429 });
 
-    const req = makeRequest('http://localhost/api/tenor?q=cats');
+    const req = makeRequest('http://localhost/api/gifs?q=cats');
     const res = await GET(req as never);
 
     expect((res as { _status: number })._status).toBe(502);
@@ -154,7 +152,7 @@ describe('GET /api/tenor', () => {
   it('returns 500 when fetch throws', async () => {
     mockFetch.mockRejectedValue(new Error('network'));
 
-    const req = makeRequest('http://localhost/api/tenor?q=cats');
+    const req = makeRequest('http://localhost/api/gifs?q=cats');
     const res = await GET(req as never);
 
     expect((res as { _status: number })._status).toBe(500);
@@ -164,17 +162,17 @@ describe('GET /api/tenor', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue(
-        makeTenorResponse([
-          makeTenorResult({ id: 'ok', media_formats: { gif: { url: 'https://media.tenor.com/ok.gif' } } }),
-          makeTenorResult({ id: 'empty', media_formats: {} }),
+        makePixabayResponse([
+          makePixabayHit({ id: 1, webformatURL: 'https://cdn.pixabay.com/ok.gif' }),
+          makePixabayHit({ id: 2, webformatURL: '' }),
         ]),
       ),
     });
 
-    const req = makeRequest('http://localhost/api/tenor');
+    const req = makeRequest('http://localhost/api/gifs');
     const res = await GET(req as never);
     const body = (res as { _body: { gifs: unknown[] } })._body;
     expect(body.gifs).toHaveLength(1);
-    expect((body.gifs[0] as { id: string }).id).toBe('ok');
+    expect((body.gifs[0] as { id: string }).id).toBe('1');
   });
 });
