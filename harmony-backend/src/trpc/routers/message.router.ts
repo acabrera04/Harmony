@@ -1,6 +1,19 @@
 import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
 import { router, withPermission } from '../init';
 import { messageService } from '../../services/message.service';
+
+/**
+ * Returns the base URL that all attachment URLs must start with.
+ * Computed from STORAGE_PROVIDER and the corresponding base URL env var.
+ * Returns null when the base URL is not configured (skips validation).
+ */
+function getAllowedAttachmentBase(): string | null {
+  if (process.env.STORAGE_PROVIDER === 's3') {
+    return process.env.R2_PUBLIC_URL ?? null;
+  }
+  return process.env.LOCAL_UPLOAD_BASE_URL ?? 'http://localhost:4000';
+}
 
 // sizeBytes is accepted as a plain number (JSON-safe).
 // The service layer casts it to BigInt before writing to Prisma.
@@ -44,15 +57,25 @@ export const messageRouter = router({
         { message: 'Message must have content or at least one attachment.' },
       ),
     )
-    .mutation(({ input, ctx }) =>
-      messageService.sendMessage({
+    .mutation(({ input, ctx }) => {
+      if (input.attachments?.length) {
+        const allowedBase = getAllowedAttachmentBase();
+        if (allowedBase) {
+          for (const att of input.attachments) {
+            if (!att.url.startsWith(allowedBase)) {
+              throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid attachment URL' });
+            }
+          }
+        }
+      }
+      return messageService.sendMessage({
         serverId: input.serverId,
         channelId: input.channelId,
         authorId: ctx.userId,
         content: input.content,
         attachments: input.attachments,
-      }),
-    ),
+      });
+    }),
 
   /**
    * Edit the content of a message the caller authored.
