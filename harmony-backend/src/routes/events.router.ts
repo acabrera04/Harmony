@@ -67,15 +67,19 @@ function sendEvent(res: Response, eventType: string, data: unknown): void {
 }
 
 async function awaitSubscriptionReadiness(
-  readyPromises: Promise<void>[],
+  entries: { ready: Promise<void>; name: string }[],
   onFailure: () => void,
 ): Promise<boolean> {
   try {
-    await Promise.all(readyPromises);
+    await Promise.all(entries.map(e => e.ready));
     return true;
   } catch (err) {
     onFailure();
-    logger.error({ err }, 'SSE subscription readiness failed');
+    const results = await Promise.allSettled(entries.map(e => e.ready));
+    const failed = entries
+      .filter((_, i) => results[i].status === 'rejected')
+      .map(e => e.name);
+    logger.error({ err, failedSubscriptions: failed }, 'SSE subscription readiness failed');
     return false;
   }
 }
@@ -221,7 +225,12 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
   const unsubServerUpdated = serverUpdatedSub.unsubscribe;
 
   const channelReady = await awaitSubscriptionReadiness(
-    [createdSub.ready, editedSub.ready, deletedSub.ready, serverUpdatedSub.ready],
+    [
+      { ready: createdSub.ready, name: EventChannels.MESSAGE_CREATED },
+      { ready: editedSub.ready, name: EventChannels.MESSAGE_EDITED },
+      { ready: deletedSub.ready, name: EventChannels.MESSAGE_DELETED },
+      { ready: serverUpdatedSub.ready, name: EventChannels.SERVER_UPDATED },
+    ],
     () => {
       unsubCreated();
       unsubEdited();
@@ -389,7 +398,10 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
   cleanupFns.push(unsubChannelDeleted);
 
   const preloadedChannelsReady = await awaitSubscriptionReadiness(
-    [channelCreatedSub.ready, channelDeletedSub.ready],
+    [
+      { ready: channelCreatedSub.ready, name: EventChannels.CHANNEL_CREATED },
+      { ready: channelDeletedSub.ready, name: EventChannels.CHANNEL_DELETED },
+    ],
     cleanup,
   );
   if (!preloadedChannelsReady) {
@@ -417,13 +429,6 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
   // has already fired (cleanedUp === true) and the early subscriptions are
   // released. Stop here so no further handlers are registered under a dead conn.
   if (cleanedUp) return;
-
-  // ── SSE headers ──────────────────────────────────────────────────────────
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.flushHeaders();
 
   // ── Subscribe to message events ──────────────────────────────────────────
 
@@ -664,22 +669,32 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
 
   const serverReady = await awaitSubscriptionReadiness(
     [
-      messageCreatedSub.ready,
-      messageEditedSub.ready,
-      messageDeletedSub.ready,
-      serverUpdatedSub.ready,
-      channelUpdatedSub.ready,
-      statusChangedSub.ready,
-      memberJoinedSub.ready,
-      memberLeftSub.ready,
-      visibilityChangedSub.ready,
+      { ready: messageCreatedSub.ready, name: EventChannels.MESSAGE_CREATED },
+      { ready: messageEditedSub.ready, name: EventChannels.MESSAGE_EDITED },
+      { ready: messageDeletedSub.ready, name: EventChannels.MESSAGE_DELETED },
+      { ready: serverUpdatedSub.ready, name: EventChannels.SERVER_UPDATED },
+      { ready: channelUpdatedSub.ready, name: EventChannels.CHANNEL_UPDATED },
+      { ready: statusChangedSub.ready, name: EventChannels.USER_STATUS_CHANGED },
+      { ready: memberJoinedSub.ready, name: EventChannels.MEMBER_JOINED },
+      { ready: memberLeftSub.ready, name: EventChannels.MEMBER_LEFT },
+      { ready: visibilityChangedSub.ready, name: EventChannels.VISIBILITY_CHANGED },
     ],
     cleanup,
   );
   if (!serverReady) {
-    if (!res.headersSent) res.status(500).json({ error: 'Failed to initialize event stream' });
+    res.status(500).json({ error: 'Failed to initialize event stream' });
     return;
   }
+
+  // Guard: if the client disconnected while awaiting subscription readiness, stop here.
+  if (cleanedUp) return;
+
+  // ── SSE headers ──────────────────────────────────────────────────────────
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
 
   // ── Heartbeat ────────────────────────────────────────────────────────────
   const heartbeat = setInterval(() => {

@@ -29,6 +29,11 @@ jest.mock('../src/events/eventBus', () => ({
     CHANNEL_CREATED: 'harmony:CHANNEL_CREATED',
     CHANNEL_UPDATED: 'harmony:CHANNEL_UPDATED',
     CHANNEL_DELETED: 'harmony:CHANNEL_DELETED',
+    SERVER_UPDATED: 'harmony:SERVER_UPDATED',
+    USER_STATUS_CHANGED: 'harmony:USER_STATUS_CHANGED',
+    MEMBER_JOINED: 'harmony:MEMBER_JOINED',
+    MEMBER_LEFT: 'harmony:MEMBER_LEFT',
+    VISIBILITY_CHANGED: 'harmony:VISIBILITY_CHANGED',
   },
 }));
 
@@ -232,15 +237,11 @@ describe('GET /api/events/server/:serverId — authorisation', () => {
 });
 
 describe('GET /api/events/server/:serverId — subscription readiness', () => {
-  it('returns 500 when SSE subscriptions fail to become ready', async () => {
+  it('returns 500 when first-batch subscriptions fail to become ready', async () => {
+    const firstUnsub = jest.fn();
     const failingReady = Promise.reject(new Error('redis subscribe failed'));
-    // Mark as handled immediately so Jest doesn't flag an unhandled rejection
-    // before the route awaits the readiness promise.
     failingReady.catch(() => undefined);
-    mockSubscribe.mockReturnValueOnce({
-      unsubscribe: jest.fn(),
-      ready: failingReady,
-    });
+    mockSubscribe.mockReturnValueOnce({ unsubscribe: firstUnsub, ready: failingReady });
     mockSubscribe.mockReturnValue({ unsubscribe: jest.fn(), ready: Promise.resolve() });
 
     const res = await request(app).get(
@@ -249,5 +250,33 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ error: 'Failed to initialize event stream' });
+    expect(firstUnsub).toHaveBeenCalled();
+  });
+
+  it('returns 500 when second-batch subscriptions fail before headers are flushed', async () => {
+    // Let CHANNEL_CREATED and CHANNEL_DELETED (first batch) succeed.
+    const firstUnsub = jest.fn();
+    const secondUnsub = jest.fn();
+    mockSubscribe.mockReturnValueOnce({ unsubscribe: firstUnsub, ready: Promise.resolve() });
+    mockSubscribe.mockReturnValueOnce({ unsubscribe: secondUnsub, ready: Promise.resolve() });
+
+    // Fail MESSAGE_CREATED (third subscribe call — first in the second batch).
+    const thirdUnsub = jest.fn();
+    const failingReady = Promise.reject(new Error('redis message-sub failed'));
+    failingReady.catch(() => undefined);
+    mockSubscribe.mockReturnValueOnce({ unsubscribe: thirdUnsub, ready: failingReady });
+    mockSubscribe.mockReturnValue({ unsubscribe: jest.fn(), ready: Promise.resolve() });
+
+    const res = await request(app).get(
+      `/api/events/server/${VALID_SERVER_ID}?token=${VALID_TOKEN}`,
+    );
+
+    // Headers must NOT have been flushed — client receives a proper 500 JSON response.
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: 'Failed to initialize event stream' });
+    // Cleanup must have run — all registered unsubscribes are called.
+    expect(firstUnsub).toHaveBeenCalled();
+    expect(secondUnsub).toHaveBeenCalled();
+    expect(thirdUnsub).toHaveBeenCalled();
   });
 });
