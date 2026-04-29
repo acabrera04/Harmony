@@ -18,6 +18,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useRouter, usePathname } from 'next/navigation';
 import { formatMessageTimestamp, formatTimeOnly } from '@/lib/utils';
 import { pinMessageAction, unpinMessageAction } from '@/app/actions/pinMessage';
@@ -25,7 +26,16 @@ import { editMessageAction } from '@/app/actions/editMessage';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { ThreadView } from '@/components/message/ThreadView';
+import { apiClient } from '@/lib/api-client';
 import type { Message, Reaction } from '@/types';
+
+const EmojiPickerPopover = dynamic(
+  () =>
+    import('@/components/channel/EmojiPickerPopover').then(m => ({
+      default: m.EmojiPickerPopover,
+    })),
+  { ssr: false },
+);
 
 // ─── AttachmentList ───────────────────────────────────────────────────────────
 
@@ -127,28 +137,35 @@ type PinState = 'idle' | 'loading' | 'success' | 'error';
 function ActionBar({
   messageId,
   serverId,
+  channelId,
   canPin,
   initialPinned,
   isOwnMessage,
   onEditClick,
   onReplyClick,
+  onReactionAdd,
 }: {
   messageId: string;
   serverId?: string;
+  channelId?: string;
   canPin?: boolean;
   initialPinned?: boolean;
   isOwnMessage?: boolean;
   onEditClick?: () => void;
   onReplyClick?: () => void;
+  onReactionAdd?: (emoji: string) => void;
 }) {
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(initialPinned ?? false);
   const [pinState, setPinState] = useState<PinState>('idle');
   const [pinErrorMsg, setPinErrorMsg] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -170,6 +187,41 @@ function ActionBar({
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [isMoreOpen]);
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    function onClickOutside(e: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [showEmojiPicker]);
+
+  const handleEmojiSelect = useCallback(
+    async (emoji: { native: string }) => {
+      setShowEmojiPicker(false);
+      if (!channelId || !serverId) return;
+      try {
+        await apiClient.trpcMutation('reaction.addReaction', {
+          serverId,
+          channelId,
+          messageId,
+          emoji: emoji.native,
+        });
+        onReactionAdd?.(emoji.native);
+      } catch (err: unknown) {
+        const code = (
+          err as { response?: { data?: { error?: { json?: { code?: string } } } } }
+        )?.response?.data?.error?.json?.code;
+        if (code !== 'CONFLICT') {
+          showToast({ message: 'Failed to add reaction. Please try again.', type: 'error' });
+        }
+      }
+    },
+    [channelId, serverId, messageId, onReactionAdd, showToast],
+  );
 
   const handlePinToggle = useCallback(async () => {
     if (!serverId) return;
@@ -240,28 +292,41 @@ function ActionBar({
         </svg>
       </button>
 
-      {/* Add Reaction — redirects guests to login; stub for authenticated users */}
-      <button
-        type='button'
-        aria-label='Add Reaction'
-        title='Add Reaction'
-        onClick={
-          !isAuthenticated
-            ? () => router.push(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`)
-            : undefined
-        }
-        className='flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors'
-      >
-        <svg
-          className='h-4 w-4'
-          viewBox='0 0 24 24'
-          fill='currentColor'
-          aria-hidden='true'
-          focusable='false'
+      {/* Add Reaction — redirects guests to login; opens emoji picker for authenticated users */}
+      <div ref={emojiPickerRef} className='relative'>
+        <button
+          type='button'
+          aria-label='Add Reaction'
+          title='Add Reaction'
+          aria-expanded={isAuthenticated ? showEmojiPicker : undefined}
+          aria-haspopup={isAuthenticated ? 'dialog' : undefined}
+          onClick={
+            !isAuthenticated
+              ? () => router.push(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`)
+              : () => setShowEmojiPicker(prev => !prev)
+          }
+          className='flex h-8 w-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors'
         >
-          <path d='M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm-3.5-9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm1.476 2.37a.75.75 0 0 0-1.06-1.06 4.5 4.5 0 0 1-6.832 0 .75.75 0 0 0-1.061 1.06 6 6 0 0 0 8.953 0z' />
-        </svg>
-      </button>
+          <svg
+            className='h-4 w-4'
+            viewBox='0 0 24 24'
+            fill='currentColor'
+            aria-hidden='true'
+            focusable='false'
+          >
+            <path d='M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm-3.5-9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm1.476 2.37a.75.75 0 0 0-1.06-1.06 4.5 4.5 0 0 1-6.832 0 .75.75 0 0 0-1.061 1.06 6 6 0 0 0 8.953 0z' />
+          </svg>
+        </button>
+        {isAuthenticated && showEmojiPicker && (
+          <div
+            role='dialog'
+            aria-label='Emoji picker'
+            className='absolute bottom-full right-0 z-50 mb-2'
+          >
+            <EmojiPickerPopover onEmojiSelect={handleEmojiSelect} />
+          </div>
+        )}
+      </div>
 
       {/* More — rendered when user can pin or is the message author */}
       {(canPin || isOwnMessage) && (
@@ -352,6 +417,7 @@ export function MessageItem({
   const [editContent, setEditContent] = useState(message.content);
   const [isSaving, setIsSaving] = useState(false);
   const [localContent, setLocalContent] = useState<string | undefined>(undefined);
+  const [localReactions, setLocalReactions] = useState<Reaction[]>(message.reactions ?? []);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   // Thread state: only top-level messages (no parentMessageId) can have threads
   const isTopLevel = !message.parentMessageId;
@@ -374,7 +440,35 @@ export function MessageItem({
     if (localContent !== undefined) setLocalContent(undefined);
   }
 
+  // Sync localReactions when message.reactions changes externally (e.g. via SSE)
+  const [prevReactions, setPrevReactions] = useState(message.reactions);
+  if (prevReactions !== message.reactions) {
+    setPrevReactions(message.reactions);
+    setLocalReactions(message.reactions ?? []);
+  }
+
   const isOwnMessage = !!user && user.id === message.author.id;
+
+  const handleReactionAdd = useCallback(
+    (emoji: string) => {
+      setLocalReactions(prev => {
+        const existing = prev.find(r => r.emoji === emoji);
+        if (existing) {
+          return prev.map(r =>
+            r.emoji === emoji
+              ? {
+                  ...r,
+                  count: r.count + 1,
+                  userIds: user?.id ? [...r.userIds, user.id] : r.userIds,
+                }
+              : r,
+          );
+        }
+        return [...prev, { emoji, count: 1, userIds: user?.id ? [user.id] : [] }];
+      });
+    },
+    [user?.id],
+  );
 
   const handleEditClick = useCallback(() => {
     const current = localContent ?? message.content;
@@ -447,11 +541,13 @@ export function MessageItem({
     <ActionBar
       messageId={message.id}
       serverId={serverId}
+      channelId={message.channelId}
       canPin={canPin}
       initialPinned={!!message.pinned}
       isOwnMessage={isOwnMessage}
       onEditClick={handleEditClick}
       onReplyClick={isTopLevel ? handleReplyClick : undefined}
+      onReactionAdd={handleReactionAdd}
     />
   );
 
@@ -548,7 +644,7 @@ export function MessageItem({
               </p>
             )}
             <AttachmentList attachments={message.attachments} />
-            <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
+            <ReactionList reactions={localReactions} messageId={message.id} />
             {localReplyCount > 0 && threadToggle}
           </div>
         </div>
@@ -600,7 +696,7 @@ export function MessageItem({
             </p>
           )}
           <AttachmentList attachments={message.attachments} />
-          <ReactionList reactions={message.reactions ?? []} messageId={message.id} />
+          <ReactionList reactions={localReactions} messageId={message.id} />
           {localReplyCount > 0 && threadToggle}
         </div>
       </div>
