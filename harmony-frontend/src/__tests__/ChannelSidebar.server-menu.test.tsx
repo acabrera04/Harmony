@@ -150,4 +150,20 @@ describe('ChannelSidebar server menu', () => {
 
     expect(mockReplace).not.toHaveBeenCalled();
   });
+
+  it('hides leave server for owner role', () => {
+    renderSidebar({ role: 'owner', id: baseServer.ownerId });
+
+    fireEvent.click(screen.getByRole('button', { name: /open server menu/i }));
+
+    expect(screen.queryByRole('menuitem', { name: /leave server/i })).not.toBeInTheDocument();
+  });
+
+  it('hides leave server for guest role even with non-guest id', () => {
+    renderSidebar({ role: 'guest', id: '99999999-9999-4999-8999-999999999999' });
+
+    fireEvent.click(screen.getByRole('button', { name: /open server menu/i }));
+
+    expect(screen.queryByRole('menuitem', { name: /leave server/i })).not.toBeInTheDocument();
+  });
 });

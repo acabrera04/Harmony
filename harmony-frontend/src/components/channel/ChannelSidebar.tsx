@@ -203,7 +203,7 @@ export function ChannelSidebar({
       currentUser.role === 'admin');
   const canLeaveServer =
     isAuthenticated &&
-    currentUser.id !== 'guest' &&
+    currentUser.role !== 'guest' &&
     currentUser.role !== 'owner' &&
     !isLeavingServer;
 
