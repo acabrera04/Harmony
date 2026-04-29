@@ -101,9 +101,15 @@ interface VoiceProviderProps {
   serverId: string;
   /** IDs of all voice channels in the current server. */
   voiceChannelIds: string[];
+  /**
+   * The authenticated user's ID. Used to clean up channelParticipants when
+   * a join fails before a Twilio room is established — at that point
+   * room.localParticipant.identity is not yet available.
+   */
+  currentUserId?: string;
 }
 
-export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProviderProps) {
+export function VoiceProvider({ children, serverId, voiceChannelIds, currentUserId }: VoiceProviderProps) {
   const { showToast } = useToast();
 
   const [connectedChannelId, setConnectedChannelId] = useState<string | null>(null);
@@ -271,6 +277,11 @@ export function VoiceProvider({ children, serverId, voiceChannelIds }: VoiceProv
 
         connectedChannelIdRef.current = channelId;
         connectedServerIdRef.current = serverId;
+        // Set local identity now so leaveChannel() can clean up channelParticipants
+        // even if TwilioVideo.connect subsequently fails (room.localParticipant is
+        // not available until after a successful connect). The Twilio token uses
+        // userId as the identity (voice.service.ts), so this value is authoritative.
+        localParticipantIdentityRef.current = currentUserId ?? null;
         setConnectedChannelId(channelId);
         setConnectedChannelName(channelName);
         setParticipants(initialParticipants);
