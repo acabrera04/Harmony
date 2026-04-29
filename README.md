@@ -75,10 +75,10 @@ password: HarmonyAdmin123!
 One-command startup from repo root:
 
 ```bash
-./dev.sh
+npm run dev
 ```
 
-This script starts Docker (`postgres`, `redis`), applies backend Prisma migrations, then launches backend API, backend worker, and frontend together with shared shutdown on `Ctrl+C`.
+This command runs `./dev.sh`, which starts Docker (`postgres`, `redis`), applies backend Prisma migrations, then launches backend API, backend worker, and frontend together with shared shutdown on `Ctrl+C`.
 
 Manual startup (three terminals):
 

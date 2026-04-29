@@ -34,11 +34,13 @@ echo "==> Migrations up to date."
 # Start services
 
 echo "==> Starting backend API (npm run dev)..."
+cd "$BACKEND_DIR"
 npm run dev &
 BACKEND_PID=$!
 
 
 echo "==> Starting backend worker (npm run dev:worker)..."
+cd "$BACKEND_DIR"
 npm run dev:worker &
 WORKER_PID=$!
 
