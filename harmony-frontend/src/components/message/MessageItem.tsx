@@ -467,7 +467,7 @@ export function MessageItem({
         return [...prev, { emoji, count: 1, userIds: user?.id ? [user.id] : [] }];
       });
     },
-    [user?.id],
+    [user],
   );
 
   const handleEditClick = useCallback(() => {
