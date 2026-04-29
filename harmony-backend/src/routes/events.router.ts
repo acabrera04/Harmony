@@ -31,6 +31,7 @@ import type {
   MemberJoinedPayload,
   MemberLeftPayload,
   VisibilityChangedPayload,
+  UserMentionedPayload,
 } from '../events/eventTypes';
 
 export const eventsRouter = Router();
@@ -57,6 +58,14 @@ const MESSAGE_SSE_INCLUDE = {
   },
   attachments: {
     select: { id: true, filename: true, url: true, contentType: true },
+  },
+  parent: {
+    select: {
+      id: true,
+      content: true,
+      isDeleted: true,
+      author: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+    },
   },
 } as const;
 
@@ -251,6 +260,15 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
             timestamp: message.createdAt.toISOString(),
             attachments: message.attachments,
             editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+            parentMessageId: message.parentMessageId,
+            parentMessage: message.parent
+              ? {
+                  id: message.parent.id,
+                  content: message.parent.isDeleted ? '' : message.parent.content,
+                  isDeleted: message.parent.isDeleted,
+                  author: message.parent.author,
+                }
+              : null,
           },
           message.createdAt.toISOString(),
         );
@@ -352,6 +370,15 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
               timestamp: msg.createdAt.toISOString(),
               attachments: msg.attachments,
               editedAt: msg.editedAt ? msg.editedAt.toISOString() : null,
+              parentMessageId: msg.parentMessageId,
+              parentMessage: msg.parent
+                ? {
+                    id: msg.parent.id,
+                    content: msg.parent.isDeleted ? '' : msg.parent.content,
+                    isDeleted: msg.parent.isDeleted,
+                    author: msg.parent.author,
+                  }
+                : null,
             },
             msg.createdAt.toISOString(),
           ),
@@ -537,6 +564,15 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
             timestamp: message.createdAt.toISOString(),
             attachments: message.attachments,
             editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+            parentMessageId: message.parentMessageId,
+            parentMessage: message.parent
+              ? {
+                  id: message.parent.id,
+                  content: message.parent.isDeleted ? '' : message.parent.content,
+                  isDeleted: message.parent.isDeleted,
+                  author: message.parent.author,
+                }
+              : null,
           },
           message.createdAt.toISOString(),
         );
@@ -748,6 +784,15 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
               timestamp: msg.createdAt.toISOString(),
               attachments: msg.attachments,
               editedAt: msg.editedAt ? msg.editedAt.toISOString() : null,
+              parentMessageId: msg.parentMessageId,
+              parentMessage: msg.parent
+                ? {
+                    id: msg.parent.id,
+                    content: msg.parent.isDeleted ? '' : msg.parent.content,
+                    isDeleted: msg.parent.isDeleted,
+                    author: msg.parent.author,
+                  }
+                : null,
             },
             msg.createdAt.toISOString(),
           ),
@@ -756,4 +801,51 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     : undefined;
 
   await finalizeSseSetup(req, res, sseState, subscriptions, { route: 'server-events', serverId }, serverReplayFrames);
+});
+
+// ─── User-scoped notification SSE route ──────────────────────────────────────
+
+/**
+ * GET /api/events/user?token=<accessToken>
+ *
+ * Streams real-time mention notifications to the authenticated user.
+ * Each connected client only receives events addressed to their own userId.
+ */
+eventsRouter.get('/user', async (req: Request, res: Response) => {
+  const token = typeof req.query.token === 'string' ? req.query.token : null;
+  if (!token) {
+    res.status(401).json({ error: 'Missing token query parameter' });
+    return;
+  }
+
+  let userId: string;
+  try {
+    const payload = authService.verifyAccessToken(token);
+    userId = payload.sub;
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired access token' });
+    return;
+  }
+
+  const sseState = createBufferedSseState();
+  const writeEvent = createBufferedEventWriter(res, sseState);
+
+  const mentionSubscription = eventBus.subscribe(
+    EventChannels.USER_MENTIONED,
+    (payload: UserMentionedPayload) => {
+      if (payload.userId !== userId) return;
+      writeEvent('notification:mention', {
+        id: payload.notificationId,
+        messageId: payload.messageId,
+        channelId: payload.channelId,
+        serverId: payload.serverId,
+        authorId: payload.authorId,
+        authorUsername: payload.authorUsername,
+        timestamp: payload.timestamp,
+        read: false,
+      });
+    },
+  );
+
+  await finalizeSseSetup(req, res, sseState, [mentionSubscription], { route: 'user-events', userId });
 });

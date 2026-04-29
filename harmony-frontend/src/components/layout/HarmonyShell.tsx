@@ -98,10 +98,12 @@ export function HarmonyShell({
   const setIsMembersOpen = useCallback((val: boolean) => setMembersOverride(val), []);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isPinsOpen, setIsPinsOpen] = useState(false);
+  const [pinsRefreshKey, setPinsRefreshKey] = useState(0);
   // #c25: track mobile channel-sidebar state so aria-expanded on hamburger reflects reality
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Local message state so sent messages appear immediately without a page reload
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   // Track previous channel so we can reset localMessages synchronously on channel
   // switch — avoids a one-render flash where old messages show under the new channel header.
   const [prevChannelId, setPrevChannelId] = useState(currentChannel.id);
@@ -110,6 +112,7 @@ export function HarmonyShell({
     setLocalMessages(messages);
     setIsMenuOpen(false);
     setIsPinsOpen(false);
+    setReplyingTo(null);
     // Only auto-close the members sidebar on mobile so desktop keeps it open by default.
     if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 640px)').matches) {
       setIsMembersOpen(false);
@@ -225,11 +228,27 @@ export function HarmonyShell({
   // Other tabs receive the broadcast and call router.refresh(); the current tab
   // navigates to the new server route which re-renders with the updated servers prop.
 
+  const handleReplyClick = useCallback((message: Message) => {
+    setReplyingTo(message);
+  }, []);
+
+  const handlePinToggle = useCallback((messageId: string, pinned: boolean) => {
+    setLocalMessages(prev =>
+      prev.map(message => (message.id === messageId ? { ...message, pinned } : message)),
+    );
+    setPinsRefreshKey(prev => prev + 1);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
+  }, []);
+
   const handleMessageSent = useCallback((msg: Message) => {
     // Dedup: the SSE event for the sender's own message can arrive before the tRPC
     // response (Redis pub/sub on the same backend + established SSE connection beats
     // the HTTP round-trip). Without this check, the message would be added twice.
     setLocalMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+    setReplyingTo(null);
   }, []);
 
   // ── Real-time SSE handlers ────────────────────────────────────────────────
@@ -248,7 +267,15 @@ export function HarmonyShell({
   const handleRealTimeEdited = useCallback(
     (msg: Message) => {
       if (msg.channelId !== currentChannel.id) return;
-      setLocalMessages(prev => prev.map(m => (m.id === msg.id ? msg : m)));
+      let pinStateChanged = false;
+      setLocalMessages(prev =>
+        prev.map(m => {
+          if (m.id !== msg.id) return m;
+          pinStateChanged = Boolean(m.pinned) !== Boolean(msg.pinned);
+          return msg;
+        }),
+      );
+      if (pinStateChanged) setPinsRefreshKey(prev => prev + 1);
     },
     [currentChannel.id],
   );
@@ -472,10 +499,11 @@ export function HarmonyShell({
             isMembersOpen={isMembersOpen}
             onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
             onSearchOpen={isChannelLocked ? undefined : () => setIsSearchOpen(true)}
-            onPinsOpen={isChannelLocked ? undefined : () => setIsPinsOpen(true)}
+            onPinsOpen={isChannelLocked ? undefined : () => setIsPinsOpen(v => !v)}
             disableMessageActions={isChannelLocked}
             isMenuOpen={isMenuOpen}
             onMenuToggle={() => setIsMenuOpen(v => !v)}
+            userId={authUser?.id}
           />
 
           <div className='flex flex-1 overflow-hidden'>
@@ -490,6 +518,8 @@ export function HarmonyShell({
                     messages={localMessages}
                     serverId={currentServer.id}
                     canPin={canPin}
+                    onReplyClick={handleReplyClick}
+                    onPinToggle={handlePinToggle}
                   />
                   <MessageInput
                     channelId={currentChannel.id}
@@ -497,6 +527,8 @@ export function HarmonyShell({
                     serverId={currentServer.id}
                     isReadOnly={currentUser.role === 'guest'}
                     onMessageSent={handleMessageSent}
+                    replyingTo={replyingTo}
+                    onCancelReply={handleCancelReply}
                   />
                   {!isAuthLoading && !isAuthenticated && (
                     <GuestPromoBanner
@@ -513,6 +545,7 @@ export function HarmonyShell({
                 serverId={currentServer.id}
                 channelName={currentChannel.name}
                 isOpen={isPinsOpen}
+                refreshKey={pinsRefreshKey}
                 onClose={() => setIsPinsOpen(false)}
               />
             )}
@@ -545,6 +578,15 @@ export function HarmonyShell({
             channelName={currentChannel.name}
             isOpen={isSearchOpen}
             onClose={() => setIsSearchOpen(false)}
+            onResultSelect={message => {
+              const el = document.querySelector(`[data-message-id="${message.id}"]`);
+              if (!el) return;
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.classList.remove('message-highlight-flash');
+              // Force a reflow so re-selecting the same message re-triggers the animation.
+              void (el as HTMLElement).offsetWidth;
+              el.classList.add('message-highlight-flash');
+            }}
           />
         )}
 

@@ -6,6 +6,8 @@ import { permissionService } from './permission.service';
 import { eventBus, EventChannels } from '../events/eventBus';
 import { channelRepository } from '../repositories/channel.repository';
 import { messageRepository } from '../repositories/message.repository';
+import { processMentions } from './mention.service';
+import { pushNotificationService } from './pushNotification.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -127,7 +129,7 @@ export const messageService = {
           { channelId, isDeleted: false },
           clampedLimit + 1,
           cursor,
-          { createdAt: 'asc' },
+          { createdAt: 'desc' },
         );
 
         const hasMore = messages.length > clampedLimit;
@@ -146,7 +148,7 @@ export const messageService = {
   async sendMessage(input: SendMessageInput) {
     const { serverId, channelId, authorId, content, attachments } = input;
 
-    await requireChannelInServer(channelId, serverId);
+    const channel = await requireChannelInServer(channelId, serverId);
 
     const message = await messageRepository.create({
       channel: { connect: { id: channelId } },
@@ -161,16 +163,13 @@ export const messageService = {
         }),
     });
 
-    cacheService
-      .invalidatePattern(
+    try {
+      await cacheService.invalidatePattern(
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
-      )
-      .catch((err) =>
-        logger.warn(
-          { err, channelId, serverId },
-          'Failed to invalidate channel message cache after send',
-        ),
       );
+    } catch (err) {
+      logger.warn({ err, channelId, serverId }, 'Failed to invalidate channel message cache after send');
+    }
 
     eventBus
       .publish(EventChannels.MESSAGE_CREATED, {
@@ -185,6 +184,45 @@ export const messageService = {
           'Failed to publish message created event',
         ),
       );
+
+    // Process @mentions — fire-and-forget, best-effort
+    const authorUsername = message.author.username;
+    processMentions({
+      messageId: message.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: message.id }, 'processMentions failed on sendMessage'),
+    );
+
+    // Dispatch push notifications fire-and-forget
+    (async () => {
+      try {
+        const server = await prisma.server.findUnique({ where: { id: serverId }, select: { slug: true } });
+        if (!server) return;
+
+        const ctx = {
+          authorId,
+          channelId,
+          serverId,
+          channelName: channel.name,
+          authorUsername,
+          serverSlug: server.slug,
+          channelSlug: channel.slug,
+          content,
+        };
+
+        await Promise.all([
+          pushNotificationService.notifyMentions(ctx),
+          pushNotificationService.notifyNewMessage(ctx),
+        ]);
+      } catch (err) {
+        logger.warn({ err, messageId: message.id }, 'Push notification dispatch failed');
+      }
+    })();
 
     return message;
   },
@@ -226,6 +264,19 @@ export const messageService = {
           'Failed to publish message edited event',
         ),
       );
+
+    // Re-process mentions on edit; both MessageMention and Notification rows have
+    // unique constraints so repeated calls are idempotent — no duplicate notifications.
+    processMentions({
+      messageId,
+      channelId: message.channelId,
+      serverId,
+      authorId,
+      authorUsername: updated.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId }, 'processMentions failed on editMessage'),
+    );
 
     return updated;
   },
@@ -434,21 +485,18 @@ export const messageService = {
     });
 
     // Invalidate channel-level and thread-level caches
-    cacheService
-      .invalidatePattern(
+    try {
+      await cacheService.invalidatePattern(
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
-      )
-      .catch((err) =>
-        logger.warn(
-          { err, channelId, serverId },
-          'Failed to invalidate channel message cache after reply',
-        ),
       );
-    cacheService
-      .invalidatePattern(`thread:msgs:${sanitizeKeySegment(parentMessageId)}:*`)
-      .catch((err) =>
-        logger.warn({ err, parentMessageId }, 'Failed to invalidate thread cache after reply'),
-      );
+    } catch (err) {
+      logger.warn({ err, channelId, serverId }, 'Failed to invalidate channel message cache after reply');
+    }
+    try {
+      await cacheService.invalidatePattern(`thread:msgs:${sanitizeKeySegment(parentMessageId)}:*`);
+    } catch (err) {
+      logger.warn({ err, parentMessageId }, 'Failed to invalidate thread cache after reply');
+    }
 
     eventBus
       .publish(EventChannels.MESSAGE_CREATED, {
@@ -464,6 +512,17 @@ export const messageService = {
           'Failed to publish reply created event',
         ),
       );
+
+    processMentions({
+      messageId: reply.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername: reply.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: reply.id }, 'processMentions failed on createReply'),
+    );
 
     return reply;
   },

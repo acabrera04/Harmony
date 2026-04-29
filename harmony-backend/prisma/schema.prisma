@@ -12,6 +12,15 @@ datasource db {
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
+/// Notification level for a channel or server.
+enum NotificationLevel {
+  ALL
+  MENTIONS
+  NONE
+
+  @@map("notification_level")
+}
+
 /// Canonical visibility states for a channel.
 /// Preserve these values exactly — referenced across all specs.
 enum ChannelVisibility {
@@ -67,13 +76,17 @@ model User {
   status        UserStatus @default(OFFLINE)
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
 
-  messages           Message[]
-  reactions          MessageReaction[]
-  visibilityAuditLog VisibilityAuditLog[] @relation("AuditActor")
-  refreshTokens      RefreshToken[]
-  ownedServers       Server[]             @relation("ServerOwner")
-  serverMemberships  ServerMember[]
-  createdInvites     ServerInvite[]       @relation("InviteCreator")
+  messages                Message[]
+  reactions               MessageReaction[]
+  visibilityAuditLog      VisibilityAuditLog[]      @relation("AuditActor")
+  refreshTokens           RefreshToken[]
+  ownedServers            Server[]                  @relation("ServerOwner")
+  serverMemberships       ServerMember[]
+  createdInvites          ServerInvite[]            @relation("InviteCreator")
+  mentions                MessageMention[]
+  notifications           Notification[]
+  pushSubscriptions       PushSubscription[]
+  notificationPreferences NotificationPreference[]
 
   @@map("users")
 }
@@ -106,7 +119,8 @@ model Server {
   owner    User      @relation("ServerOwner", fields: [ownerId], references: [id])
   channels Channel[]
   members  ServerMember[]
-  invites  ServerInvite[]
+  invites                 ServerInvite[]
+  notificationPreferences NotificationPreference[]
 
   // idx_servers_slug is pinned via map: on the @unique above.
   // idx_servers_public (partial WHERE is_public = TRUE) is added in the
@@ -145,6 +159,7 @@ model Channel {
   messages          Message[]
   auditLog          VisibilityAuditLog[]
   generatedMetaTags GeneratedMetaTags?
+  notificationPreferences NotificationPreference[]
 
   // Composite unique — one slug per server
   @@unique([serverId, slug], map: "idx_channels_server_slug")
@@ -178,6 +193,8 @@ model Message {
   parent      Message?         @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   /// Direct replies to this message.
   replies     Message[]        @relation("MessageReplies")
+  mentions    MessageMention[]
+  notifications Notification[]
 
   // idx_messages_channel_time (non-partial) and
   // idx_messages_channel_not_deleted (partial WHERE is_deleted = FALSE)
@@ -256,6 +273,43 @@ model ServerInvite {
   @@map("server_invites")
 }
 
+/// A record of one user being mentioned in a specific message.
+model MessageMention {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId], map: "idx_message_mentions_unique")
+  @@index([userId], map: "idx_message_mentions_user")
+  @@map("message_mentions")
+}
+
+/// In-app notification for a user (currently only mention notifications).
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(50)
+  /// The message that triggered this notification.
+  messageId String   @map("message_id") @db.Uuid
+  channelId String   @map("channel_id") @db.Uuid
+  serverId  String   @map("server_id") @db.Uuid
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  /// Prevent duplicate mention notifications for the same user+message pair.
+  @@unique([userId, type, messageId], map: "idx_notifications_unique")
+  @@index([userId, read], map: "idx_notifications_user_read")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_notifications_user_created")
+  @@map("notifications")
+}
+
 model GeneratedMetaTags {
   id                  String   @id @default(uuid()) @db.Uuid
   channelId           String   @unique(map: "idx_meta_tags_channel") @map("channel_id") @db.Uuid
@@ -286,4 +340,38 @@ model GeneratedMetaTags {
   // idx_meta_tags_needs_regen (partial WHERE needs_regeneration = TRUE) exists in the init SQL migration.
   // idx_meta_tags_generated (generated_at) is added as raw SQL in 20260418000000_add_meta_tag_overrides.
   @@map("generated_meta_tags")
+}
+
+/// Web Push API subscription endpoint for a user's browser/device.
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique @db.VarChar(2048)
+  p256dh    String   @db.VarChar(512)
+  auth      String   @db.VarChar(128)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_push_subscriptions_user")
+  @@map("push_subscriptions")
+}
+
+/// Per-user notification level override for a server or channel.
+/// Hierarchy: channel override > server override > global default (MENTIONS).
+model NotificationPreference {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  serverId  String?           @map("server_id") @db.Uuid
+  channelId String?           @map("channel_id") @db.Uuid
+  level     NotificationLevel @default(MENTIONS)
+  updatedAt DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server  Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channel Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serverId, channelId], map: "idx_notification_prefs_unique")
+  @@index([userId], map: "idx_notification_prefs_user")
+  @@map("notification_preferences")
 }

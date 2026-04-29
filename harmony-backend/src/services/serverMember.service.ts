@@ -208,4 +208,37 @@ export const serverMemberService = {
       timestamp: new Date().toISOString(),
     });
   },
+
+  /**
+   * Search server members by username prefix for @ mention autocomplete.
+   * The caller must themselves be a member of the server.
+   * Returns up to 10 matching members ordered by username.
+   */
+  async searchMembers(
+    serverId: string,
+    callerId: string,
+    query: string,
+  ): Promise<Array<{ id: string; username: string; displayName: string; avatarUrl: string | null }>> {
+    const callerMembership = await serverMemberRepository.findByUserAndServer(callerId, serverId);
+    if (!callerMembership) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'You are not a member of this server' });
+    }
+
+    const trimmed = query.trim();
+    const members = await prisma.serverMember.findMany({
+      where: {
+        serverId,
+        user: trimmed
+          ? { username: { startsWith: trimmed, mode: 'insensitive' } }
+          : undefined,
+      },
+      select: {
+        user: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+      },
+      orderBy: { user: { username: 'asc' } },
+      take: 10,
+    });
+
+    return members.map((m) => m.user);
+  },
 };
