@@ -15,14 +15,23 @@ import { sendMessageAction } from '@/app/actions/sendMessage';
 import { createReplyAction } from '@/app/actions/createReply';
 import { apiClient } from '@/lib/api-client';
 import type { Message, AttachmentInput } from '@/types';
+import type { GifResult } from '@/app/api/gifs/route';
 import type { MentionCandidate } from '@/components/channel/MentionAutocomplete';
 import { MentionAutocomplete } from '@/components/channel/MentionAutocomplete';
 
-// Lazy-load the heavy emoji picker bundle so it doesn't block the initial render
+// Lazy-load heavy pickers so they don't block the initial render
 const EmojiPickerPopover = dynamic(
   () =>
     import('@/components/channel/EmojiPickerPopover').then(m => ({
       default: m.EmojiPickerPopover,
+    })),
+  { ssr: false },
+);
+
+const GifPickerPopover = dynamic(
+  () =>
+    import('@/components/channel/GifPickerPopover').then(m => ({
+      default: m.GifPickerPopover,
     })),
   { ssr: false },
 );
@@ -64,9 +73,11 @@ export function MessageInput({
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentInput[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const gifPickerRef = useRef<HTMLDivElement>(null);
   const shouldRefocusTextareaRef = useRef(false);
 
   // ── Mention autocomplete state ────────────────────────────────────────────
@@ -82,6 +93,7 @@ export function MessageInput({
     setSendError(null);
     setPendingAttachments([]);
     setShowEmojiPicker(false);
+    setShowGifPicker(false);
     setMentionCandidates([]);
     setMentionStart(-1);
     setMentionSelectedIdx(0);
@@ -97,17 +109,27 @@ export function MessageInput({
     };
   }, []);
 
-  // Close picker when clicking outside the popover
   useEffect(() => {
     if (!showEmojiPicker) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
         setShowEmojiPicker(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [showEmojiPicker]);
+
+  useEffect(() => {
+    if (!showGifPicker) return;
+    const handler = (e: MouseEvent) => {
+      if (gifPickerRef.current && !gifPickerRef.current.contains(e.target as Node)) {
+        setShowGifPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showGifPicker]);
 
   // Auto-resize: grow up to ~8 lines, then scroll
   useEffect(() => {
@@ -175,6 +197,23 @@ export function MessageInput({
   const removeAttachment = (index: number) => {
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
+
+  const handleGifSelect = useCallback(
+    (gif: GifResult) => {
+      setPendingAttachments(prev => [
+        ...prev,
+        {
+          url: gif.url,
+          filename: gif.filename,
+          contentType: gif.contentType,
+          sizeBytes: gif.sizeBytes,
+        },
+      ]);
+      setShowGifPicker(false);
+      requestAnimationFrame(() => textareaRef.current?.focus());
+    },
+    [],
+  );
 
   const closeMentionDropdown = useCallback(() => {
     setMentionCandidates([]);
@@ -506,14 +545,28 @@ export function MessageInput({
           )}
 
           {/* GIF button */}
-          <button
-            type='button'
-            title='Send GIF (coming soon)'
-            aria-label='GIF'
-            className='flex h-8 items-center justify-center rounded px-1.5 text-xs font-bold text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
-          >
-            GIF
-          </button>
+          <div ref={gifPickerRef} className='relative'>
+            <button
+              type='button'
+              title='GIF'
+              aria-label='GIF picker'
+              aria-expanded={showGifPicker}
+              aria-haspopup='dialog'
+              onClick={() => {
+                setShowGifPicker(prev => !prev);
+                setShowEmojiPicker(false);
+              }}
+              className='flex h-8 items-center justify-center rounded px-1.5 text-xs font-bold text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
+            >
+              GIF
+            </button>
+
+            {showGifPicker && (
+              <div className='absolute bottom-full right-0 z-50 mb-2'>
+                <GifPickerPopover onGifSelect={handleGifSelect} />
+              </div>
+            )}
+          </div>
 
           {/* Emoji button */}
           <div ref={emojiPickerRef} className='relative'>
@@ -523,7 +576,10 @@ export function MessageInput({
               aria-label='Emoji'
               aria-expanded={showEmojiPicker}
               aria-haspopup='dialog'
-              onClick={() => setShowEmojiPicker(prev => !prev)}
+              onClick={() => {
+                setShowEmojiPicker(prev => !prev);
+                setShowGifPicker(false);
+              }}
               className='flex h-8 w-8 items-center justify-center rounded text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-200'
             >
               <svg

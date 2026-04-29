@@ -25,6 +25,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.dicebear.com',
       },
+      // Pixabay GIF CDN — used by GifPickerPopover preview images
+      {
+        protocol: 'https',
+        hostname: 'cdn.pixabay.com',
+      },
     ],
   },
 };

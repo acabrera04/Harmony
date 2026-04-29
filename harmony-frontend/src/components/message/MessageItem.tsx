@@ -29,6 +29,82 @@ import { apiClient } from '@/lib/api-client';
 import { MentionText } from '@/components/message/MentionText';
 import type { Message, Reaction } from '@/types';
 
+const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+const EMBED_VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'ogg', 'mov']);
+
+function getEmbedVideoUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const extension = parsed.pathname.split('.').pop()?.toLowerCase();
+    if (!extension || !EMBED_VIDEO_EXTENSIONS.has(extension)) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function MessageContent({ content }: { content: string }) {
+  const matches = [...content.matchAll(URL_PATTERN)];
+  if (matches.length === 0) {
+    return (
+      <p className='whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
+        <MentionText content={content} currentUsername={undefined} />
+      </p>
+    );
+  }
+
+  const textSegments: string[] = [];
+  const videoEmbeds: string[] = [];
+  let lastIndex = 0;
+
+  for (const match of matches) {
+    const url = match[0];
+    const index = match.index ?? 0;
+    const embedUrl = getEmbedVideoUrl(url);
+
+    textSegments.push(content.slice(lastIndex, index));
+    if (!embedUrl) {
+      textSegments.push(url);
+    } else {
+      videoEmbeds.push(embedUrl);
+    }
+
+    lastIndex = index + url.length;
+  }
+
+  textSegments.push(content.slice(lastIndex));
+  const textContent = textSegments.join('').trim();
+
+  return (
+    <div className='mt-0.5'>
+      {textContent && (
+        <p className='whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
+          <MentionText content={textContent} currentUsername={undefined} />
+        </p>
+      )}
+      {videoEmbeds.length > 0 && (
+        <div className={`${textContent ? 'mt-2' : ''} flex flex-col gap-2`}>
+          {videoEmbeds.map(url => (
+            <video
+              key={url}
+              src={url}
+              muted
+              autoPlay
+              loop
+              playsInline
+              preload='metadata'
+              className='max-h-80 max-w-md rounded-md bg-black'
+              aria-label='Embedded message video'
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EmojiPickerPopover = dynamic(
   () =>
     import('@/components/channel/EmojiPickerPopover').then(m => ({
@@ -45,6 +121,7 @@ function AttachmentList({ attachments }: { attachments: Message['attachments'] }
     <div className='mt-1.5 flex flex-col gap-2'>
       {attachments.map(a => {
         const isImage = a.type?.startsWith('image/');
+        const isVideo = a.type?.startsWith('video/');
         if (isImage) {
           return (
             <a
@@ -57,6 +134,21 @@ function AttachmentList({ attachments }: { attachments: Message['attachments'] }
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a.url} alt={a.filename} className='max-h-64 rounded-md object-contain' />
             </a>
+          );
+        }
+        if (isVideo) {
+          return (
+            <video
+              key={a.id}
+              src={a.url}
+              muted
+              autoPlay
+              loop
+              playsInline
+              preload='metadata'
+              className='max-h-80 max-w-md rounded-md bg-black'
+              aria-label={a.filename || 'Embedded attachment video'}
+            />
           );
         }
         return (
@@ -822,12 +914,12 @@ export function MessageItem({
             {isEditing ? (
               editUi
             ) : (
-              <p className='whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
-                <MentionText content={localContent ?? message.content} currentUsername={user?.username} />
+              <div>
+                <MessageContent content={localContent ?? message.content} />
                 {(message.editedAt || localContent !== undefined) && (
                   <span className='ml-1 text-[10px] text-gray-500'>(edited)</span>
                 )}
-              </p>
+              </div>
             )}
             <AttachmentList attachments={message.attachments} />
             <ReactionList
@@ -890,9 +982,7 @@ export function MessageItem({
           {isEditing ? (
             editUi
           ) : (
-            <p className='mt-0.5 whitespace-pre-line text-sm leading-relaxed text-[#dcddde]'>
-              <MentionText content={localContent ?? message.content} currentUsername={user?.username} />
-            </p>
+            <MessageContent content={localContent ?? message.content} />
           )}
           <AttachmentList attachments={message.attachments} />
           <ReactionList
