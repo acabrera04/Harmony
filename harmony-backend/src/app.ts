@@ -20,7 +20,7 @@ import { presenceService } from './services/presence.service';
 
 const logger = createLogger({ component: 'app', instanceId });
 
-function buildSendMessageLogContext(input: unknown) {
+function buildTrpcInputLogContext(input: unknown) {
   if (!input || typeof input !== 'object') {
     return {};
   }
@@ -28,6 +28,8 @@ function buildSendMessageLogContext(input: unknown) {
   const obj = input as {
     serverId?: unknown;
     channelId?: unknown;
+    messageId?: unknown;
+    parentMessageId?: unknown;
     content?: unknown;
     attachments?: unknown;
   };
@@ -37,6 +39,9 @@ function buildSendMessageLogContext(input: unknown) {
   return {
     serverId: typeof obj.serverId === 'string' ? obj.serverId : undefined,
     channelId: typeof obj.channelId === 'string' ? obj.channelId : undefined,
+    messageId: typeof obj.messageId === 'string' ? obj.messageId : undefined,
+    parentMessageId: typeof obj.parentMessageId === 'string' ? obj.parentMessageId : undefined,
+    hasContent: typeof obj.content === 'string' ? obj.content.trim().length > 0 : undefined,
     contentLength: typeof obj.content === 'string' ? obj.content.length : undefined,
     attachmentCount: attachments.length,
     attachmentOrigins: attachments
@@ -51,6 +56,7 @@ function buildSendMessageLogContext(input: unknown) {
         }
       })
       .filter((origin): origin is string => origin !== null),
+    inputKeys: Object.keys(obj).sort(),
   };
 }
 
@@ -216,20 +222,9 @@ export function createApp(options: CreateAppOptions = {}) {
               path,
               trpcCode: error.code,
               errorMessage: error.message,
+              ...buildTrpcInputLogContext(input),
             },
             'tRPC request failed',
-          );
-        }
-
-        if (path === 'message.sendMessage' && error.code === 'BAD_REQUEST') {
-          logger.warn(
-            {
-              path,
-              trpcCode: error.code,
-              errorMessage: error.message,
-              ...buildSendMessageLogContext(input),
-            },
-            'message.sendMessage rejected with BAD_REQUEST',
           );
         }
 
