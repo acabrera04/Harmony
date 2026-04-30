@@ -121,11 +121,11 @@ export function UserProfilePopover({
       className='fixed z-50 rounded-lg bg-[#18191c] shadow-2xl ring-1 ring-black/40'
       style={style}
     >
-      {/* Banner + avatar */}
+      {/* Banner + avatar + names: flex keeps the label column out from under the avatar */}
       <div className='h-16 rounded-t-lg bg-[#5865f2]' />
       <div className='relative px-4 pb-4'>
-        <div className='absolute -top-8 left-4'>
-          <div className='relative'>
+        <div className='-mt-8 flex gap-3'>
+          <div className='relative shrink-0'>
             {avatarUrl && !avatarError ? (
               <Image
                 src={avatarUrl}
@@ -146,16 +146,15 @@ export function UserProfilePopover({
               aria-label={STATUS_LABEL[status] ?? 'Offline'}
             />
           </div>
-        </div>
-
-        <div className='mt-10'>
-          <p className='text-base font-bold leading-tight text-white'>
-            {displayName}
-          </p>
-          {username && username !== displayName && (
-            <p className='mt-0.5 text-xs text-gray-400'>@{username}</p>
-          )}
-          <p className='mt-1 text-xs text-gray-500'>{STATUS_LABEL[status] ?? 'Offline'}</p>
+          <div className='min-w-0 flex-1 pt-9'>
+            <p className='truncate text-base font-bold leading-tight text-white'>
+              {displayName}
+            </p>
+            {username && username !== displayName && (
+              <p className='mt-0.5 truncate text-xs text-gray-400'>@{username}</p>
+            )}
+            <p className='mt-1 text-xs text-gray-500'>{STATUS_LABEL[status] ?? 'Offline'}</p>
+          </div>
         </div>
       </div>
     </div>
