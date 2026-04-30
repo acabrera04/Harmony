@@ -185,17 +185,20 @@ function ReactionList({
   messageId,
   userId,
   onReactionClick,
+  highlightedEmoji,
 }: {
   reactions: Reaction[];
   messageId: string;
   userId?: string;
   onReactionClick?: (emoji: string, alreadyReacted: boolean) => void;
+  highlightedEmoji?: string | null;
 }) {
   if (!reactions || reactions.length === 0) return null;
   return (
     <div className='mt-1 flex flex-wrap gap-1'>
       {reactions.map(r => {
         const alreadyReacted = !!userId && r.userIds.includes(userId);
+        const isHighlighted = r.emoji === highlightedEmoji;
         return (
           <button
             key={`${r.emoji}-${messageId}`}
@@ -208,6 +211,7 @@ function ReactionList({
               alreadyReacted
                 ? 'border-[#5865f2]/60 bg-[#5865f2]/20 text-[#5865f2] hover:bg-[#5865f2]/30'
                 : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10',
+              isHighlighted && 'animate-bounce',
             )}
           >
             <span>{r.emoji}</span>
@@ -300,6 +304,7 @@ function ActionBar({
   onReplyClick,
   onPinToggle,
   onReactionAdd,
+  onReactionConflict,
 }: {
   messageId: string;
   serverId?: string;
@@ -311,6 +316,7 @@ function ActionBar({
   onReplyClick?: () => void;
   onPinToggle?: (messageId: string, pinned: boolean) => void;
   onReactionAdd?: (emoji: string) => void;
+  onReactionConflict?: (emoji: string) => void;
 }) {
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
@@ -373,14 +379,16 @@ function ActionBar({
         });
         onReactionAdd?.(emoji.native);
       } catch (err: unknown) {
-        const code = (err as { response?: { data?: { error?: { json?: { code?: string } } } } })
-          ?.response?.data?.error?.json?.code;
-        if (code !== 'CONFLICT') {
+        const e = err as { response?: { status?: number; data?: { error?: { json?: { code?: string } } } } };
+        const isConflict = e?.response?.status === 409 || e?.response?.data?.error?.json?.code === 'CONFLICT';
+        if (isConflict) {
+          onReactionConflict?.(emoji.native);
+        } else {
           showToast({ message: 'Failed to add reaction. Please try again.', type: 'error' });
         }
       }
     },
-    [channelId, serverId, messageId, onReactionAdd, showToast],
+    [channelId, serverId, messageId, onReactionAdd, onReactionConflict, showToast],
   );
 
   const handlePinToggle = useCallback(async () => {
@@ -604,6 +612,8 @@ export function MessageItem({
   const [isSaving, setIsSaving] = useState(false);
   const [localContent, setLocalContent] = useState<string | undefined>(undefined);
   const [localReactions, setLocalReactions] = useState<Reaction[]>(message.reactions ?? []);
+  const [highlightedEmoji, setHighlightedEmoji] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const isTopLevel = !message.parentMessageId;
   const [isThreadOpen, setIsThreadOpen] = useState(false);
@@ -655,6 +665,14 @@ export function MessageItem({
     },
     [user],
   );
+
+  const handleReactionConflict = useCallback((emoji: string) => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    setHighlightedEmoji(emoji);
+    highlightTimerRef.current = setTimeout(() => setHighlightedEmoji(null), 800);
+  }, []);
+
+  useEffect(() => () => { if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current); }, []);
 
   // Called when user clicks an existing reaction pill to add or remove their reaction.
   const handleReactionToggle = useCallback(
@@ -826,6 +844,7 @@ export function MessageItem({
       onReplyClick={isTopLevel ? handleReplyClick : undefined}
       onPinToggle={onPinToggle}
       onReactionAdd={handleReactionAdd}
+      onReactionConflict={handleReactionConflict}
     />
   );
 
@@ -933,6 +952,7 @@ export function MessageItem({
               messageId={message.id}
               userId={user?.id}
               onReactionClick={handleReactionToggle}
+              highlightedEmoji={highlightedEmoji}
             />
             {localReplyCount > 0 && threadToggle}
           </div>
