@@ -102,6 +102,15 @@ export function MessageList({
     isNearBottomRef.current = distanceFromBottom <= 100;
   }, []);
 
+  // Called by MessageItem when an image or video finishes loading. If the user
+  // was at (or near) the bottom when the media started loading, the newly
+  // expanded content will have shifted the visible area up — re-anchor to bottom.
+  const handleMediaLoad = useCallback(() => {
+    if (!isNearBottomRef.current) return;
+    const el = scrollContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, []);
+
   useLayoutEffect(() => {
     if (!hasMountedRef.current) {
       // Initial load: jump instantly so the user starts at the bottom
@@ -167,6 +176,7 @@ export function MessageList({
                   canPin={canPin}
                   onReplyClick={onReplyClick}
                   onPinToggle={onPinToggle}
+                  onMediaLoad={handleMediaLoad}
                 />
               ))}
             </div>
