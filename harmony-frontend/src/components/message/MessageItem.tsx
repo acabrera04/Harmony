@@ -116,13 +116,7 @@ const EmojiPickerPopover = dynamic(
 
 // ─── AttachmentList ───────────────────────────────────────────────────────────
 
-function AttachmentList({
-  attachments,
-  onMediaLoad,
-}: {
-  attachments: Message['attachments'];
-  onMediaLoad?: () => void;
-}) {
+function AttachmentList({ attachments }: { attachments: Message['attachments'] }) {
   if (!attachments || attachments.length === 0) return null;
   return (
     <div className='mt-1.5 flex flex-col gap-2'>
@@ -139,12 +133,7 @@ function AttachmentList({
               className='inline-block max-w-sm'
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={a.url}
-                alt={a.filename}
-                className='max-h-64 rounded-md object-contain'
-                onLoad={onMediaLoad}
-              />
+              <img src={a.url} alt={a.filename} className='max-h-64 rounded-md object-contain' />
             </a>
           );
         }
@@ -160,7 +149,6 @@ function AttachmentList({
               preload='metadata'
               className='max-h-80 max-w-md rounded-md bg-black'
               aria-label={a.filename || 'Embedded attachment video'}
-              onLoadedMetadata={onMediaLoad}
             />
           );
         }
@@ -603,7 +591,6 @@ export function MessageItem({
   serverId,
   onReplyClick,
   onPinToggle,
-  onMediaLoad,
 }: {
   message: Message;
   /** Set to false for grouped follow-up messages from the same author. Hides the avatar and author line. */
@@ -616,8 +603,6 @@ export function MessageItem({
   onReplyClick?: (message: Message) => void;
   /** Called when the user triggers a pin/unpin action for this message. */
   onPinToggle?: (messageId: string, pinned: boolean) => void;
-  /** Called when an image or video attachment finishes loading, so the scroll container can re-anchor to the bottom. */
-  onMediaLoad?: () => void;
 }) {
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
@@ -979,7 +964,7 @@ export function MessageItem({
                 )}
               </div>
             )}
-            <AttachmentList attachments={message.attachments} onMediaLoad={onMediaLoad} />
+            <AttachmentList attachments={message.attachments} />
             <ReactionList
               reactions={localReactions}
               messageId={message.id}
