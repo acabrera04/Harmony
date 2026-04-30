@@ -121,6 +121,10 @@ export function MessageList({
   }, []);
 
   useLayoutEffect(() => {
+    // Nothing to scroll to yet — don't mark as mounted so that the first
+    // real messages get the instant-scroll path instead of smooth scroll.
+    if (messages.length === 0) return;
+
     if (!hasMountedRef.current) {
       // Initial load: jump instantly so the user starts at the bottom
       hasMountedRef.current = true;
