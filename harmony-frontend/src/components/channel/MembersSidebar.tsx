@@ -7,8 +7,10 @@
 
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { UserProfilePopover } from '@/components/shared/UserProfilePopover';
 import type { User, UserRole, UserStatus } from '@/types';
 
 // ─── Status dot ───────────────────────────────────────────────────────────────
@@ -94,40 +96,55 @@ function groupMembers(members: User[]): MemberSection[] {
 
 function MemberRow({ user }: { user: User }) {
   const isOffline = user.status === 'offline';
+  const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null);
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/10 cursor-pointer',
-        isOffline && 'opacity-40',
-      )}
-    >
-      {/* Avatar + status dot */}
-      <div className='relative flex-shrink-0'>
-        {user.avatar ? (
-          <Image
-            src={user.avatar}
-            alt={user.username}
-            width={32}
-            height={32}
-            unoptimized
-            className='h-8 w-8 rounded-full'
-          />
-        ) : (
-          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-semibold text-white'>
-            {user.username.charAt(0).toUpperCase() || '?'}
-          </div>
+    <>
+      <div
+        role='button'
+        tabIndex={0}
+        className={cn(
+          'flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/10 cursor-pointer',
+          isOffline && 'opacity-40',
         )}
-        <span className='absolute -bottom-0.5 -right-0.5'>
-          <StatusDot status={user.status} />
+        onClick={e => setProfileAnchorRect((e.currentTarget as HTMLDivElement).getBoundingClientRect())}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setProfileAnchorRect(e.currentTarget.getBoundingClientRect()); } }}
+      >
+        {/* Avatar + status dot */}
+        <div className='relative flex-shrink-0'>
+          {user.avatar ? (
+            <Image
+              src={user.avatar}
+              alt={user.username}
+              width={32}
+              height={32}
+              unoptimized
+              className='h-8 w-8 rounded-full'
+            />
+          ) : (
+            <div className='flex h-8 w-8 items-center justify-center rounded-full bg-[#5865f2] text-sm font-semibold text-white'>
+              {user.username.charAt(0).toUpperCase() || '?'}
+            </div>
+          )}
+          <span className='absolute -bottom-0.5 -right-0.5'>
+            <StatusDot status={user.status} />
+          </span>
+        </div>
+
+        {/* Name */}
+        <span className='truncate text-sm font-medium text-gray-300'>
+          {user.displayName ?? user.username}
         </span>
       </div>
-
-      {/* Name */}
-      <span className='truncate text-sm font-medium text-gray-300'>
-        {user.displayName ?? user.username}
-      </span>
-    </div>
+      {profileAnchorRect && (
+        <UserProfilePopover
+          userId={user.id}
+          seed={{ username: user.username, displayName: user.displayName, avatarUrl: user.avatar }}
+          anchorRect={profileAnchorRect}
+          onClose={() => setProfileAnchorRect(null)}
+        />
+      )}
+    </>
   );
 }
 
