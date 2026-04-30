@@ -177,6 +177,17 @@ export const reactionService = {
         ),
       );
 
+    cacheService
+      .invalidatePattern(
+        `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
+      )
+      .catch((err) =>
+        logger.warn(
+          { err, messageId, channelId, serverId },
+          'Failed to invalidate channel messages cache after reaction removal',
+        ),
+      );
+
     eventBus
       .publish(EventChannels.REACTION_REMOVED, {
         messageId,
