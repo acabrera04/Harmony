@@ -8,9 +8,13 @@ export interface MentionTextProps {
   currentUsername?: string;
 }
 
+const BROADCAST_MENTIONS = new Set(['everyone', 'here']);
+
 /**
  * Renders message content with @username tokens styled as inline mention pills.
- * Self-mentions receive an accent background; other mentions are styled subtly.
+ * - @everyone / @here get a distinct amber highlight with a tooltip.
+ * - Self-mentions receive an accent (indigo) background.
+ * - Other @username mentions are styled subtly.
  * Pass `currentUsername` from a parent component that already holds auth state.
  */
 export function MentionText({ content, currentUsername }: MentionTextProps) {
@@ -32,18 +36,27 @@ export function MentionText({ content, currentUsername }: MentionTextProps) {
       parts.push(content.slice(lastIndex, start));
     }
 
-    const isSelf =
-      currentUsername && username.toLowerCase() === currentUsername.toLowerCase();
+    const lowerName = username.toLowerCase();
+    const isBroadcast = BROADCAST_MENTIONS.has(lowerName);
+    const isSelf = !isBroadcast && currentUsername && lowerName === currentUsername.toLowerCase();
+
+    const tooltip = isBroadcast
+      ? lowerName === 'everyone'
+        ? 'Notifies all members of this channel'
+        : 'Notifies online members of this channel'
+      : `@${username}`;
 
     parts.push(
       <span
         key={key++}
         className={
-          isSelf
-            ? 'rounded px-0.5 font-semibold text-white bg-indigo-500/70 hover:bg-indigo-500 cursor-default'
-            : 'rounded px-0.5 font-semibold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/40 cursor-default'
+          isBroadcast
+            ? 'rounded px-0.5 font-semibold text-amber-200 bg-amber-500/30 hover:bg-amber-500/50 cursor-default'
+            : isSelf
+              ? 'rounded px-0.5 font-semibold text-white bg-indigo-500/70 hover:bg-indigo-500 cursor-default'
+              : 'rounded px-0.5 font-semibold text-indigo-300 bg-indigo-500/20 hover:bg-indigo-500/40 cursor-default'
         }
-        title={`@${username}`}
+        title={tooltip}
       >
         {full}
       </span>,

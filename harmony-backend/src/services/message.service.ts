@@ -6,7 +6,7 @@ import { permissionService } from './permission.service';
 import { eventBus, EventChannels } from '../events/eventBus';
 import { channelRepository } from '../repositories/channel.repository';
 import { messageRepository } from '../repositories/message.repository';
-import { processMentions } from './mention.service';
+import { processMentions, processBroadcastMentions } from './mention.service';
 import { pushNotificationService } from './pushNotification.service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -217,6 +217,16 @@ export const messageService = {
     }).catch((err) =>
       logger.warn({ err, messageId: message.id }, 'processMentions failed on sendMessage'),
     );
+    processBroadcastMentions({
+      messageId: message.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: message.id }, 'processBroadcastMentions failed on sendMessage'),
+    );
 
     // Dispatch push notifications fire-and-forget
     (async () => {
@@ -296,6 +306,16 @@ export const messageService = {
       content,
     }).catch((err) =>
       logger.warn({ err, messageId }, 'processMentions failed on editMessage'),
+    );
+    processBroadcastMentions({
+      messageId,
+      channelId: message.channelId,
+      serverId,
+      authorId,
+      authorUsername: updated.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId }, 'processBroadcastMentions failed on editMessage'),
     );
 
     return updated;
@@ -542,6 +562,16 @@ export const messageService = {
       content,
     }).catch((err) =>
       logger.warn({ err, messageId: reply.id }, 'processMentions failed on createReply'),
+    );
+    processBroadcastMentions({
+      messageId: reply.id,
+      channelId,
+      serverId,
+      authorId,
+      authorUsername: reply.author.username,
+      content,
+    }).catch((err) =>
+      logger.warn({ err, messageId: reply.id }, 'processBroadcastMentions failed on createReply'),
     );
 
     return reply;
