@@ -100,7 +100,6 @@ export interface CreateAppOptions {
 export function createApp(options: CreateAppOptions = {}) {
   presenceService.startSweeper();
 
-  const isE2E = process.env.NODE_ENV === 'e2e';
   const isProduction = process.env.NODE_ENV === 'production';
   // Each limiter calls makeStore() independently so it gets its own instance.
   const makeStore = (prefix: string): Store | undefined =>
@@ -224,13 +223,21 @@ export function createApp(options: CreateAppOptions = {}) {
               errorMessage: error.message,
               ...buildTrpcInputLogContext(input),
             },
-            'tRPC request failed',
+            'tRPC request failed with non-internal error',
           );
         }
 
         // Unexpected server errors include stack/cause via serializer.
         if (error.code === 'INTERNAL_SERVER_ERROR') {
-          logger.error({ err: error, path }, 'Unhandled tRPC error');
+          logger.error(
+            {
+              err: error,
+              path,
+              trpcCode: error.code,
+              errorMessage: error.message,
+            },
+            'tRPC request failed with INTERNAL_SERVER_ERROR',
+          );
         }
       },
     }),
