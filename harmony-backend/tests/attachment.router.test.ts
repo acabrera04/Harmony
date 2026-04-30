@@ -151,4 +151,20 @@ describe('POST /api/attachments/upload', () => {
     expect(res.status).toBe(201);
     expect(res.body.contentType).toBe('text/plain');
   });
+
+  it('returns 201 for a valid MP4 upload', async () => {
+    mockDetectMimeType.mockResolvedValueOnce('video/mp4');
+
+    const mp4Buffer = Buffer.from('fake-mp4-data');
+    const res = await request(app)
+      .post('/api/attachments/upload')
+      .set('Authorization', `Bearer ${VALID_TOKEN}`)
+      .attach('file', mp4Buffer, {
+        filename: 'clip.mp4',
+        contentType: 'video/mp4',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.contentType).toBe('video/mp4');
+  });
 });
