@@ -632,6 +632,9 @@ export function ChannelSettingsPage({
   const [displayName, setDisplayName] = useState(channel.name);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const isSeoAllowed = channel.visibility === ChannelVisibility.PUBLIC_INDEXABLE;
+  const visibleSections = SECTIONS.filter((s) => s.id !== 'seo' || isSeoAllowed);
+
   // Render-phase derived-state reset: keep sidebar heading and back-button text
   // in sync when channel prop changes without unmounting this component.
   const [prevChannelId, setPrevChannelId] = useState(channel.id);
@@ -640,6 +643,12 @@ export function ChannelSettingsPage({
     setDisplayName(channel.name);
     setActiveSection('overview');
     setIsSidebarOpen(false);
+  }
+
+  // If the active section is no longer visible (e.g. visibility changed away from
+  // PUBLIC_INDEXABLE while the SEO tab was open), fall back to overview.
+  if (activeSection === 'seo' && !isSeoAllowed) {
+    setActiveSection('overview');
   }
 
   const backHref = `/channels/${serverSlug}/${channel.slug}`;
@@ -675,7 +684,7 @@ export function ChannelSettingsPage({
 
         {/* Nav items */}
         <nav aria-label='Settings sections'>
-          {SECTIONS.map(({ id, label }) => (
+          {visibleSections.map(({ id, label }) => (
             <button
               key={id}
               type='button'
