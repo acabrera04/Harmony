@@ -400,6 +400,42 @@ export function HarmonyShell({
     [],
   );
 
+  const handleMemberProfileUpdated = useCallback(
+    ({
+      id,
+      username,
+      displayName,
+      avatarUrl,
+    }: {
+      id: string;
+      username: string;
+      displayName?: string;
+      avatarUrl?: string;
+    }) => {
+      setLocalMembers(prev =>
+        prev.map(m => (m.id === id ? { ...m, username, displayName, avatar: avatarUrl } : m)),
+      );
+      setLocalMessages(prev =>
+        prev.map(msg => {
+          const isMainAuthor = msg.author.id === id;
+          const isParentAuthor = msg.parentMessage?.author.id === id;
+          if (!isMainAuthor && !isParentAuthor) return msg;
+          const updatedMsg = isMainAuthor
+            ? { ...msg, author: { ...msg.author, username, displayName, avatarUrl } }
+            : { ...msg };
+          if (isParentAuthor) {
+            updatedMsg.parentMessage = {
+              ...msg.parentMessage!,
+              author: { ...msg.parentMessage!.author, username, displayName, avatarUrl },
+            };
+          }
+          return updatedMsg;
+        }),
+      );
+    },
+    [],
+  );
+
   const authUserStatusKey = authUser ? `${authUser.id}:${authUser.status}:${authUser.role}` : null;
   const [prevAuthUserStatusKey, setPrevAuthUserStatusKey] = useState(authUserStatusKey);
   if (authUserStatusKey !== prevAuthUserStatusKey) {
@@ -466,6 +502,7 @@ export function HarmonyShell({
     onMemberJoined: handleMemberJoined,
     onMemberLeft: handleMemberLeft,
     onMemberStatusChanged: handleMemberStatusChanged,
+    onMemberProfileUpdated: handleMemberProfileUpdated,
     onChannelVisibilityChanged: handleChannelVisibilityChanged,
     // Message callbacks are disabled when the channel is locked (same guard as the
     // former useChannelEvents call) so locked guests don't accumulate stale state.
