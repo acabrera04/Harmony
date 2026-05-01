@@ -665,9 +665,10 @@ export function MessageItem({
   const isOwnMessage = !!user && user.id === message.author.id;
   const isMentioned =
     !!currentUsername &&
-    (localContent ?? message.content)
-      .toLowerCase()
-      .includes('@' + currentUsername.toLowerCase());
+    // Use suffix boundary (?!\w) so @ann doesn't match @announcements.
+    new RegExp(`@${currentUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?!\\w)`, 'i').test(
+      localContent ?? message.content,
+    );
 
   const handleReactionAdd = useCallback(
     (emoji: string) => {

@@ -29,8 +29,9 @@ export function MentionText({ content, currentUsername, channels, serverSlug }: 
   let lastIndex = 0;
   let key = 0;
 
-  // Single pass: match both @username and #channel-name tokens in source order.
-  const re = /(?:@([\w]{1,32})|#([\w-]{1,100}))/g;
+  // Single pass: match @username and #channel-name tokens only at start or after whitespace
+  // to avoid false positives in URL fragments (e.g. https://example.com/#section) or foo#bar.
+  const re = /(?<!\S)(?:@([\w]{1,32})|#([\w-]{1,100}))/g;
   let match: RegExpExecArray | null;
 
   while ((match = re.exec(content)) !== null) {

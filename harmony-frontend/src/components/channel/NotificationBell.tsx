@@ -106,43 +106,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       const es = new EventSource(url);
       eventSourceRef.current = es;
 
-      es.addEventListener('notification:mention', (e: MessageEvent) => {
-        try {
-          const payload = JSON.parse(e.data) as {
-            id: string;
-            messageId: string;
-            channelId: string;
-            serverId: string;
-            authorId: string;
-            authorUsername: string;
-            timestamp: string;
-            read: boolean;
-          };
-          const optimistic: Notification = {
-            id: payload.id,
-            type: 'mention',
-            messageId: payload.messageId,
-            channelId: payload.channelId,
-            serverId: payload.serverId,
-            read: false,
-            createdAt: payload.timestamp,
-            message: {
-              id: payload.messageId,
-              content: '',
-              isDeleted: false,
-              author: {
-                id: payload.authorId,
-                username: payload.authorUsername,
-                displayName: payload.authorUsername,
-                avatarUrl: null,
-              },
-            },
-          };
-          setNotifications((prev) => [optimistic, ...prev].slice(0, 50));
-          setUnreadCount((c) => c + 1);
-        } catch {
-          // malformed payload — ignore
-        }
+      es.addEventListener('notification:mention', () => {
+        // Refetch the full list so channel/server slugs are populated for navigation.
+        setUnreadCount((c) => c + 1);
+        loadNotifications();
       });
     })();
 
@@ -257,9 +224,17 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 };
                 return (
                   <li key={n.id}>
-                    <button
-                      type='button'
+                    {/* Use div+role instead of <button> so the ✓ sibling <button> isn't nested inside interactive content (invalid HTML) */}
+                    <div
+                      role='button'
+                      tabIndex={0}
                       onClick={handleRowClick}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleRowClick();
+                        }
+                      }}
                       className={cn(
                         'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5',
                         !n.read && 'bg-indigo-500/10',
@@ -288,18 +263,16 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                         </p>
                       </div>
                       {!n.read && (
-                        <span
+                        <button
+                          type='button'
                           onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
-                          role='button'
-                          tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); markAsRead(n.id); } }}
                           title='Mark as read'
                           className='mt-0.5 flex-shrink-0 text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors'
                         >
                           ✓
-                        </span>
+                        </button>
                       )}
-                    </button>
+                    </div>
                   </li>
                 );
               })}
