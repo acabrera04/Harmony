@@ -31,6 +31,10 @@ import { apiClient, getAccessToken } from '@/lib/api-client';
 import { createFrontendLogger } from '@/lib/frontend-logger';
 import { useToast } from '@/hooks/useToast';
 import { getApiBaseUrl } from '@/lib/runtime-config';
+import {
+  getStoredAudioInputDeviceId,
+  getStoredAudioOutputDeviceId,
+} from '@/hooks/useAudioDevices';
 
 const logger = createFrontendLogger({ component: 'voice-context' });
 
@@ -254,6 +258,27 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
     }
   }, [resetVoiceState]);
 
+  // Applies the user's stored output device to an audio element when the browser supports setSinkId.
+  function applySinkId(el: HTMLAudioElement) {
+    const outputDeviceId = getStoredAudioOutputDeviceId();
+    if (
+      outputDeviceId &&
+      outputDeviceId !== 'default' &&
+      'setSinkId' in el
+    ) {
+      (el as HTMLAudioElement & { setSinkId: (id: string) => Promise<void> })
+        .setSinkId(outputDeviceId)
+        .catch((err: unknown) => {
+          logger.warn('Failed to set audio output device', {
+            feature: 'voice',
+            event: 'set_sink_id_failed',
+            operation: 'setSinkId',
+            error: err,
+          });
+        });
+    }
+  }
+
   const joinChannel = useCallback(
     async (channelId: string, serverId: string, channelName: string) => {
       // Already connected to the same channel — no-op.
@@ -290,9 +315,13 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
 
         // Dynamic import keeps the Twilio SDK out of SSR.
         const TwilioVideo = await import('twilio-video');
+        const inputDeviceId = getStoredAudioInputDeviceId();
         const room = await TwilioVideo.connect(token, {
           name: channelId,
-          audio: true,
+          audio:
+            inputDeviceId && inputDeviceId !== 'default'
+              ? { deviceId: { exact: inputDeviceId } }
+              : true,
           video: false,
           dominantSpeaker: true,
         });
@@ -381,6 +410,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
           participant.audioTracks.forEach((pub: any) => {
             if (pub.track) {
               const el: HTMLAudioElement = pub.track.attach();
+              applySinkId(el);
               document.body.appendChild(el);
               const existing = remoteAudioTracksRef.current.get(participant.identity) ?? [];
               remoteAudioTracksRef.current.set(participant.identity, [...existing, pub.track]);
@@ -418,6 +448,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
           participant.on('trackSubscribed', (track: any) => {
             if (track.kind === 'audio') {
               const el: HTMLAudioElement = track.attach();
+              applySinkId(el);
               document.body.appendChild(el);
               const existing = remoteAudioTracksRef.current.get(participant.identity) ?? [];
               remoteAudioTracksRef.current.set(participant.identity, [...existing, track]);
