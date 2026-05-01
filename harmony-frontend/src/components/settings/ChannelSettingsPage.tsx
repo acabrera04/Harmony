@@ -645,11 +645,9 @@ export function ChannelSettingsPage({
     setIsSidebarOpen(false);
   }
 
-  // If the active section is no longer visible (e.g. visibility changed away from
-  // PUBLIC_INDEXABLE while the SEO tab was open), fall back to overview.
-  if (activeSection === 'seo' && !isSeoAllowed) {
-    setActiveSection('overview');
-  }
+  // Derive the visible section without a side effect: if SEO is no longer allowed
+  // (e.g. visibility changed while the tab was open), fall back to overview.
+  const effectiveSection = activeSection === 'seo' && !isSeoAllowed ? 'overview' : activeSection;
 
   const backHref = `/channels/${serverSlug}/${channel.slug}`;
 
@@ -692,10 +690,10 @@ export function ChannelSettingsPage({
                 setActiveSection(id);
                 setIsSidebarOpen(false);
               }}
-              aria-current={activeSection === id ? 'page' : undefined}
+              aria-current={effectiveSection === id ? 'page' : undefined}
               className={cn(
                 'w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors',
-                activeSection === id
+                effectiveSection === id
                   ? cn(BG.active, 'font-medium text-white')
                   : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
               )}
@@ -757,24 +755,24 @@ export function ChannelSettingsPage({
 
         {/* Section content */}
         <div className='px-4 py-6 sm:px-10 sm:py-8'>
-          {activeSection === 'overview' && (
+          {effectiveSection === 'overview' && (
             <OverviewSection channel={channel} serverSlug={serverSlug} onSave={setDisplayName} />
           )}
-          {activeSection === 'permissions' && <PermissionsSection />}
-          {activeSection === 'visibility' && (
+          {effectiveSection === 'permissions' && <PermissionsSection />}
+          {effectiveSection === 'visibility' && (
             <VisibilitySection channel={channel} serverSlug={serverSlug} disabled={false} />
           )}
-          {activeSection === 'members' && (
+          {effectiveSection === 'members' && (
             <ChannelMembersSection channel={channel} serverSlug={serverSlug} />
           )}
-          {activeSection === 'seo' && (
+          {effectiveSection === 'seo' && (
             <SeoPreviewSection
               serverSlug={serverSlug}
               channelSlug={channel.slug}
               canManageSeo={canManageSeo}
             />
           )}
-          {activeSection === 'notifications' && (
+          {effectiveSection === 'notifications' && (
             <ChannelNotificationsSection channel={channel} serverId={channel.serverId} />
           )}
         </div>
