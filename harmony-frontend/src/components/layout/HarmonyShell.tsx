@@ -653,6 +653,9 @@ export function HarmonyShell({
                     messages={localMessages}
                     serverId={currentServer.id}
                     canPin={canPin}
+                    currentUsername={authUser?.username}
+                    channels={localChannels}
+                    serverSlug={currentServer.slug}
                     onReplyClick={handleReplyClick}
                     onPinToggle={handlePinToggle}
                     hasMoreOlder={hasMoreOlder}
