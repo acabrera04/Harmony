@@ -26,6 +26,8 @@ interface NotificationBellProps {
   userId?: string;
   /** Called whenever the per-server unread mention counts change. */
   onUnreadCountsByServerChange?: (counts: Record<string, number>) => void;
+  /** When the user navigates to a channel, auto-mark its notifications as read. */
+  currentChannelId?: string;
 }
 
 function BellIcon({ className }: { className?: string }) {
@@ -55,7 +57,7 @@ function formatRelativeTime(ts: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function NotificationBell({ userId, onUnreadCountsByServerChange }: NotificationBellProps) {
+export function NotificationBell({ userId, onUnreadCountsByServerChange, currentChannelId }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
@@ -73,6 +75,22 @@ export function NotificationBell({ userId, onUnreadCountsByServerChange }: Notif
   useEffect(() => {
     onUnreadCountsByServerChangeRef.current?.(unreadByServer);
   }, [unreadByServer]);
+
+  // Auto-mark notifications as read when the user visits the channel they were mentioned in.
+  useEffect(() => {
+    if (!currentChannelId || !userId) return;
+    const hasUnread = notifications.some((n) => n.channelId === currentChannelId && !n.read);
+    if (!hasUnread) return;
+    void apiClient
+      .trpcMutation('notification.markChannelAsRead', { channelId: currentChannelId })
+      .then(() => {
+        setNotifications((prev) =>
+          prev.map((n) => (n.channelId === currentChannelId ? { ...n, read: true } : n)),
+        );
+      })
+      .catch((err) => console.error('[NotificationBell] markChannelAsRead failed:', err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChannelId, userId]);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -195,8 +213,8 @@ export function NotificationBell({ userId, onUnreadCountsByServerChange }: Notif
     try {
       await apiClient.trpcMutation('notification.markAllAsRead');
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } catch {
-      // ignore — non-critical, badge will self-correct on next load
+    } catch (err) {
+      console.error('[NotificationBell] markAllAsRead failed:', err);
     }
   };
 

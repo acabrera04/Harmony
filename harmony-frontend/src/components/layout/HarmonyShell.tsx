@@ -619,6 +619,7 @@ export function HarmonyShell({
             onMenuToggle={() => setIsMenuOpen(v => !v)}
             userId={authUser?.id}
             onUnreadCountsByServerChange={setMentionCountByServer}
+            currentChannelId={currentChannel.id}
           />
 
           <div className='flex flex-1 overflow-hidden'>
