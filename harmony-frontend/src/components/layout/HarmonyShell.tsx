@@ -124,7 +124,6 @@ export function HarmonyShell({
     setHasMoreOlder(initialHasMore);
     setOlderCursor(initialNextCursor);
     setIsLoadingOlder(false);
-    isLoadingOlderRef.current = false;
     setIsMenuOpen(false);
     setIsPinsOpen(false);
     setReplyingTo(null);
@@ -153,6 +152,12 @@ export function HarmonyShell({
     () => localChannels.filter(c => c.type === ChannelType.VOICE).map(c => c.id),
     [localChannels],
   );
+  // Reset the synchronous loading mutex when the channel changes. This can't live
+  // in the render-time block above (refs must not be written during render).
+  useEffect(() => {
+    isLoadingOlderRef.current = false;
+  }, [currentChannel.id]);
+
   // Track the channels prop reference so localChannels resets whenever the server
   // passes a fresh array (server navigation or revalidatePath refresh) — same
   // render-time derivation pattern used above for localMessages/prevChannelId.
