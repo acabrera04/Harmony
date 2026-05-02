@@ -185,7 +185,7 @@ export const channelService = {
       }
     }
 
-    await channelRepository.delete(channelId);
+    const deleted = await channelRepository.delete(channelId);
 
     // Write-through: invalidate all caches for deleted channel (best-effort)
     cacheService
@@ -226,6 +226,8 @@ export const channelService = {
           'Failed to publish channel deleted event',
         ),
       );
+
+    return deleted;
   },
 
   async createDefaultChannel(serverId: string, isPublic = false, tx?: Prisma.TransactionClient) {
