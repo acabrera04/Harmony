@@ -12,6 +12,7 @@ import { cn, getUserErrorMessage } from '@/lib/utils';
 import {
   saveChannelSettings,
   fetchAuditLog,
+  deleteChannelAction,
 } from '@/app/settings/[serverSlug]/[channelSlug]/actions';
 import { VisibilityToggle } from '@/components/channel/VisibilityToggle';
 import { SeoPreviewSection } from '@/components/settings/SeoPreviewSection';
@@ -108,14 +109,15 @@ function ChannelNotificationsSection({ channel, serverId }: { channel: Channel; 
   );
 }
 
-type Section = 'overview' | 'permissions' | 'visibility' | 'seo' | 'notifications';
+type Section = 'overview' | 'permissions' | 'visibility' | 'seo' | 'notifications' | 'danger';
 
-const SECTIONS: { id: Section; label: string }[] = [
+const SECTIONS: { id: Section; label: string; danger?: boolean }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'permissions', label: 'Permissions' },
   { id: 'visibility', label: 'Visibility' },
   { id: 'seo', label: 'SEO Preview' },
   { id: 'notifications', label: 'Notifications' },
+  { id: 'danger', label: 'Delete Channel', danger: true },
 ];
 
 // ─── Overview section ─────────────────────────────────────────────────────────
@@ -608,7 +610,71 @@ function VisibilitySection({
   );
 }
 
-// ─── Loading spinner ──────────────────────────────────────────────────────────
+// ─── Danger zone section ──────────────────────────────────────────────────────
+
+function DangerZoneSection({ channel, serverSlug }: { channel: Channel; serverSlug: string }) {
+  const [confirmText, setConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const nameMatches = confirmText === channel.name;
+
+  async function handleDelete() {
+    if (!nameMatches || deleting) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteChannelAction(serverSlug, channel.slug);
+    } catch (err) {
+      setError(getUserErrorMessage(err, 'Failed to delete channel.'));
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className='max-w-lg space-y-6'>
+      <h2 className='text-xl font-semibold text-white'>Delete Channel</h2>
+      <div className='rounded border border-red-500/40 bg-red-950/20 p-5 space-y-4'>
+        <p className='text-sm text-gray-300'>
+          Deleting <span className='font-semibold text-white'>#{channel.name}</span> is permanent
+          and cannot be undone. All messages and settings for this channel will be lost.
+        </p>
+        <div>
+          <label
+            htmlFor='confirm-channel-name'
+            className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400'
+          >
+            Type the channel name to confirm
+          </label>
+          <input
+            id='confirm-channel-name'
+            type='text'
+            value={confirmText}
+            onChange={e => setConfirmText(e.target.value)}
+            placeholder={channel.name}
+            disabled={deleting}
+            className={cn(
+              'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-600 outline-none',
+              'focus:ring-2 focus:ring-red-500 disabled:opacity-50',
+              BG.input,
+            )}
+          />
+        </div>
+        {error && <p className='text-xs text-red-400'>{error}</p>}
+        <button
+          type='button'
+          onClick={handleDelete}
+          disabled={!nameMatches || deleting}
+          className='rounded px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+        >
+          {deleting ? 'Deleting…' : 'Delete Channel'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface ChannelSettingsPageProps {
   channel: Channel;
@@ -673,7 +739,7 @@ export function ChannelSettingsPage({
 
         {/* Nav items */}
         <nav aria-label='Settings sections'>
-          {SECTIONS.map(({ id, label }) => (
+          {SECTIONS.map(({ id, label, danger }) => (
             <button
               key={id}
               type='button'
@@ -684,9 +750,13 @@ export function ChannelSettingsPage({
               aria-current={activeSection === id ? 'page' : undefined}
               className={cn(
                 'w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm transition-colors',
-                activeSection === id
-                  ? cn(BG.active, 'font-medium text-white')
-                  : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
+                danger
+                  ? activeSection === id
+                    ? cn(BG.active, 'font-medium text-red-400')
+                    : 'text-red-400/80 hover:bg-[#393c43] hover:text-red-400'
+                  : activeSection === id
+                    ? cn(BG.active, 'font-medium text-white')
+                    : 'text-gray-400 hover:bg-[#393c43] hover:text-gray-200',
               )}
             >
               {label}
@@ -762,6 +832,9 @@ export function ChannelSettingsPage({
           )}
           {activeSection === 'notifications' && (
             <ChannelNotificationsSection channel={channel} serverId={channel.serverId} />
+          )}
+          {activeSection === 'danger' && (
+            <DangerZoneSection channel={channel} serverSlug={serverSlug} />
           )}
         </div>
       </main>

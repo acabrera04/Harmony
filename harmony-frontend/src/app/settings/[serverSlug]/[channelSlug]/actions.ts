@@ -8,7 +8,8 @@
  */
 
 import { revalidatePath } from 'next/cache';
-import { updateChannel, getChannel, getAuditLog } from '@/services/channelService';
+import { redirect } from 'next/navigation';
+import { updateChannel, getChannel, getAuditLog, deleteChannel } from '@/services/channelService';
 import { getServer } from '@/services/serverService';
 import type { Channel } from '@/types';
 import type { AuditLogPage } from '@/services/channelService';
@@ -119,6 +120,28 @@ export async function triggerSeoRegeneration(
 ): Promise<MetaTagJobAccepted> {
   const channel = await resolveChannelForSeo(serverSlug, channelSlug);
   return triggerMetaTagRegeneration(channel.id);
+}
+
+/**
+ * Server action: delete a channel. Resolves IDs from route slugs (don't trust raw IDs from
+ * the client), then redirects to the server home after deletion.
+ * Auth enforced by the backend `channel.deleteChannel` procedure (requires channel:delete).
+ */
+export async function deleteChannelAction(
+  serverSlug: string,
+  channelSlug: string,
+): Promise<void> {
+  const channel = await getChannel(serverSlug, channelSlug);
+  if (!channel) throw new Error('Channel not found');
+
+  const server = await getServer(serverSlug);
+  if (!server) throw new Error('Server not found');
+
+  await deleteChannel(channel.id, server.id);
+
+  revalidatePath(`/channels/${serverSlug}`, 'layout');
+  revalidatePath(`/settings/${serverSlug}`, 'layout');
+  redirect(`/channels/${serverSlug}`);
 }
 
 export async function fetchSeoRegenerationStatus(
