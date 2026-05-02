@@ -108,12 +108,22 @@ export function MessageList({
   // to prevent the viewport from jumping when older messages are added at the top.
   const savedScrollHeightRef = useRef(0);
 
+  const triggerLoadOlder = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (el) savedScrollHeightRef.current = el.scrollHeight;
+    onLoadOlderMessages?.();
+  }, [onLoadOlderMessages]);
+
   const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isNearBottomRef.current = distanceFromBottom <= 100;
-  }, []);
+    // Auto-load older messages when the user scrolls within 200px of the top
+    if (el.scrollTop <= 200 && hasMoreOlder && !isLoadingOlder) {
+      triggerLoadOlder();
+    }
+  }, [hasMoreOlder, isLoadingOlder, triggerLoadOlder]);
 
   // When any message content grows in height (images, videos, embeds loading),
   // re-anchor the scroll position to the bottom if the user was already there.
@@ -153,12 +163,6 @@ export function MessageList({
     }
   }, [messages]);
 
-  const handleLoadOlderClick = useCallback(() => {
-    const el = scrollContainerRef.current;
-    if (el) savedScrollHeightRef.current = el.scrollHeight;
-    onLoadOlderMessages?.();
-  }, [onLoadOlderMessages]);
-
   const groups = useMemo(() => groupMessages(messages), [messages]);
 
   return (
@@ -178,7 +182,7 @@ export function MessageList({
             <span className='text-xs text-gray-400'>Loading older messages…</span>
           ) : (
             <button
-              onClick={handleLoadOlderClick}
+              onClick={triggerLoadOlder}
               className='rounded px-3 py-1 text-xs font-medium text-gray-300 hover:bg-[#40444b] hover:text-white'
             >
               Load older messages
