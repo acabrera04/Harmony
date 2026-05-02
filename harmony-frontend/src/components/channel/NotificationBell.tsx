@@ -24,6 +24,8 @@ interface Notification {
 interface NotificationBellProps {
   /** When provided, the component connects to the user SSE stream for real-time badges. */
   userId?: string;
+  /** Called whenever the per-server unread mention counts change. */
+  onUnreadCountsByServerChange?: (counts: Record<string, number>) => void;
 }
 
 function BellIcon({ className }: { className?: string }) {
@@ -53,10 +55,24 @@ function formatRelativeTime(ts: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function NotificationBell({ userId }: NotificationBellProps) {
+export function NotificationBell({ userId, onUnreadCountsByServerChange }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const onUnreadCountsByServerChangeRef = useRef(onUnreadCountsByServerChange);
+  onUnreadCountsByServerChangeRef.current = onUnreadCountsByServerChange;
+
+  const unreadByServer = useMemo(
+    () =>
+      notifications
+        .filter((n) => !n.read)
+        .reduce<Record<string, number>>((acc, n) => ({ ...acc, [n.serverId]: (acc[n.serverId] ?? 0) + 1 }), {}),
+    [notifications],
+  );
+
+  useEffect(() => {
+    onUnreadCountsByServerChangeRef.current?.(unreadByServer);
+  }, [unreadByServer]);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);

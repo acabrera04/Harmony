@@ -171,6 +171,7 @@ export function HarmonyShell({
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
   const [isBrowseServersOpen, setIsBrowseServersOpen] = useState(false);
   const [localServers, setLocalServers] = useState<Server[]>(servers);
+  const [mentionCountByServer, setMentionCountByServer] = useState<Record<string, number>>({});
   const [prevServers, setPrevServers] = useState<Server[]>(servers);
   if (prevServers !== servers) {
     setPrevServers(servers);
@@ -565,6 +566,7 @@ export function HarmonyShell({
           currentServerId={currentServer.id}
           basePath={basePath}
           isMobileVisible={isMenuOpen}
+          mentionCountByServer={mentionCountByServer}
           onBrowseServers={() => setIsBrowseServersOpen(true)}
           onAddServer={
             isAuthLoading
@@ -616,6 +618,7 @@ export function HarmonyShell({
             isMenuOpen={isMenuOpen}
             onMenuToggle={() => setIsMenuOpen(v => !v)}
             userId={authUser?.id}
+            onUnreadCountsByServerChange={setMentionCountByServer}
           />
 
           <div className='flex flex-1 overflow-hidden'>
