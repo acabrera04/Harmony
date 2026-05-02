@@ -612,12 +612,21 @@ function VisibilitySection({
 
 // ─── Danger zone section ──────────────────────────────────────────────────────
 
-function DangerZoneSection({ channel, serverSlug }: { channel: Channel; serverSlug: string }) {
+function DangerZoneSection({
+  channel,
+  serverSlug,
+  isLastTextChannel,
+}: {
+  channel: Channel;
+  serverSlug: string;
+  isLastTextChannel: boolean;
+}) {
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const nameMatches = confirmText === channel.name;
+  const blocked = isLastTextChannel;
 
   async function handleDelete() {
     if (!nameMatches || deleting) return;
@@ -635,40 +644,50 @@ function DangerZoneSection({ channel, serverSlug }: { channel: Channel; serverSl
     <div className='max-w-lg space-y-6'>
       <h2 className='text-xl font-semibold text-white'>Delete Channel</h2>
       <div className='rounded border border-red-500/40 bg-red-950/20 p-5 space-y-4'>
-        <p className='text-sm text-gray-300'>
-          Deleting <span className='font-semibold text-white'>#{channel.name}</span> is permanent
-          and cannot be undone. All messages and settings for this channel will be lost.
-        </p>
-        <div>
-          <label
-            htmlFor='confirm-channel-name'
-            className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400'
-          >
-            Type the channel name to confirm
-          </label>
-          <input
-            id='confirm-channel-name'
-            type='text'
-            value={confirmText}
-            onChange={e => setConfirmText(e.target.value)}
-            placeholder={channel.name}
-            disabled={deleting}
-            className={cn(
-              'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-600 outline-none',
-              'focus:ring-2 focus:ring-red-500 disabled:opacity-50',
-              BG.input,
-            )}
-          />
-        </div>
-        {error && <p className='text-xs text-red-400'>{error}</p>}
-        <button
-          type='button'
-          onClick={handleDelete}
-          disabled={!nameMatches || deleting}
-          className='rounded px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
-        >
-          {deleting ? 'Deleting…' : 'Delete Channel'}
-        </button>
+        {blocked ? (
+          <p className='text-sm text-gray-300'>
+            <span className='font-semibold text-white'>#{channel.name}</span> cannot be deleted
+            because it is the only text channel in this server. Create another text channel first.
+          </p>
+        ) : (
+          <>
+            <p className='text-sm text-gray-300'>
+              Deleting <span className='font-semibold text-white'>#{channel.name}</span> is
+              permanent and cannot be undone. All messages and settings for this channel will be
+              lost.
+            </p>
+            <div>
+              <label
+                htmlFor='confirm-channel-name'
+                className='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400'
+              >
+                Type the channel name to confirm
+              </label>
+              <input
+                id='confirm-channel-name'
+                type='text'
+                value={confirmText}
+                onChange={e => setConfirmText(e.target.value)}
+                placeholder={channel.name}
+                disabled={deleting}
+                className={cn(
+                  'w-full rounded px-3 py-2 text-sm text-white placeholder-gray-600 outline-none',
+                  'focus:ring-2 focus:ring-red-500 disabled:opacity-50',
+                  BG.input,
+                )}
+              />
+            </div>
+            {error && <p className='text-xs text-red-400'>{error}</p>}
+            <button
+              type='button'
+              onClick={handleDelete}
+              disabled={!nameMatches || deleting}
+              className='rounded px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+            >
+              {deleting ? 'Deleting…' : 'Delete Channel'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -681,6 +700,7 @@ export interface ChannelSettingsPageProps {
   serverSlug: string;
   serverOwnerId?: string;
   canManageSeo?: boolean;
+  isLastTextChannel?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -690,6 +710,7 @@ export function ChannelSettingsPage({
   serverSlug,
   serverOwnerId: _serverOwnerId,
   canManageSeo = true,
+  isLastTextChannel = false,
 }: ChannelSettingsPageProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('overview');
@@ -834,7 +855,11 @@ export function ChannelSettingsPage({
             <ChannelNotificationsSection channel={channel} serverId={channel.serverId} />
           )}
           {activeSection === 'danger' && (
-            <DangerZoneSection channel={channel} serverSlug={serverSlug} />
+            <DangerZoneSection
+              channel={channel}
+              serverSlug={serverSlug}
+              isLastTextChannel={isLastTextChannel}
+            />
           )}
         </div>
       </main>
