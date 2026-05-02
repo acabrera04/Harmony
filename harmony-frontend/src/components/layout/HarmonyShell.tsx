@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { cn } from '@/lib/utils';
 import { TopBar } from '@/components/channel/TopBar';
 import { MembersSidebar } from '@/components/channel/MembersSidebar';
