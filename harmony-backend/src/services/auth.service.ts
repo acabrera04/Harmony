@@ -31,6 +31,17 @@ const REFRESH_SECRET = (() => {
 
 const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '15m';
 
+const DUMMY_SALT_HMAC_KEY = (() => {
+  const value = process.env.DUMMY_SALT_HMAC_KEY;
+  if (value) return value;
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DUMMY_SALT_HMAC_KEY environment variable is not set');
+  }
+
+  return ACCESS_SECRET;
+})();
+
 const REFRESH_EXPIRES_IN_DAYS: number = (() => {
   const raw = process.env.JWT_REFRESH_EXPIRES_DAYS;
   if (raw === undefined) return 7;
@@ -79,7 +90,7 @@ function decodePasswordVerifierRecord(
 
 function createDummyPasswordSalt(email: string): string {
   return crypto
-    .createHash('sha256')
+    .createHmac('sha256', DUMMY_SALT_HMAC_KEY)
     .update(`missing-user:${email.toLowerCase()}`)
     .digest('hex')
     .slice(0, PASSWORD_SALT_BYTES * 2);
@@ -166,7 +177,11 @@ export const authService = {
   },
 
   async getLoginPasswordSalt(email: string): Promise<string> {
-    if (process.env.NODE_ENV === 'development' && process.env.ENABLE_DEV_ADMIN === 'true' && email === ADMIN_EMAIL) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.ENABLE_DEV_ADMIN === 'true' &&
+      email === ADMIN_EMAIL
+    ) {
       return DEV_ADMIN_PASSWORD_SALT;
     }
 

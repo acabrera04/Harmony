@@ -149,6 +149,19 @@ describe('authService password-verifier helpers', () => {
     expect(first).toBe(second);
     expect(first).toMatch(/^[0-9a-f]{32}$/i);
   });
+
+  it('does not expose the public SHA-256 missing-user salt for unknown users', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+
+    const salt = await authService.getLoginPasswordSalt('missing@example.com');
+    const publicFormulaSalt = crypto
+      .createHash('sha256')
+      .update('missing-user:missing@example.com')
+      .digest('hex')
+      .slice(0, 32);
+
+    expect(salt).not.toBe(publicFormulaSalt);
+  });
 });
 
 describe('authService.register', () => {
