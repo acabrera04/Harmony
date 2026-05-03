@@ -146,6 +146,26 @@ describe('POST /api/auth/register', () => {
     expect(res.body.error).toBe('Validation failed');
   });
 
+  it('returns sanitized validation fields without raw Zod issue details', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email: 'bad-email', username: 'a' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: 'Validation failed',
+      fields: expect.arrayContaining([
+        { field: 'email', message: 'Please enter a valid email address' },
+        { field: 'username', message: 'Username must be at least 3 characters' },
+      ]),
+    });
+    expect(res.body).not.toHaveProperty('details');
+    for (const fieldError of res.body.fields) {
+      expect(Object.keys(fieldError).sort()).toEqual(['field', 'message']);
+    }
+  });
+
   it('returns 409 when email is already in use', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
@@ -296,6 +316,25 @@ describe('POST /api/auth/login', () => {
       .send({ email: 'not-an-email' });
 
     expect(res.status).toBe(400);
+  });
+
+  it('returns sanitized validation fields without raw Zod issue details', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email: 'not-an-email' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: 'Validation failed',
+      fields: expect.arrayContaining([
+        { field: 'email', message: 'Please enter a valid email address' },
+      ]),
+    });
+    expect(res.body).not.toHaveProperty('details');
+    for (const fieldError of res.body.fields) {
+      expect(Object.keys(fieldError).sort()).toEqual(['field', 'message']);
+    }
   });
 });
 
