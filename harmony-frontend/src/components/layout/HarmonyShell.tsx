@@ -27,6 +27,7 @@ import { ChannelType, ChannelVisibility, UserStatus } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
 import { getOlderMessagesAction } from '@/app/actions/getOlderMessages';
+import { mergeCreatedMessageIntoChannelMessages } from '@/lib/message-threading';
 import type { Server, Channel, Message, User } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -115,6 +116,7 @@ export function HarmonyShell({
   // duplicate fetches while React hasn't yet re-rendered with isLoadingOlder=true.
   const isLoadingOlderRef = useRef(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [latestReplyByParentId, setLatestReplyByParentId] = useState<Record<string, Message>>({});
   // Track previous channel so we can reset localMessages synchronously on channel
   // switch — avoids a one-render flash where old messages show under the new channel header.
   const [prevChannelId, setPrevChannelId] = useState(currentChannel.id);
@@ -127,6 +129,7 @@ export function HarmonyShell({
     setIsMenuOpen(false);
     setIsPinsOpen(false);
     setReplyingTo(null);
+    setLatestReplyByParentId({});
     // Only auto-close the members sidebar on mobile so desktop keeps it open by default.
     if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 640px)').matches) {
       setIsMembersOpen(false);
@@ -278,13 +281,25 @@ export function HarmonyShell({
     setReplyingTo(null);
   }, []);
 
-  const handleMessageSent = useCallback((msg: Message) => {
+  const trackCreatedMessage = useCallback((msg: Message) => {
     // Dedup: the SSE event for the sender's own message can arrive before the tRPC
     // response (Redis pub/sub on the same backend + established SSE connection beats
     // the HTTP round-trip). Without this check, the message would be added twice.
-    setLocalMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
-    setReplyingTo(null);
+    setLocalMessages(prev => mergeCreatedMessageIntoChannelMessages(prev, msg));
+    if (msg.parentMessageId) {
+      setLatestReplyByParentId(prev =>
+        prev[msg.parentMessageId!]?.id === msg.id ? prev : { ...prev, [msg.parentMessageId!]: msg },
+      );
+    }
   }, []);
+
+  const handleMessageSent = useCallback(
+    (msg: Message) => {
+      trackCreatedMessage(msg);
+      setReplyingTo(null);
+    },
+    [trackCreatedMessage],
+  );
 
   // ── Real-time SSE handlers ────────────────────────────────────────────────
 
@@ -293,10 +308,9 @@ export function HarmonyShell({
       // Filter: server endpoint delivers messages for all channels; only update
       // localMessages for the channel currently in view.
       if (msg.channelId !== currentChannel.id) return;
-      // Dedup: skip if the message was already optimistically added (e.g. sent by this client)
-      setLocalMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+      trackCreatedMessage(msg);
     },
-    [currentChannel.id],
+    [currentChannel.id, trackCreatedMessage],
   );
 
   const handleRealTimeEdited = useCallback(
@@ -654,6 +668,7 @@ export function HarmonyShell({
                     hasMoreOlder={hasMoreOlder}
                     isLoadingOlder={isLoadingOlder}
                     onLoadOlderMessages={handleLoadOlderMessages}
+                    latestReplyByParentId={latestReplyByParentId}
                   />
                   <MessageInput
                     channelId={currentChannel.id}

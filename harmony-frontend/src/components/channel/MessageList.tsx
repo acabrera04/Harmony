@@ -89,6 +89,8 @@ interface MessageListProps {
   isLoadingOlder?: boolean;
   /** Called when the user requests loading older messages. */
   onLoadOlderMessages?: () => void;
+  /** Latest reply keyed by parent message ID so open thread views can reflect composer/SSE replies. */
+  latestReplyByParentId?: Record<string, Message>;
 }
 
 export function MessageList({
@@ -104,6 +106,7 @@ export function MessageList({
   hasMoreOlder,
   isLoadingOlder,
   onLoadOlderMessages,
+  latestReplyByParentId,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -244,6 +247,7 @@ export function MessageList({
                   serverSlug={serverSlug}
                   onReplyClick={onReplyClick}
                   onPinToggle={onPinToggle}
+                  latestReply={latestReplyByParentId?.[msg.id]}
                 />
               ))}
             </div>

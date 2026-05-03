@@ -640,6 +640,7 @@ export function MessageItem({
   serverSlug,
   onReplyClick,
   onPinToggle,
+  latestReply,
 }: {
   message: Message;
   /** Set to false for grouped follow-up messages from the same author. Hides the avatar and author line. */
@@ -658,6 +659,8 @@ export function MessageItem({
   onReplyClick?: (message: Message) => void;
   /** Called when the user triggers a pin/unpin action for this message. */
   onPinToggle?: (messageId: string, pinned: boolean) => void;
+  /** Latest reply for this message's thread, delivered from composer/SSE state. */
+  latestReply?: Message;
 }) {
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
@@ -676,6 +679,12 @@ export function MessageItem({
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(message.replyCount ?? 0);
   const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null);
+  const [prevReplyCount, setPrevReplyCount] = useState(message.replyCount ?? 0);
+  if (prevReplyCount !== (message.replyCount ?? 0)) {
+    const nextReplyCount = message.replyCount ?? 0;
+    setPrevReplyCount(nextReplyCount);
+    setLocalReplyCount(nextReplyCount);
+  }
 
   // Render-phase derived-state reset: when the avatar URL changes (including A→B→A),
   // reset avatarError so the new URL is always attempted.
@@ -944,6 +953,7 @@ export function MessageItem({
         parentMessage={message}
         channelId={message.channelId}
         serverId={serverId}
+        incomingReply={latestReply}
         onReplyCountChange={delta => setLocalReplyCount(c => c + delta)}
       />
     ) : null;

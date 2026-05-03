@@ -17,6 +17,11 @@ import type { Message } from '@/types';
 
 // ─── ReplyItem ────────────────────────────────────────────────────────────────
 
+function appendUniqueReplies(base: Message[], incoming: Message[]) {
+  const seen = new Set(base.map(reply => reply.id));
+  return [...base, ...incoming.filter(reply => !seen.has(reply.id))];
+}
+
 function ReplyItem({ reply }: { reply: Message }) {
   const [avatarError, setAvatarError] = useState(false);
   const initial = reply.author.username?.trim().charAt(0).toUpperCase() || '?';
@@ -176,6 +181,8 @@ export interface ThreadViewProps {
   serverId: string;
   /** Called when a new reply is sent so the parent can update its replyCount. */
   onReplyCountChange?: (delta: number) => void;
+  /** Reply created outside this component, e.g. via channel composer or SSE. */
+  incomingReply?: Message;
 }
 
 export function ThreadView({
@@ -183,6 +190,7 @@ export function ThreadView({
   channelId,
   serverId,
   onReplyCountChange,
+  incomingReply,
 }: ThreadViewProps) {
   const [replies, setReplies] = useState<Message[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -191,6 +199,15 @@ export function ThreadView({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const initializedRef = useRef(false);
+  const incomingReplyId =
+    incomingReply?.parentMessageId === parentMessage.id ? incomingReply.id : null;
+  const [prevIncomingReplyId, setPrevIncomingReplyId] = useState<string | null>(null);
+  if (incomingReplyId !== prevIncomingReplyId) {
+    setPrevIncomingReplyId(incomingReplyId);
+    if (incomingReplyId && incomingReply) {
+      setReplies(prev => appendUniqueReplies(prev, [incomingReply]));
+    }
+  }
 
   const loadReplies = useCallback(
     async (cursor?: string) => {
@@ -199,7 +216,11 @@ export function ThreadView({
       const result = await getThreadMessagesAction(parentMessage.id, channelId, serverId, cursor);
       setIsLoading(false);
       if (result.ok) {
-        setReplies(prev => (cursor ? [...prev, ...result.replies] : result.replies));
+        setReplies(prev =>
+          cursor
+            ? appendUniqueReplies(prev, result.replies)
+            : appendUniqueReplies(result.replies, prev),
+        );
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       } else {
@@ -221,7 +242,7 @@ export function ThreadView({
       if (!isCurrent) return;
       setIsLoading(false);
       if (result.ok) {
-        setReplies(result.replies);
+        setReplies(prev => appendUniqueReplies(result.replies, prev));
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       } else {
