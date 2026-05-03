@@ -191,6 +191,38 @@ function createBufferedEventWriter(
   };
 }
 
+function writeCreatedMessageEvent(
+  writeEvent: (eventType: string, data: unknown, id?: string) => void,
+  payload: MessageCreatedPayload,
+  logContext: Record<string, string>,
+): void {
+  if (!payload.message) {
+    logger.warn(
+      { ...logContext, messageId: payload.messageId },
+      'Missing hydrated SSE message:created payload',
+    );
+    return;
+  }
+
+  writeEvent('message:created', payload.message, payload.message.timestamp);
+}
+
+function writeEditedMessageEvent(
+  writeEvent: (eventType: string, data: unknown, id?: string) => void,
+  payload: MessageEditedPayload,
+  logContext: Record<string, string>,
+): void {
+  if (!payload.message) {
+    logger.warn(
+      { ...logContext, messageId: payload.messageId },
+      'Missing hydrated SSE message:edited payload',
+    );
+    return;
+  }
+
+  writeEvent('message:edited', payload.message);
+}
+
 async function finalizeSseSetup(
   req: Request,
   res: Response,
@@ -307,43 +339,7 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_CREATED,
     async (payload: MessageCreatedPayload) => {
       if (payload.channelId !== channelId) return;
-
-      try {
-        const message = await prisma.message.findUnique({
-          where: { id: payload.messageId },
-          include: MESSAGE_SSE_INCLUDE,
-        });
-        if (!message || message.isDeleted) return;
-
-        writeEvent(
-          'message:created',
-          {
-            id: message.id,
-            channelId: message.channelId,
-            authorId: message.authorId,
-            author: message.author,
-            content: message.content,
-            timestamp: message.createdAt.toISOString(),
-            attachments: message.attachments,
-            editedAt: message.editedAt ? message.editedAt.toISOString() : null,
-            parentMessageId: message.parentMessageId,
-            parentMessage: message.parent
-              ? {
-                  id: message.parent.id,
-                  content: message.parent.isDeleted ? '' : message.parent.content,
-                  isDeleted: message.parent.isDeleted,
-                  author: message.parent.author,
-                }
-              : null,
-          },
-          message.createdAt.toISOString(),
-        );
-      } catch (err) {
-        logger.warn(
-          { err, channelId, messageId: payload.messageId },
-          'Failed to hydrate SSE message:created payload',
-        );
-      }
+      writeCreatedMessageEvent(writeEvent, payload, { channelId });
     },
   );
 
@@ -351,30 +347,7 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_EDITED,
     async (payload: MessageEditedPayload) => {
       if (payload.channelId !== channelId) return;
-
-      try {
-        const message = await prisma.message.findUnique({
-          where: { id: payload.messageId },
-          include: MESSAGE_SSE_INCLUDE,
-        });
-        if (!message || message.isDeleted) return;
-
-        writeEvent('message:edited', {
-          id: message.id,
-          channelId: message.channelId,
-          authorId: message.authorId,
-          author: message.author,
-          content: message.content,
-          timestamp: message.createdAt.toISOString(),
-          attachments: message.attachments,
-          editedAt: message.editedAt ? message.editedAt.toISOString() : null,
-        });
-      } catch (err) {
-        logger.warn(
-          { err, channelId, messageId: payload.messageId },
-          'Failed to hydrate SSE message:edited payload',
-        );
-      }
+      writeEditedMessageEvent(writeEvent, payload, { channelId });
     },
   );
 
@@ -636,43 +609,7 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_CREATED,
     async (payload: MessageCreatedPayload) => {
       if (!serverChannelIds.has(payload.channelId)) return;
-
-      try {
-        const message = await prisma.message.findUnique({
-          where: { id: payload.messageId },
-          include: MESSAGE_SSE_INCLUDE,
-        });
-        if (!message || message.isDeleted) return;
-
-        writeEvent(
-          'message:created',
-          {
-            id: message.id,
-            channelId: message.channelId,
-            authorId: message.authorId,
-            author: message.author,
-            content: message.content,
-            timestamp: message.createdAt.toISOString(),
-            attachments: message.attachments,
-            editedAt: message.editedAt ? message.editedAt.toISOString() : null,
-            parentMessageId: message.parentMessageId,
-            parentMessage: message.parent
-              ? {
-                  id: message.parent.id,
-                  content: message.parent.isDeleted ? '' : message.parent.content,
-                  isDeleted: message.parent.isDeleted,
-                  author: message.parent.author,
-                }
-              : null,
-          },
-          message.createdAt.toISOString(),
-        );
-      } catch (err) {
-        logger.warn(
-          { err, serverId, messageId: payload.messageId },
-          'Failed to hydrate SSE message:created payload on server endpoint',
-        );
-      }
+      writeCreatedMessageEvent(writeEvent, payload, { serverId });
     },
   );
   subscriptions.push(messageCreatedSubscription);
@@ -681,30 +618,7 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_EDITED,
     async (payload: MessageEditedPayload) => {
       if (!serverChannelIds.has(payload.channelId)) return;
-
-      try {
-        const message = await prisma.message.findUnique({
-          where: { id: payload.messageId },
-          include: MESSAGE_SSE_INCLUDE,
-        });
-        if (!message || message.isDeleted) return;
-
-        writeEvent('message:edited', {
-          id: message.id,
-          channelId: message.channelId,
-          authorId: message.authorId,
-          author: message.author,
-          content: message.content,
-          timestamp: message.createdAt.toISOString(),
-          attachments: message.attachments,
-          editedAt: message.editedAt ? message.editedAt.toISOString() : null,
-        });
-      } catch (err) {
-        logger.warn(
-          { err, serverId, messageId: payload.messageId },
-          'Failed to hydrate SSE message:edited payload on server endpoint',
-        );
-      }
+      writeEditedMessageEvent(writeEvent, payload, { serverId });
     },
   );
   subscriptions.push(messageEditedSubscription);
@@ -954,7 +868,14 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
       }
     : undefined;
 
-  await finalizeSseSetup(req, res, sseState, subscriptions, { route: 'server-events', serverId }, serverReplayFrames);
+  await finalizeSseSetup(
+    req,
+    res,
+    sseState,
+    subscriptions,
+    { route: 'server-events', serverId },
+    serverReplayFrames,
+  );
 });
 
 // ─── User-scoped notification SSE route ──────────────────────────────────────
@@ -998,5 +919,8 @@ eventsRouter.get('/user', async (req: Request, res: Response) => {
     },
   );
 
-  await finalizeSseSetup(req, res, sseState, [mentionSubscription], { route: 'user-events', userId });
+  await finalizeSseSetup(req, res, sseState, [mentionSubscription], {
+    route: 'user-events',
+    userId,
+  });
 });

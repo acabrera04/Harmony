@@ -177,6 +177,16 @@ describe('messageService.sendMessage — event publishing', () => {
         channelId: CHANNEL_ID,
         authorId: AUTHOR_ID,
         timestamp: expect.any(String),
+        message: expect.objectContaining({
+          id: MESSAGE_ID,
+          channelId: CHANNEL_ID,
+          authorId: AUTHOR_ID,
+          content: 'hello',
+          timestamp: MOCK_MESSAGE.createdAt.toISOString(),
+          editedAt: null,
+          parentMessageId: null,
+          parentMessage: null,
+        }),
       }),
     );
   });
@@ -227,6 +237,14 @@ describe('messageService.editMessage — event publishing', () => {
         messageId: MESSAGE_ID,
         channelId: CHANNEL_ID,
         timestamp: expect.any(String),
+        message: expect.objectContaining({
+          id: MESSAGE_ID,
+          channelId: CHANNEL_ID,
+          authorId: AUTHOR_ID,
+          content: 'edited',
+          timestamp: MOCK_UPDATED_MESSAGE.createdAt.toISOString(),
+          editedAt: MOCK_UPDATED_MESSAGE.editedAt!.toISOString(),
+        }),
       }),
     );
   });
@@ -341,6 +359,14 @@ describe('messageService.createReply — event publishing', () => {
         authorId: AUTHOR_ID,
         parentMessageId: MESSAGE_ID,
         timestamp: expect.any(String),
+        message: expect.objectContaining({
+          id: REPLY_ID,
+          channelId: CHANNEL_ID,
+          authorId: AUTHOR_ID,
+          content: 'reply',
+          timestamp: MOCK_REPLY.createdAt.toISOString(),
+          parentMessageId: MESSAGE_ID,
+        }),
       }),
     );
   });
