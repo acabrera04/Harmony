@@ -305,17 +305,18 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
       },
     );
 
-    (prisma.message.findUnique as jest.Mock).mockResolvedValue({
+    const hydratedMessage = {
       id: MESSAGE_ID,
       channelId: CHANNEL_ID,
       authorId: 'author-1',
       author: { id: 'author-1', username: 'bob', displayName: 'Bob', avatarUrl: null },
       content: 'live message during setup window',
-      createdAt: new Date('2026-04-19T11:00:00.000Z'),
+      timestamp: '2026-04-19T11:00:00.000Z',
       editedAt: null,
       attachments: [],
-      isDeleted: false,
-    });
+      parentMessageId: null,
+      parentMessage: null,
+    };
 
     const addr = server.address();
     if (!addr || typeof addr === 'string') throw new Error('Bad server address');
@@ -324,15 +325,12 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
     const chunks: string[] = [];
     let response: http.IncomingMessage | null = null;
     await new Promise<void>((resolve, reject) => {
-      const req = http.get(
-        { hostname: 'localhost', port, path: sseUrl },
-        (res) => {
-          response = res;
-          responseStarted.resolve();
-          res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
-          res.on('error', reject);
-        },
-      );
+      const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
+        response = res;
+        responseStarted.resolve();
+        res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+        res.on('error', reject);
+      });
 
       req.on('error', reject);
 
@@ -347,6 +345,7 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
           channelId: CHANNEL_ID,
           authorId: 'author-1',
           timestamp: new Date('2026-04-19T11:00:00.000Z').toISOString(),
+          message: hydratedMessage,
         });
 
         ready.resolve();
@@ -363,6 +362,84 @@ describe('GET /api/events/server/:serverId — subscription readiness', () => {
     const body = chunks.join('');
     expect(body).toContain('event: message:created');
     expect(body).toContain('live message during setup window');
+    expect(prisma.message.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('does not hydrate message:created once per connected server SSE client', async () => {
+    const CHANNEL_ID = '550e8400-e29b-41d4-a716-446655440012';
+    const MESSAGE_ID = '550e8400-e29b-41d4-a716-446655440013';
+    const hydratedMessage = {
+      id: MESSAGE_ID,
+      channelId: CHANNEL_ID,
+      authorId: 'author-1',
+      author: { id: 'author-1', username: 'bob', displayName: 'Bob', avatarUrl: null },
+      content: 'one hydrated payload',
+      timestamp: '2026-04-19T11:05:00.000Z',
+      attachments: [],
+      editedAt: null,
+      parentMessageId: null,
+      parentMessage: null,
+    };
+    const messageCreatedHandlers: Array<(payload: MessageCreatedPayload) => Promise<void>> = [];
+
+    (prisma.channel.findMany as jest.Mock).mockResolvedValue([{ id: CHANNEL_ID }]);
+    mockSubscribe.mockImplementation(
+      (channel: string, handler: (payload: MessageCreatedPayload) => Promise<void>) => {
+        if (channel === 'harmony:MESSAGE_CREATED') messageCreatedHandlers.push(handler);
+        return { unsubscribe: jest.fn(), ready: Promise.resolve() };
+      },
+    );
+
+    const addr = server.address();
+    if (!addr || typeof addr === 'string') throw new Error('Bad server address');
+    const port = addr.port;
+
+    const openSse = () =>
+      new Promise<{ req: http.ClientRequest; chunks: string[] }>((resolve, reject) => {
+        const chunks: string[] = [];
+        const req = http.get(
+          {
+            hostname: 'localhost',
+            port,
+            path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}`,
+          },
+          (res) => {
+            res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+            res.on('error', reject);
+            resolve({ req, chunks });
+          },
+        );
+        req.on('error', reject);
+      });
+
+    const first = await openSse();
+    seedSseTestTicket(redis as unknown as { set: jest.Mock });
+    const second = await openSse();
+
+    expect(messageCreatedHandlers).toHaveLength(2);
+
+    await Promise.all(
+      messageCreatedHandlers.map((handler) =>
+        handler({
+          messageId: MESSAGE_ID,
+          channelId: CHANNEL_ID,
+          authorId: 'author-1',
+          timestamp: hydratedMessage.timestamp,
+          message: hydratedMessage,
+        }),
+      ),
+    );
+
+    await waitFor(() => {
+      return (
+        first.chunks.join('').includes('one hydrated payload') &&
+        second.chunks.join('').includes('one hydrated payload')
+      );
+    });
+
+    first.req.destroy();
+    second.req.destroy();
+    expect(prisma.message.findUnique).not.toHaveBeenCalled();
   });
 });
 
@@ -462,14 +539,11 @@ describe('GET /api/events/server/:serverId — Last-Event-ID replay', () => {
     const chunks: string[] = [];
     const responseStarted = createDeferred<void>();
     await new Promise<void>((resolve, reject) => {
-      const req = http.get(
-        { hostname: 'localhost', port, path: sseUrlWithReplay },
-        (res) => {
-          responseStarted.resolve();
-          res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
-          res.on('error', reject);
-        },
-      );
+      const req = http.get({ hostname: 'localhost', port, path: sseUrlWithReplay }, (res) => {
+        responseStarted.resolve();
+        res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+        res.on('error', reject);
+      });
       req.on('error', reject);
 
       setTimeout(async () => {
@@ -483,6 +557,18 @@ describe('GET /api/events/server/:serverId — Last-Event-ID replay', () => {
           channelId: LIVE_CHANNEL_ID,
           authorId: 'author-3',
           timestamp: new Date('2026-04-19T10:01:00.000Z').toISOString(),
+          message: {
+            id: liveMsg.id,
+            channelId: liveMsg.channelId,
+            authorId: liveMsg.authorId,
+            author: liveMsg.author,
+            content: liveMsg.content,
+            timestamp: liveMsg.createdAt.toISOString(),
+            attachments: liveMsg.attachments,
+            editedAt: null,
+            parentMessageId: null,
+            parentMessage: null,
+          },
         });
         ready.resolve();
         await responseStarted.promise;

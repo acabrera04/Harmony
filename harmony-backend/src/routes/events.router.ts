@@ -40,6 +40,7 @@ import type {
   UserMentionedPayload,
   ReactionAddedPayload,
   ReactionRemovedPayload,
+  SseMessagePayload,
 } from '../events/eventTypes';
 
 export const eventsRouter = Router();
@@ -188,6 +189,34 @@ function createBufferedEventWriter(
       return;
     }
     res.write(frame);
+  };
+}
+
+function messageCreatedEventData(message: SseMessagePayload) {
+  return {
+    id: message.id,
+    channelId: message.channelId,
+    authorId: message.authorId,
+    author: message.author,
+    content: message.content,
+    timestamp: message.timestamp,
+    attachments: message.attachments,
+    editedAt: message.editedAt,
+    parentMessageId: message.parentMessageId,
+    parentMessage: message.parentMessage,
+  };
+}
+
+function messageEditedEventData(message: SseMessagePayload) {
+  return {
+    id: message.id,
+    channelId: message.channelId,
+    authorId: message.authorId,
+    author: message.author,
+    content: message.content,
+    timestamp: message.timestamp,
+    attachments: message.attachments,
+    editedAt: message.editedAt,
   };
 }
 
@@ -636,43 +665,13 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_CREATED,
     async (payload: MessageCreatedPayload) => {
       if (!serverChannelIds.has(payload.channelId)) return;
+      if (!payload.message) return;
 
-      try {
-        const message = await prisma.message.findUnique({
-          where: { id: payload.messageId },
-          include: MESSAGE_SSE_INCLUDE,
-        });
-        if (!message || message.isDeleted) return;
-
-        writeEvent(
-          'message:created',
-          {
-            id: message.id,
-            channelId: message.channelId,
-            authorId: message.authorId,
-            author: message.author,
-            content: message.content,
-            timestamp: message.createdAt.toISOString(),
-            attachments: message.attachments,
-            editedAt: message.editedAt ? message.editedAt.toISOString() : null,
-            parentMessageId: message.parentMessageId,
-            parentMessage: message.parent
-              ? {
-                  id: message.parent.id,
-                  content: message.parent.isDeleted ? '' : message.parent.content,
-                  isDeleted: message.parent.isDeleted,
-                  author: message.parent.author,
-                }
-              : null,
-          },
-          message.createdAt.toISOString(),
-        );
-      } catch (err) {
-        logger.warn(
-          { err, serverId, messageId: payload.messageId },
-          'Failed to hydrate SSE message:created payload on server endpoint',
-        );
-      }
+      writeEvent(
+        'message:created',
+        messageCreatedEventData(payload.message),
+        payload.message.timestamp,
+      );
     },
   );
   subscriptions.push(messageCreatedSubscription);
@@ -681,30 +680,9 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     EventChannels.MESSAGE_EDITED,
     async (payload: MessageEditedPayload) => {
       if (!serverChannelIds.has(payload.channelId)) return;
+      if (!payload.message) return;
 
-      try {
-        const message = await prisma.message.findUnique({
-          where: { id: payload.messageId },
-          include: MESSAGE_SSE_INCLUDE,
-        });
-        if (!message || message.isDeleted) return;
-
-        writeEvent('message:edited', {
-          id: message.id,
-          channelId: message.channelId,
-          authorId: message.authorId,
-          author: message.author,
-          content: message.content,
-          timestamp: message.createdAt.toISOString(),
-          attachments: message.attachments,
-          editedAt: message.editedAt ? message.editedAt.toISOString() : null,
-        });
-      } catch (err) {
-        logger.warn(
-          { err, serverId, messageId: payload.messageId },
-          'Failed to hydrate SSE message:edited payload on server endpoint',
-        );
-      }
+      writeEvent('message:edited', messageEditedEventData(payload.message));
     },
   );
   subscriptions.push(messageEditedSubscription);
@@ -954,7 +932,14 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
       }
     : undefined;
 
-  await finalizeSseSetup(req, res, sseState, subscriptions, { route: 'server-events', serverId }, serverReplayFrames);
+  await finalizeSseSetup(
+    req,
+    res,
+    sseState,
+    subscriptions,
+    { route: 'server-events', serverId },
+    serverReplayFrames,
+  );
 });
 
 // ─── User-scoped notification SSE route ──────────────────────────────────────
@@ -998,5 +983,8 @@ eventsRouter.get('/user', async (req: Request, res: Response) => {
     },
   );
 
-  await finalizeSseSetup(req, res, sseState, [mentionSubscription], { route: 'user-events', userId });
+  await finalizeSseSetup(req, res, sseState, [mentionSubscription], {
+    route: 'user-events',
+    userId,
+  });
 });

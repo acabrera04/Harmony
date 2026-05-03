@@ -47,12 +47,14 @@ export interface MessageCreatedPayload {
   /** Present only when the message is a thread reply; absent for top-level channel messages. */
   parentMessageId?: string;
   timestamp: string;
+  message?: SseMessagePayload;
 }
 
 export interface MessageEditedPayload {
   messageId: string;
   channelId: string;
   timestamp: string;
+  message?: SseMessagePayload;
 }
 
 export interface MessageDeletedPayload {
@@ -167,6 +169,40 @@ export interface UserMentionedPayload {
   authorId: string;
   authorUsername: string;
   timestamp: string;
+}
+
+export interface SseMessageAuthorPayload {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+export interface SseMessageAttachmentPayload {
+  id: string;
+  filename: string;
+  url: string;
+  contentType: string;
+}
+
+export interface SseParentMessagePayload {
+  id: string;
+  content: string;
+  isDeleted: boolean;
+  author: SseMessageAuthorPayload;
+}
+
+export interface SseMessagePayload {
+  id: string;
+  channelId: string;
+  authorId: string;
+  author: SseMessageAuthorPayload;
+  content: string;
+  timestamp: string;
+  attachments: SseMessageAttachmentPayload[];
+  editedAt: string | null;
+  parentMessageId: string | null;
+  parentMessage: SseParentMessagePayload | null;
 }
 
 // Map each channel to its payload type for type-safe subscribe/publish
