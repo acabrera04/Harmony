@@ -229,23 +229,6 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
       },
     );
 
-    (prisma.message.findUnique as jest.Mock).mockResolvedValue({
-      id: 'message-1',
-      channelId: VALID_CHANNEL_ID,
-      authorId: 'author-1',
-      author: {
-        id: 'author-1',
-        username: 'alice',
-        displayName: 'Alice',
-        avatarUrl: null,
-      },
-      content: 'hello from the setup window',
-      createdAt: new Date('2026-04-19T10:00:00.000Z'),
-      editedAt: null,
-      attachments: [],
-      isDeleted: false,
-    });
-
     const addr = server.address();
     if (!addr || typeof addr === 'string') throw new Error('Bad server address');
     const port = addr.port;
@@ -273,6 +256,23 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
           channelId: VALID_CHANNEL_ID,
           authorId: 'author-1',
           timestamp: new Date('2026-04-19T10:00:00.000Z').toISOString(),
+          message: {
+            id: 'message-1',
+            channelId: VALID_CHANNEL_ID,
+            authorId: 'author-1',
+            author: {
+              id: 'author-1',
+              username: 'alice',
+              displayName: 'Alice',
+              avatarUrl: null,
+            },
+            content: 'hello from the setup window',
+            timestamp: new Date('2026-04-19T10:00:00.000Z').toISOString(),
+            attachments: [],
+            editedAt: null,
+            parentMessageId: null,
+            parentMessage: null,
+          },
         });
 
         ready.resolve();

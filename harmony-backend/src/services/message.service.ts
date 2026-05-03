@@ -5,6 +5,7 @@ import { cacheService, CacheTTL, sanitizeKeySegment } from './cache.service';
 import { permissionService } from './permission.service';
 import { isSystemAdmin } from '../lib/admin.utils';
 import { eventBus, EventChannels } from '../events/eventBus';
+import type { EventMessagePayload } from '../events/eventTypes';
 import { channelRepository } from '../repositories/channel.repository';
 import { channelMemberRepository } from '../repositories/channelMember.repository';
 import { messageRepository } from '../repositories/message.repository';
@@ -84,6 +85,39 @@ function groupReactions(raw: { emoji: string; userId: string }[]) {
   }));
 }
 
+function serializeMessageForEvent(message: {
+  id: string;
+  channelId: string;
+  authorId: string;
+  author: EventMessagePayload['author'];
+  content: string;
+  createdAt: Date;
+  editedAt: Date | null;
+  attachments: EventMessagePayload['attachments'];
+  parentMessageId: string | null;
+  parent?: EventMessagePayload['parentMessage'];
+}): EventMessagePayload {
+  return {
+    id: message.id,
+    channelId: message.channelId,
+    authorId: message.authorId,
+    author: message.author,
+    content: message.content,
+    timestamp: message.createdAt.toISOString(),
+    attachments: message.attachments,
+    editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+    parentMessageId: message.parentMessageId,
+    parentMessage: message.parent
+      ? {
+          id: message.parent.id,
+          content: message.parent.isDeleted ? '' : message.parent.content,
+          isDeleted: message.parent.isDeleted,
+          author: message.parent.author,
+        }
+      : null,
+  };
+}
+
 /**
  * Cache key scoped to both server and channel so that private-channel entries
  * cannot be hit by users authorized on a different server.
@@ -129,7 +163,10 @@ async function requirePrivateChannelAccess(
 
   const isMember = await channelMemberRepository.isMember(userId, channel.id);
   if (!isMember) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have access to this private channel' });
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You do not have access to this private channel',
+    });
   }
 }
 
@@ -175,7 +212,7 @@ export const messageService = {
         const page = hasMore ? messages.slice(0, clampedLimit) : messages;
         const nextCursor = hasMore ? page[page.length - 1].id : null;
 
-        const messagesWithReactions = page.map(msg => ({
+        const messagesWithReactions = page.map((msg) => ({
           ...msg,
           reactions: groupReactions(msg.reactions),
         }));
@@ -213,7 +250,10 @@ export const messageService = {
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
       );
     } catch (err) {
-      logger.warn({ err, channelId, serverId }, 'Failed to invalidate channel message cache after send');
+      logger.warn(
+        { err, channelId, serverId },
+        'Failed to invalidate channel message cache after send',
+      );
     }
 
     eventBus
@@ -222,6 +262,7 @@ export const messageService = {
         channelId,
         authorId,
         timestamp: message.createdAt.toISOString(),
+        message: serializeMessageForEvent(message),
       })
       .catch((err) =>
         logger.warn(
@@ -256,7 +297,10 @@ export const messageService = {
     // Dispatch push notifications fire-and-forget
     (async () => {
       try {
-        const server = await prisma.server.findUnique({ where: { id: serverId }, select: { slug: true } });
+        const server = await prisma.server.findUnique({
+          where: { id: serverId },
+          select: { slug: true },
+        });
         if (!server) return;
 
         const ctx = {
@@ -312,6 +356,7 @@ export const messageService = {
         messageId,
         channelId: message.channelId,
         timestamp: updated.editedAt!.toISOString(),
+        message: serializeMessageForEvent(updated),
       })
       .catch((err) =>
         logger.warn(
@@ -329,9 +374,7 @@ export const messageService = {
       authorId,
       authorUsername: updated.author.username,
       content,
-    }).catch((err) =>
-      logger.warn({ err, messageId }, 'processMentions failed on editMessage'),
-    );
+    }).catch((err) => logger.warn({ err, messageId }, 'processMentions failed on editMessage'));
     processBroadcastMentions({
       messageId,
       channelId: message.channelId,
@@ -557,11 +600,7 @@ export const messageService = {
         tx,
       );
 
-      await messageRepository.updateRaw(
-        parentMessageId,
-        { replyCount: { increment: 1 } },
-        tx,
-      );
+      await messageRepository.updateRaw(parentMessageId, { replyCount: { increment: 1 } }, tx);
 
       return created;
     });
@@ -572,7 +611,10 @@ export const messageService = {
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
       );
     } catch (err) {
-      logger.warn({ err, channelId, serverId }, 'Failed to invalidate channel message cache after reply');
+      logger.warn(
+        { err, channelId, serverId },
+        'Failed to invalidate channel message cache after reply',
+      );
     }
     try {
       await cacheService.invalidatePattern(`thread:msgs:${sanitizeKeySegment(parentMessageId)}:*`);
@@ -587,6 +629,7 @@ export const messageService = {
         authorId,
         parentMessageId,
         timestamp: reply.createdAt.toISOString(),
+        message: serializeMessageForEvent(reply),
       })
       .catch((err) =>
         logger.warn(

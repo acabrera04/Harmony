@@ -47,12 +47,50 @@ export interface MessageCreatedPayload {
   /** Present only when the message is a thread reply; absent for top-level channel messages. */
   parentMessageId?: string;
   timestamp: string;
+  /** Hydrated once by the producer so SSE fan-out does not query per connected client. */
+  message?: EventMessagePayload;
 }
 
 export interface MessageEditedPayload {
   messageId: string;
   channelId: string;
   timestamp: string;
+  /** Hydrated once by the producer so SSE fan-out does not query per connected client. */
+  message?: EventMessagePayload;
+}
+
+export interface EventMessageAuthor {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
+export interface EventMessageAttachment {
+  id: string;
+  filename: string;
+  url: string;
+  contentType: string;
+}
+
+export interface EventMessageParent {
+  id: string;
+  content: string;
+  isDeleted: boolean;
+  author: EventMessageAuthor;
+}
+
+export interface EventMessagePayload {
+  id: string;
+  channelId: string;
+  authorId: string;
+  author: EventMessageAuthor;
+  content: string;
+  timestamp: string;
+  attachments: EventMessageAttachment[];
+  editedAt: string | null;
+  parentMessageId: string | null;
+  parentMessage: EventMessageParent | null;
 }
 
 export interface MessageDeletedPayload {
