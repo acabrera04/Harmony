@@ -10,6 +10,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useServerEvents } from '../hooks/useServerEvents';
+import { fetchSseTicket } from '../lib/api-client';
 import { ChannelType, ChannelVisibility } from '../types/channel';
 import type { Channel } from '../types/channel';
 import type { Message } from '../types/message';
@@ -19,7 +20,7 @@ import type { User } from '../types/user';
 
 jest.mock('../lib/api-client', () => ({
   getAccessToken: jest.fn(() => 'mock-token'),
-  fetchSseTicket: jest.fn(() => Promise.resolve('mock-ticket')),
+  fetchSseTicket: jest.fn(() => Promise.resolve()),
   refreshAccessToken: jest.fn(() => Promise.resolve()),
 }));
 
@@ -41,7 +42,7 @@ interface MockEventSourceInstance {
 
 let mockEventSourceInstance: MockEventSourceInstance | null = null;
 
-const MockEventSource = jest.fn().mockImplementation((url: string) => {
+const MockEventSource = jest.fn().mockImplementation((url: string, _init?: EventSourceInit) => {
   const handlers = new Map<string, EventSourceHandler[]>();
 
   const instance: MockEventSourceInstance = {
@@ -161,9 +162,11 @@ describe('useServerEvents — connection', () => {
     );
     await flushPromises();
 
-    expect(MockEventSource).toHaveBeenCalledWith(
-      `${API_URL}/api/events/server/${SERVER_ID}?ticket=mock-ticket`,
-    );
+    expect(MockEventSource).toHaveBeenCalledWith(`${API_URL}/api/events/server/${SERVER_ID}`, {
+      withCredentials: true,
+    });
+    expect(fetchSseTicket).toHaveBeenCalledWith(API_URL, 'mock-token', 'server');
+    expect(new URL(mockEventSourceInstance!.url).search).toBe('');
   });
 
   it('does NOT create EventSource when enabled=false', async () => {

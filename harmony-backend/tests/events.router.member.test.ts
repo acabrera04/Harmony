@@ -12,7 +12,7 @@ import { createApp } from '../src/app';
 import { eventBus } from '../src/events/eventBus';
 import { prisma } from '../src/db/prisma';
 import { redis } from '../src/db/redis';
-import { seedSseTestTicket, SSE_TEST_TICKET } from './helpers/redisTicketJestMock';
+import { seedSseTestTicket, SSE_TEST_TICKET_COOKIE } from './helpers/redisTicketJestMock';
 import type { Express } from 'express';
 
 const VALID_SERVER_ID = '550e8400-e29b-41d4-a716-446655440002';
@@ -97,19 +97,22 @@ function sseGet(
     if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
     const port = addr.port;
 
-    const req = http.get({ hostname: 'localhost', port, path }, (res) => {
-      const headers = res.headers as Record<string, string | string[] | undefined>;
-      const statusCode = res.statusCode ?? 0;
-      res.on('data', () => {});
-      const timer = setTimeout(() => {
-        res.destroy();
-        resolve({ statusCode, headers });
-      }, timeoutMs);
-      res.on('close', () => {
-        clearTimeout(timer);
-        resolve({ statusCode, headers });
-      });
-    });
+    const req = http.get(
+      { hostname: 'localhost', port, path, headers: { Cookie: SSE_TEST_TICKET_COOKIE } },
+      (res) => {
+        const headers = res.headers as Record<string, string | string[] | undefined>;
+        const statusCode = res.statusCode ?? 0;
+        res.on('data', () => {});
+        const timer = setTimeout(() => {
+          res.destroy();
+          resolve({ statusCode, headers });
+        }, timeoutMs);
+        res.on('close', () => {
+          clearTimeout(timer);
+          resolve({ statusCode, headers });
+        });
+      },
+    );
 
     req.on('error', reject);
     req.setTimeout(timeoutMs + 500, () => {
@@ -156,7 +159,7 @@ beforeEach(() => {
 // ─── Member event subscriptions ───────────────────────────────────────────────
 
 describe('GET /api/events/server/:serverId — member event subscriptions', () => {
-  const sseUrl = (id: string) => `/api/events/server/${id}?ticket=${SSE_TEST_TICKET}`;
+  const sseUrl = (id: string) => `/api/events/server/${id}`;
 
   it('subscribes to MEMBER_JOINED and MEMBER_LEFT event channels', async () => {
     await sseGet(httpServer, sseUrl(VALID_SERVER_ID));
@@ -184,12 +187,14 @@ describe('GET /api/events/server/:serverId — member:joined event', () => {
     // Capture the MEMBER_JOINED subscriber so we can invoke it directly
     let memberJoinedHandler: ((payload: unknown) => Promise<void>) | null = null;
 
-    mockSubscribe.mockImplementation((channel: string, handler: (payload: unknown) => Promise<void>) => {
-      if (channel === 'harmony:MEMBER_JOINED') {
-        memberJoinedHandler = handler;
-      }
-      return { unsubscribe: jest.fn(), ready: Promise.resolve() };
-    });
+    mockSubscribe.mockImplementation(
+      (channel: string, handler: (payload: unknown) => Promise<void>) => {
+        if (channel === 'harmony:MEMBER_JOINED') {
+          memberJoinedHandler = handler;
+        }
+        return { unsubscribe: jest.fn(), ready: Promise.resolve() };
+      },
+    );
 
     // Open the SSE connection (captures subscribers)
     const addr = httpServer.address();
@@ -199,7 +204,12 @@ describe('GET /api/events/server/:serverId — member:joined event', () => {
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
@@ -249,12 +259,14 @@ describe('GET /api/events/server/:serverId — member:joined event', () => {
 
     let memberJoinedHandler: ((payload: unknown) => Promise<void>) | null = null;
 
-    mockSubscribe.mockImplementation((channel: string, handler: (payload: unknown) => Promise<void>) => {
-      if (channel === 'harmony:MEMBER_JOINED') {
-        memberJoinedHandler = handler;
-      }
-      return { unsubscribe: jest.fn(), ready: Promise.resolve() };
-    });
+    mockSubscribe.mockImplementation(
+      (channel: string, handler: (payload: unknown) => Promise<void>) => {
+        if (channel === 'harmony:MEMBER_JOINED') {
+          memberJoinedHandler = handler;
+        }
+        return { unsubscribe: jest.fn(), ready: Promise.resolve() };
+      },
+    );
 
     const addr = httpServer.address();
     if (!addr || typeof addr === 'string') throw new Error('Bad address');
@@ -263,7 +275,12 @@ describe('GET /api/events/server/:serverId — member:joined event', () => {
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
@@ -302,12 +319,14 @@ describe('GET /api/events/server/:serverId — member:joined event', () => {
   it('does not emit member:joined for a different server', async () => {
     let memberJoinedHandler: ((payload: unknown) => Promise<void>) | null = null;
 
-    mockSubscribe.mockImplementation((channel: string, handler: (payload: unknown) => Promise<void>) => {
-      if (channel === 'harmony:MEMBER_JOINED') {
-        memberJoinedHandler = handler;
-      }
-      return { unsubscribe: jest.fn(), ready: Promise.resolve() };
-    });
+    mockSubscribe.mockImplementation(
+      (channel: string, handler: (payload: unknown) => Promise<void>) => {
+        if (channel === 'harmony:MEMBER_JOINED') {
+          memberJoinedHandler = handler;
+        }
+        return { unsubscribe: jest.fn(), ready: Promise.resolve() };
+      },
+    );
 
     const addr = httpServer.address();
     if (!addr || typeof addr === 'string') throw new Error('Bad address');
@@ -316,7 +335,12 @@ describe('GET /api/events/server/:serverId — member:joined event', () => {
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
@@ -368,7 +392,12 @@ describe('GET /api/events/server/:serverId — member:left event', () => {
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
@@ -416,7 +445,12 @@ describe('GET /api/events/server/:serverId — member:left event', () => {
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
