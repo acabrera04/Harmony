@@ -10,18 +10,25 @@
 import { BACKEND_URL, LOCAL_SEEDS, localOnlyDescribe } from './env';
 import { login, register } from './helpers/auth';
 
-/** One-shot SSE nonce from POST /api/events/ticket (JWT cannot live in query strings). */
-async function getSseTicket(accessToken: string): Promise<string> {
+type SseStream = 'channel' | 'server' | 'user';
+
+/** One-shot SSE cookie from POST /api/events/ticket (JWT cannot live in query strings). */
+async function getSseTicketCookie(accessToken: string, stream: SseStream): Promise<string> {
   const res = await fetch(`${BACKEND_URL}/api/events/ticket`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ stream }),
   });
   if (!res.ok) {
     throw new Error(`SSE ticket issuance failed: HTTP ${res.status}`);
   }
-  const body = (await res.json()) as { ticket?: string };
-  if (!body.ticket) throw new Error('SSE ticket response missing ticket field');
-  return body.ticket;
+
+  const setCookie = res.headers.get('set-cookie');
+  if (!setCookie) throw new Error('SSE ticket response missing Set-Cookie header');
+  return setCookie.split(';')[0];
 }
 
 // ─── Cloud-read-only smoke ────────────────────────────────────────────────────
@@ -37,10 +44,9 @@ describe('SSE Smoke (cloud-read-only)', () => {
       // Without a known server ID and token, only verify the endpoint is mounted.
       // Send a request without ticket to check it returns 401 (not 404).
       const fakeServerId = '00000000-0000-0000-0000-000000000000';
-      const res = await fetch(
-        `${BACKEND_URL}/api/events/server/${fakeServerId}`,
-        { signal: AbortSignal.timeout(5000) },
-      ).catch(() => null);
+      const res = await fetch(`${BACKEND_URL}/api/events/server/${fakeServerId}`, {
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => null);
       if (res) {
         // 401 means the endpoint exists; anything else still shows it's mounted
         expect([401, 403, 200]).toContain(res.status);
@@ -52,11 +58,11 @@ describe('SSE Smoke (cloud-read-only)', () => {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const ticket = await getSseTicket(token);
-      const res = await fetch(
-        `${BACKEND_URL}/api/events/server/${serverId}?ticket=${encodeURIComponent(ticket)}`,
-        { signal: controller.signal },
-      );
+      const cookie = await getSseTicketCookie(token, 'server');
+      const res = await fetch(`${BACKEND_URL}/api/events/server/${serverId}`, {
+        headers: { Cookie: cookie },
+        signal: controller.signal,
+      });
       clearTimeout(timeoutId);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toMatch(/text\/event-stream/i);
@@ -101,11 +107,11 @@ localOnlyDescribe('SSE (local-only)', () => {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const ticket = await getSseTicket(accessToken);
-      const res = await fetch(
-        `${BACKEND_URL}/api/events/channel/${channelId}?ticket=${encodeURIComponent(ticket)}`,
-        { signal: controller.signal },
-      );
+      const cookie = await getSseTicketCookie(accessToken, 'channel');
+      const res = await fetch(`${BACKEND_URL}/api/events/channel/${channelId}`, {
+        headers: { Cookie: cookie },
+        signal: controller.signal,
+      });
       clearTimeout(timeoutId);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toMatch(/text\/event-stream/i);
@@ -122,10 +128,9 @@ localOnlyDescribe('SSE (local-only)', () => {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/api/events/channel/${channelId}`,
-        { signal: controller.signal },
-      );
+      const res = await fetch(`${BACKEND_URL}/api/events/channel/${channelId}`, {
+        signal: controller.signal,
+      });
       clearTimeout(timeoutId);
       expect(res.status).toBe(401);
     } catch (err: unknown) {
@@ -148,7 +153,7 @@ localOnlyDescribe('SSE (local-only)', () => {
       freshUsername,
       'TestPass123!',
     );
-    const freshTicket = await getSseTicket(freshToken);
+    const freshCookie = await getSseTicketCookie(freshToken, 'channel');
 
     // Look up a channel from open-source-hub (not auto-joined on registration).
     const nonDefaultChannelRes = await fetch(
@@ -164,10 +169,10 @@ localOnlyDescribe('SSE (local-only)', () => {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/api/events/channel/${nonDefaultChannelId}?ticket=${encodeURIComponent(freshTicket)}`,
-        { signal: controller.signal },
-      );
+      const res = await fetch(`${BACKEND_URL}/api/events/channel/${nonDefaultChannelId}`, {
+        headers: { Cookie: freshCookie },
+        signal: controller.signal,
+      });
       clearTimeout(timeoutId);
       // Fresh user is not a member of open-source-hub → expect 403 Forbidden
       expect(res.status).toBe(403);
@@ -191,11 +196,11 @@ localOnlyDescribe('SSE (local-only)', () => {
 
     return new Promise<void>(async (resolve, reject) => {
       try {
-        const ticket = await getSseTicket(accessToken);
-        const res = await fetch(
-          `${BACKEND_URL}/api/events/channel/${channelId}?ticket=${encodeURIComponent(ticket)}`,
-          { signal: controller.signal },
-        );
+        const cookie = await getSseTicketCookie(accessToken, 'channel');
+        const res = await fetch(`${BACKEND_URL}/api/events/channel/${channelId}`, {
+          headers: { Cookie: cookie },
+          signal: controller.signal,
+        });
 
         if (res.status !== 200 || !res.body) {
           clearTimeout(timeoutId);
@@ -210,17 +215,14 @@ localOnlyDescribe('SSE (local-only)', () => {
 
         // Post a message to trigger the SSE event
         const msgInput = encodeURIComponent(JSON.stringify({ channelId }));
-        const postRes = await fetch(
-          `${BACKEND_URL}/trpc/message.sendMessage`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ serverId, channelId, content: 'SSE integration test message' }),
+        const postRes = await fetch(`${BACKEND_URL}/trpc/message.sendMessage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
           },
-        );
+          body: JSON.stringify({ serverId, channelId, content: 'SSE integration test message' }),
+        });
         void msgInput; // used above just for clarity
 
         if (postRes.status !== 200) {
@@ -260,11 +262,11 @@ localOnlyDescribe('SSE (local-only)', () => {
 
     return new Promise<void>(async (resolve, reject) => {
       try {
-        const ticket = await getSseTicket(accessToken);
-        const res = await fetch(
-          `${BACKEND_URL}/api/events/server/${serverId}?ticket=${encodeURIComponent(ticket)}`,
-          { signal: controller.signal },
-        );
+        const cookie = await getSseTicketCookie(accessToken, 'server');
+        const res = await fetch(`${BACKEND_URL}/api/events/server/${serverId}`, {
+          headers: { Cookie: cookie },
+          signal: controller.signal,
+        });
 
         if (res.status !== 200 || !res.body) {
           clearTimeout(timeoutId);
@@ -329,11 +331,11 @@ localOnlyDescribe('SSE (local-only)', () => {
 
     return new Promise<void>(async (resolve, reject) => {
       try {
-        const ticket = await getSseTicket(accessToken);
-        const res = await fetch(
-          `${BACKEND_URL}/api/events/channel/${channelId}?ticket=${encodeURIComponent(ticket)}`,
-          { signal: controller.signal },
-        );
+        const cookie = await getSseTicketCookie(accessToken, 'channel');
+        const res = await fetch(`${BACKEND_URL}/api/events/channel/${channelId}`, {
+          headers: { Cookie: cookie },
+          signal: controller.signal,
+        });
 
         if (res.status !== 200 || !res.body) {
           clearTimeout(timeoutId);
