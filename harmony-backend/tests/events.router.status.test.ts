@@ -12,7 +12,7 @@ import { createApp } from '../src/app';
 import { eventBus } from '../src/events/eventBus';
 import { prisma } from '../src/db/prisma';
 import { redis } from '../src/db/redis';
-import { seedSseTestTicket, SSE_TEST_TICKET } from './helpers/redisTicketJestMock';
+import { seedSseTestTicket, SSE_TEST_TICKET_COOKIE } from './helpers/redisTicketJestMock';
 import type { Express } from 'express';
 
 const VALID_SERVER_ID = '550e8400-e29b-41d4-a716-446655440002';
@@ -97,19 +97,22 @@ function sseGet(
     if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
     const port = addr.port;
 
-    const req = http.get({ hostname: 'localhost', port, path }, (res) => {
-      const headers = res.headers as Record<string, string | string[] | undefined>;
-      const statusCode = res.statusCode ?? 0;
-      res.on('data', () => {});
-      const timer = setTimeout(() => {
-        res.destroy();
-        resolve({ statusCode, headers });
-      }, timeoutMs);
-      res.on('close', () => {
-        clearTimeout(timer);
-        resolve({ statusCode, headers });
-      });
-    });
+    const req = http.get(
+      { hostname: 'localhost', port, path, headers: { Cookie: SSE_TEST_TICKET_COOKIE } },
+      (res) => {
+        const headers = res.headers as Record<string, string | string[] | undefined>;
+        const statusCode = res.statusCode ?? 0;
+        res.on('data', () => {});
+        const timer = setTimeout(() => {
+          res.destroy();
+          resolve({ statusCode, headers });
+        }, timeoutMs);
+        res.on('close', () => {
+          clearTimeout(timer);
+          resolve({ statusCode, headers });
+        });
+      },
+    );
 
     req.on('error', reject);
     req.setTimeout(timeoutMs + 500, () => {
@@ -148,7 +151,7 @@ beforeEach(() => {
 // ─── Status event subscription ────────────────────────────────────────────────
 
 describe('GET /api/events/server/:serverId — status event subscription', () => {
-  const sseUrl = (id: string) => `/api/events/server/${id}?ticket=${SSE_TEST_TICKET}`;
+  const sseUrl = (id: string) => `/api/events/server/${id}`;
 
   it('subscribes to USER_STATUS_CHANGED event channel', async () => {
     await sseGet(httpServer, sseUrl(VALID_SERVER_ID));
@@ -187,7 +190,12 @@ describe('GET /api/events/server/:serverId — member:statusChanged event', () =
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
@@ -236,7 +244,12 @@ describe('GET /api/events/server/:serverId — member:statusChanged event', () =
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 
@@ -285,7 +298,12 @@ describe('GET /api/events/server/:serverId — member:statusChanged event', () =
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
       const req = http.get(
-        { hostname: 'localhost', port, path: `/api/events/server/${VALID_SERVER_ID}?ticket=${SSE_TEST_TICKET}` },
+        {
+          hostname: 'localhost',
+          port,
+          path: `/api/events/server/${VALID_SERVER_ID}`,
+          headers: { Cookie: SSE_TEST_TICKET_COOKIE },
+        },
         (res) => {
           res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
 

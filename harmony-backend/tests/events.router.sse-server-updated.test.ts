@@ -12,7 +12,7 @@ import { createApp } from '../src/app';
 import { eventBus } from '../src/events/eventBus';
 import { prisma } from '../src/db/prisma';
 import { redis } from '../src/db/redis';
-import { seedSseTestTicket, SSE_TEST_TICKET } from './helpers/redisTicketJestMock';
+import { seedSseTestTicket, SSE_TEST_CHANNEL_TICKET_COOKIE } from './helpers/redisTicketJestMock';
 import type { Express } from 'express';
 
 const VALID_CHANNEL_ID = '550e8400-e29b-41d4-a716-446655440001';
@@ -82,53 +82,6 @@ jest.mock('../src/db/redis', () => {
 
 type SubscriberHandler = (payload: unknown) => void;
 
-/**
- * Collect SSE data from an open streaming connection for a window of time,
- * optionally triggering an event bus publish mid-stream, then resolve with
- * all received text chunks concatenated.
- */
-function sseGetWithEvent(
-  server: http.Server,
-  path: string,
-  onConnected: (triggerEvent: () => void) => void,
-  timeoutMs = 600,
-): Promise<{ statusCode: number; body: string }> {
-  return new Promise((resolve, reject) => {
-    const addr = server.address();
-    if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
-    const port = addr.port;
-
-    let body = '';
-
-    const req = http.get({ hostname: 'localhost', port, path }, (res) => {
-      const statusCode = res.statusCode ?? 0;
-
-      res.on('data', (chunk: Buffer) => {
-        body += chunk.toString();
-      });
-
-      // Allow caller to trigger the event once connected
-      onConnected(() => {});
-
-      const timer = setTimeout(() => {
-        res.destroy();
-        resolve({ statusCode, body });
-      }, timeoutMs);
-
-      res.on('close', () => {
-        clearTimeout(timer);
-        resolve({ statusCode, body });
-      });
-    });
-
-    req.on('error', reject);
-    req.setTimeout(timeoutMs + 500, () => {
-      req.destroy();
-      reject(new Error('Request timed out'));
-    });
-  });
-}
-
 // ─── Test setup ───────────────────────────────────────────────────────────────
 
 const mockSubscribe = eventBus.subscribe as jest.Mock;
@@ -170,7 +123,7 @@ beforeEach(() => {
 // ─── SERVER_UPDATED subscription ─────────────────────────────────────────────
 
 describe('GET /api/events/channel/:channelId — SERVER_UPDATED subscription', () => {
-  const sseUrl = `/api/events/channel/${VALID_CHANNEL_ID}?ticket=${SSE_TEST_TICKET}`;
+  const sseUrl = `/api/events/channel/${VALID_CHANNEL_ID}`;
 
   it('subscribes to SERVER_UPDATED event channel', async () => {
     await new Promise<void>((resolve, reject) => {
@@ -178,13 +131,21 @@ describe('GET /api/events/channel/:channelId — SERVER_UPDATED subscription', (
       if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
       const port = (addr as { port: number }).port;
 
-      const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
-        res.on('data', () => {});
-        setTimeout(() => {
-          res.destroy();
-          resolve();
-        }, 300);
-      });
+      const req = http.get(
+        {
+          hostname: 'localhost',
+          port,
+          path: sseUrl,
+          headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE },
+        },
+        (res) => {
+          res.on('data', () => {});
+          setTimeout(() => {
+            res.destroy();
+            resolve();
+          }, 300);
+        },
+      );
       req.on('error', reject);
     });
 
@@ -208,22 +169,30 @@ describe('GET /api/events/channel/:channelId — SERVER_UPDATED subscription', (
       if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
       const port = (addr as { port: number }).port;
 
-      const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
-        res.on('data', (chunk: Buffer) => {
-          receivedBody += chunk.toString();
-        });
+      const req = http.get(
+        {
+          hostname: 'localhost',
+          port,
+          path: sseUrl,
+          headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE },
+        },
+        (res) => {
+          res.on('data', (chunk: Buffer) => {
+            receivedBody += chunk.toString();
+          });
 
-        // Fire the event after a brief moment to let subscriptions register
-        setTimeout(() => {
-          const handler = capturedHandlers.get('harmony:SERVER_UPDATED');
-          if (handler) handler(serverUpdatedPayload);
-        }, 100);
+          // Fire the event after a brief moment to let subscriptions register
+          setTimeout(() => {
+            const handler = capturedHandlers.get('harmony:SERVER_UPDATED');
+            if (handler) handler(serverUpdatedPayload);
+          }, 100);
 
-        setTimeout(() => {
-          res.destroy();
-          resolve();
-        }, 400);
-      });
+          setTimeout(() => {
+            res.destroy();
+            resolve();
+          }, 400);
+        },
+      );
       req.on('error', reject);
     });
 
@@ -248,21 +217,29 @@ describe('GET /api/events/channel/:channelId — SERVER_UPDATED subscription', (
       if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
       const port = (addr as { port: number }).port;
 
-      const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
-        res.on('data', (chunk: Buffer) => {
-          receivedBody += chunk.toString();
-        });
+      const req = http.get(
+        {
+          hostname: 'localhost',
+          port,
+          path: sseUrl,
+          headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE },
+        },
+        (res) => {
+          res.on('data', (chunk: Buffer) => {
+            receivedBody += chunk.toString();
+          });
 
-        setTimeout(() => {
-          const handler = capturedHandlers.get('harmony:SERVER_UPDATED');
-          if (handler) handler(serverUpdatedPayload);
-        }, 100);
+          setTimeout(() => {
+            const handler = capturedHandlers.get('harmony:SERVER_UPDATED');
+            if (handler) handler(serverUpdatedPayload);
+          }, 100);
 
-        setTimeout(() => {
-          res.destroy();
-          resolve();
-        }, 400);
-      });
+          setTimeout(() => {
+            res.destroy();
+            resolve();
+          }, 400);
+        },
+      );
       req.on('error', reject);
     });
 

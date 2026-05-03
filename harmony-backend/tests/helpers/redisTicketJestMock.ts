@@ -5,6 +5,8 @@
 
 export const SSE_TEST_TICKET = '550e8400-e29b-41d4-a716-446655440099';
 export const SSE_TEST_USER_ID = 'test-user-id';
+export const SSE_TEST_TICKET_COOKIE = `harmony_sse_ticket_server=${SSE_TEST_TICKET}`;
+export const SSE_TEST_CHANNEL_TICKET_COOKIE = `harmony_sse_ticket_channel=${SSE_TEST_TICKET}`;
 
 export function redisTicketMockFactory(): { redis: Record<string, jest.Mock> } {
   const store = new Map<string, string>();

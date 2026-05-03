@@ -242,18 +242,26 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 /**
- * Fetches a one-shot SSE ticket from the backend.
- * The ticket must be passed as ?ticket=<nonce> when opening an EventSource.
+ * Issues a one-shot SSE ticket cookie from the backend.
+ * EventSource cannot set Authorization headers, so the backend stores the
+ * nonce in a short-lived HTTP-only cookie that is redeemed by the SSE GET.
  * Throws if the request fails (caller should abort the SSE connection).
  */
-export async function fetchSseTicket(apiBaseUrl: string, accessToken: string): Promise<string> {
+export async function fetchSseTicket(
+  apiBaseUrl: string,
+  accessToken: string,
+  stream: 'channel' | 'server' | 'user',
+): Promise<void> {
   const res = await fetch(`${apiBaseUrl}/api/events/ticket`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ stream }),
+    credentials: 'include',
   });
   if (!res.ok) throw new Error(`Failed to fetch SSE ticket: ${res.status}`);
-  const data = await res.json() as { ticket: string };
-  return data.ticket;
 }
 
 /**

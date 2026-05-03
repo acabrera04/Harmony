@@ -3,18 +3,19 @@
  *
  * POST /api/events/ticket
  *   Requires Authorization: Bearer <accessToken>.
- *   Returns a one-shot nonce stored in Redis for 60 s.
+ *   Requires { stream: "channel" | "server" | "user" }.
+ *   Sets a stream-scoped, short-lived, HTTP-only, one-shot ticket cookie stored in Redis for 60 s.
  *
- * GET /api/events/channel/:channelId?ticket=<nonce>
- * GET /api/events/server/:serverId?ticket=<nonce>
- * GET /api/events/user?ticket=<nonce>
+ * GET /api/events/channel/:channelId
+ * GET /api/events/server/:serverId
+ * GET /api/events/user
  *
  * Streams real-time events using Server-Sent Events.
  *
  * Auth: EventSource cannot send custom headers, so a short-lived one-shot ticket
- * is used instead of passing the JWT directly in the query string. The frontend
- * calls POST /api/events/ticket first, then opens the EventSource with ?ticket=<nonce>.
- * The nonce is consumed immediately on first use, preventing replay.
+ * cookie is used instead of passing the JWT or ticket in the query string. The
+ * frontend calls POST /api/events/ticket first, then opens EventSource with
+ * credentials enabled. The nonce is consumed immediately on first use, preventing replay.
  */
 
 import crypto from 'crypto';
@@ -61,9 +62,68 @@ function isValidUUID(id: string): boolean {
 // ─── SSE ticket helpers ───────────────────────────────────────────────────────
 
 const TICKET_TTL_SECONDS = 60;
+const SSE_TICKET_COOKIE_NAMES = {
+  channel: 'harmony_sse_ticket_channel',
+  server: 'harmony_sse_ticket_server',
+  user: 'harmony_sse_ticket_user',
+} as const;
+
+type SseTicketStream = keyof typeof SSE_TICKET_COOKIE_NAMES;
+
+function isSseTicketStream(value: unknown): value is SseTicketStream {
+  return value === 'channel' || value === 'server' || value === 'user';
+}
 
 function ticketKey(nonce: string): string {
   return `sse:ticket:${nonce}`;
+}
+
+function serializeSseTicketCookie(
+  stream: SseTicketStream,
+  value: string,
+  maxAgeSeconds: number,
+): string {
+  const secure = process.env.NODE_ENV === 'production';
+  const attributes = [
+    `${SSE_TICKET_COOKIE_NAMES[stream]}=${encodeURIComponent(value)}`,
+    'Path=/api/events',
+    'HttpOnly',
+    `Max-Age=${maxAgeSeconds}`,
+    secure ? 'SameSite=None' : 'SameSite=Lax',
+  ];
+  if (secure) attributes.push('Secure');
+  return attributes.join('; ');
+}
+
+function readCookie(req: Request, name: string): string | null {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return null;
+
+  for (const pair of cookieHeader.split(';')) {
+    const separatorIndex = pair.indexOf('=');
+    if (separatorIndex === -1) continue;
+    const key = pair.slice(0, separatorIndex).trim();
+    if (key !== name) continue;
+    try {
+      return decodeURIComponent(pair.slice(separatorIndex + 1).trim());
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+async function redeemSseTicketFromCookie(
+  req: Request,
+  res: Response,
+  stream: SseTicketStream,
+): Promise<string | null> {
+  const ticket = readCookie(req, SSE_TICKET_COOKIE_NAMES[stream]);
+  if (!ticket) return null;
+
+  res.setHeader('Set-Cookie', serializeSseTicketCookie(stream, '', 0));
+  return redeemTicket(ticket);
 }
 
 /**
@@ -94,11 +154,16 @@ async function redeemTicket(nonce: string): Promise<string | null> {
  * POST /api/events/ticket
  *
  * Requires Authorization: Bearer <accessToken>.
- * Returns { ticket: <nonce> } — the nonce must be passed as ?ticket=<nonce>
- * when opening an SSE connection. The nonce is valid for 60 seconds and can
- * only be used once.
+ * Requires { stream: "channel" | "server" | "user" }. Sets a stream-scoped
+ * HTTP-only ticket cookie for the next SSE connection. The nonce is valid for
+ * 60 seconds and can only be used once.
  */
 eventsRouter.post('/ticket', async (req: Request, res: Response) => {
+  if (!isSseTicketStream(req.body?.stream)) {
+    res.status(400).json({ error: 'Invalid stream type' });
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing or invalid Authorization header' });
@@ -116,7 +181,8 @@ eventsRouter.post('/ticket', async (req: Request, res: Response) => {
 
   const nonce = crypto.randomUUID();
   await redis.set(ticketKey(nonce), userId, 'EX', TICKET_TTL_SECONDS);
-  res.json({ ticket: nonce });
+  res.setHeader('Set-Cookie', serializeSseTicketCookie(req.body.stream, nonce, TICKET_TTL_SECONDS));
+  res.json({ ok: true });
 });
 
 // ─── Prisma select shape (matches frontend Message type) ──────────────────────
@@ -260,16 +326,10 @@ eventsRouter.get('/channel/:channelId', async (req: Request, res: Response) => {
     return;
   }
 
-  // ── Auth — one-shot ticket exchanged via POST /api/events/ticket ─────────
-  const ticket = typeof req.query.ticket === 'string' ? req.query.ticket : null;
-  if (!ticket) {
-    res.status(401).json({ error: 'Missing ticket query parameter' });
-    return;
-  }
-
-  const userId = await redeemTicket(ticket);
+  // ── Auth — one-shot ticket cookie exchanged via POST /api/events/ticket ───
+  const userId = await redeemSseTicketFromCookie(req, res, 'channel');
   if (!userId) {
-    res.status(401).json({ error: 'Invalid or expired SSE ticket' });
+    res.status(401).json({ error: 'Missing, invalid, or expired SSE ticket' });
     return;
   }
 
@@ -508,14 +568,14 @@ const CHANNEL_SSE_SELECT = {
 // ─── Server-scoped SSE route — channel list updates ───────────────────────────
 
 /**
- * GET /api/events/server/:serverId?ticket=<nonce>
+ * GET /api/events/server/:serverId
  *
  * Streams real-time server events to authenticated, authorised clients using
  * Server-Sent Events. Scoped to a server so all members see the same sidebar,
  * member, message, and server updates regardless of which channel they are viewing.
  *
  * Auth: one-shot ticket pattern — call POST /api/events/ticket first, then
- * pass the returned nonce as ?ticket=<nonce>.
+ * open EventSource with credentials so the ticket cookie is sent.
  *
  * Authorisation: user must be a member of the server.
  */
@@ -527,16 +587,10 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
     return;
   }
 
-  // ── Auth — one-shot ticket ────────────────────────────────────────────────
-  const ticket = typeof req.query.ticket === 'string' ? req.query.ticket : null;
-  if (!ticket) {
-    res.status(401).json({ error: 'Missing ticket query parameter' });
-    return;
-  }
-
-  const userId = await redeemTicket(ticket);
+  // ── Auth — one-shot ticket cookie ─────────────────────────────────────────
+  const userId = await redeemSseTicketFromCookie(req, res, 'server');
   if (!userId) {
-    res.status(401).json({ error: 'Invalid or expired SSE ticket' });
+    res.status(401).json({ error: 'Missing, invalid, or expired SSE ticket' });
     return;
   }
 
@@ -954,27 +1008,28 @@ eventsRouter.get('/server/:serverId', async (req: Request, res: Response) => {
       }
     : undefined;
 
-  await finalizeSseSetup(req, res, sseState, subscriptions, { route: 'server-events', serverId }, serverReplayFrames);
+  await finalizeSseSetup(
+    req,
+    res,
+    sseState,
+    subscriptions,
+    { route: 'server-events', serverId },
+    serverReplayFrames,
+  );
 });
 
 // ─── User-scoped notification SSE route ──────────────────────────────────────
 
 /**
- * GET /api/events/user?ticket=<nonce>
+ * GET /api/events/user
  *
  * Streams real-time mention notifications to the authenticated user.
  * Each connected client only receives events addressed to their own userId.
  */
 eventsRouter.get('/user', async (req: Request, res: Response) => {
-  const ticket = typeof req.query.ticket === 'string' ? req.query.ticket : null;
-  if (!ticket) {
-    res.status(401).json({ error: 'Missing ticket query parameter' });
-    return;
-  }
-
-  const userId = await redeemTicket(ticket);
+  const userId = await redeemSseTicketFromCookie(req, res, 'user');
   if (!userId) {
-    res.status(401).json({ error: 'Invalid or expired SSE ticket' });
+    res.status(401).json({ error: 'Missing, invalid, or expired SSE ticket' });
     return;
   }
 
@@ -998,5 +1053,8 @@ eventsRouter.get('/user', async (req: Request, res: Response) => {
     },
   );
 
-  await finalizeSseSetup(req, res, sseState, [mentionSubscription], { route: 'user-events', userId });
+  await finalizeSseSetup(req, res, sseState, [mentionSubscription], {
+    route: 'user-events',
+    userId,
+  });
 });

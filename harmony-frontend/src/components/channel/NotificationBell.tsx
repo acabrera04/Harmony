@@ -59,7 +59,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -93,16 +93,15 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     let cancelled = false;
 
     (async () => {
-      let ticket: string;
       try {
-        ticket = await fetchSseTicket(apiBase, token);
+        await fetchSseTicket(apiBase, token, 'user');
       } catch {
         return; // abort silently — notification bell is non-critical
       }
       if (cancelled) return;
 
-      const url = `${apiBase}/api/events/user?ticket=${encodeURIComponent(ticket)}`;
-      const es = new EventSource(url);
+      const url = `${apiBase}/api/events/user`;
+      const es = new EventSource(url, { withCredentials: true });
       eventSourceRef.current = es;
 
       es.addEventListener('notification:mention', (e: MessageEvent) => {
@@ -137,7 +136,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               },
             },
           };
-          setNotifications((prev) => [optimistic, ...prev].slice(0, 50));
+          setNotifications(prev => [optimistic, ...prev].slice(0, 50));
         } catch {
           // malformed payload — ignore
         }
@@ -151,7 +150,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
     };
-  }, [userId]);
+  }, [userId, loadNotifications]);
 
   // Close panel on outside click
   useEffect(() => {
@@ -166,15 +165,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   }, [isOpen]);
 
   const toggleOpen = () => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(prev => !prev);
   };
 
   const markAsRead = async (id: string) => {
     try {
       await apiClient.trpcMutation('notification.markAsRead', { notificationId: id });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
+      setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
     } catch {
       // ignore — non-critical, badge will self-correct on next load
     }
@@ -183,7 +180,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const markAllAsRead = async () => {
     try {
       await apiClient.trpcMutation('notification.markAllAsRead');
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch {
       // ignore — non-critical, badge will self-correct on next load
     }
@@ -235,16 +232,12 @@ export function NotificationBell({ userId }: NotificationBellProps) {
 
           {/* List */}
           <ul className='max-h-80 overflow-y-auto'>
-            {isLoading && (
-              <li className='px-4 py-6 text-center text-sm text-gray-400'>Loading…</li>
-            )}
+            {isLoading && <li className='px-4 py-6 text-center text-sm text-gray-400'>Loading…</li>}
             {!isLoading && notifications.length === 0 && (
-              <li className='px-4 py-6 text-center text-sm text-gray-400'>
-                No notifications yet.
-              </li>
+              <li className='px-4 py-6 text-center text-sm text-gray-400'>No notifications yet.</li>
             )}
             {!isLoading &&
-              notifications.map((n) => {
+              notifications.map(n => {
                 const serverSlug = n.channel?.server?.slug;
                 const channelSlug = n.channel?.slug;
                 const isNavigable = !!(serverSlug && channelSlug);
@@ -260,7 +253,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                       role='button'
                       tabIndex={0}
                       onClick={handleRowClick}
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           handleRowClick();
@@ -296,7 +289,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                       {!n.read && (
                         <button
                           type='button'
-                          onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            markAsRead(n.id);
+                          }}
                           title='Mark as read'
                           className='mt-0.5 flex-shrink-0 text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors'
                         >

@@ -16,7 +16,7 @@ import { eventBus } from '../src/events/eventBus';
 import { prisma } from '../src/db/prisma';
 import { redis } from '../src/db/redis';
 import { createDeferred, waitFor } from './helpers/async';
-import { seedSseTestTicket, SSE_TEST_TICKET } from './helpers/redisTicketJestMock';
+import { seedSseTestTicket, SSE_TEST_CHANNEL_TICKET_COOKIE } from './helpers/redisTicketJestMock';
 import type { Express } from 'express';
 import type { MessageCreatedPayload } from '../src/events/eventTypes';
 
@@ -95,21 +95,24 @@ function sseGet(
     if (!addr || typeof addr === 'string') return reject(new Error('Bad server address'));
     const port = addr.port;
 
-    const req = http.get({ hostname: 'localhost', port, path }, (res) => {
-      const headers = res.headers as Record<string, string | string[] | undefined>;
-      const statusCode = res.statusCode ?? 0;
-      // Drain data to prevent socket from stalling
-      res.on('data', () => {});
-      // Resolve after a short window — we've already captured headers
-      const timer = setTimeout(() => {
-        res.destroy();
-        resolve({ statusCode, headers });
-      }, timeoutMs);
-      res.on('close', () => {
-        clearTimeout(timer);
-        resolve({ statusCode, headers });
-      });
-    });
+    const req = http.get(
+      { hostname: 'localhost', port, path, headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE } },
+      (res) => {
+        const headers = res.headers as Record<string, string | string[] | undefined>;
+        const statusCode = res.statusCode ?? 0;
+        // Drain data to prevent socket from stalling
+        res.on('data', () => {});
+        // Resolve after a short window — we've already captured headers
+        const timer = setTimeout(() => {
+          res.destroy();
+          resolve({ statusCode, headers });
+        }, timeoutMs);
+        res.on('close', () => {
+          clearTimeout(timer);
+          resolve({ statusCode, headers });
+        });
+      },
+    );
 
     req.on('error', reject);
     req.setTimeout(timeoutMs + 500, () => {
@@ -150,7 +153,7 @@ beforeEach(() => {
 
 describe('GET /api/events/channel/:channelId — SSE headers', () => {
   const VALID_CHANNEL_ID = '550e8400-e29b-41d4-a716-446655440001';
-  const sseUrl = (id: string) => `/api/events/channel/${id}?ticket=${SSE_TEST_TICKET}`;
+  const sseUrl = (id: string) => `/api/events/channel/${id}`;
 
   it('sets Content-Type: text/event-stream', async () => {
     const { headers } = await sseGet(server, sseUrl(VALID_CHANNEL_ID));
@@ -184,7 +187,7 @@ describe('GET /api/events/channel/:channelId — SSE headers', () => {
 
 describe('GET /api/events/channel/:channelId — subscription readiness', () => {
   const VALID_CHANNEL_ID = '550e8400-e29b-41d4-a716-446655440001';
-  const sseUrl = `/api/events/channel/${VALID_CHANNEL_ID}?ticket=${SSE_TEST_TICKET}`;
+  const sseUrl = `/api/events/channel/${VALID_CHANNEL_ID}`;
 
   it('waits for all subscription handshakes before flushing SSE headers', async () => {
     const ready = createDeferred<void>();
@@ -198,10 +201,18 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
     const port = addr.port;
 
     let headersReceived = false;
-    const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
-      headersReceived = true;
-      res.resume();
-    });
+    const req = http.get(
+      {
+        hostname: 'localhost',
+        port,
+        path: sseUrl,
+        headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE },
+      },
+      (res) => {
+        headersReceived = true;
+        res.resume();
+      },
+    );
 
     await new Promise((resolve) => setTimeout(resolve, 75));
     expect(headersReceived).toBe(false);
@@ -253,12 +264,20 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
     const chunks: string[] = [];
     let response: http.IncomingMessage | null = null;
     await new Promise<void>((resolve, reject) => {
-      const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
-        response = res;
-        responseStarted.resolve();
-        res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
-        res.on('error', reject);
-      });
+      const req = http.get(
+        {
+          hostname: 'localhost',
+          port,
+          path: sseUrl,
+          headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE },
+        },
+        (res) => {
+          response = res;
+          responseStarted.resolve();
+          res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+          res.on('error', reject);
+        },
+      );
 
       req.on('error', reject);
 
@@ -297,7 +316,7 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
 describe('GET /api/events/channel/:channelId — Last-Event-ID replay', () => {
   const VALID_CHANNEL_ID = '550e8400-e29b-41d4-a716-446655440001';
   const lastEventId = '2026-04-19T09:59:00.000Z';
-  const sseUrl = `/api/events/channel/${VALID_CHANNEL_ID}?ticket=${SSE_TEST_TICKET}&lastEventId=${encodeURIComponent(lastEventId)}`;
+  const sseUrl = `/api/events/channel/${VALID_CHANNEL_ID}?lastEventId=${encodeURIComponent(lastEventId)}`;
 
   it('replays message:created events missed during the reconnect gap', async () => {
     const missedMessage = {
@@ -319,15 +338,23 @@ describe('GET /api/events/channel/:channelId — Last-Event-ID replay', () => {
 
     const chunks: string[] = [];
     await new Promise<void>((resolve, reject) => {
-      const req = http.get({ hostname: 'localhost', port, path: sseUrl }, (res) => {
-        res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
-        res.on('error', reject);
-        setTimeout(() => {
-          res.destroy();
-          req.destroy();
-          resolve();
-        }, 150);
-      });
+      const req = http.get(
+        {
+          hostname: 'localhost',
+          port,
+          path: sseUrl,
+          headers: { Cookie: SSE_TEST_CHANNEL_TICKET_COOKIE },
+        },
+        (res) => {
+          res.on('data', (chunk: Buffer) => chunks.push(chunk.toString()));
+          res.on('error', reject);
+          setTimeout(() => {
+            res.destroy();
+            req.destroy();
+            resolve();
+          }, 150);
+        },
+      );
       req.on('error', reject);
     });
 
@@ -360,7 +387,7 @@ describe('GET /api/events/channel/:channelId — input validation', () => {
   it('accepts a valid UUID-formatted channelId and returns 200', async () => {
     const { statusCode } = await sseGet(
       server,
-      `/api/events/channel/550e8400-e29b-41d4-a716-446655440001?ticket=${SSE_TEST_TICKET}`,
+      `/api/events/channel/550e8400-e29b-41d4-a716-446655440001`,
     );
     expect(statusCode).toBe(200);
   });
@@ -377,10 +404,7 @@ describe('GET /api/events/channel/:channelId — subscription readiness', () => 
       ready: channel === 'harmony:MESSAGE_CREATED' ? failingReady : Promise.resolve(),
     }));
 
-    const res = await sseGet(
-      server,
-      `/api/events/channel/550e8400-e29b-41d4-a716-446655440001?ticket=${SSE_TEST_TICKET}`,
-    );
+    const res = await sseGet(server, `/api/events/channel/550e8400-e29b-41d4-a716-446655440001`);
 
     expect(res.statusCode).toBe(503);
   });

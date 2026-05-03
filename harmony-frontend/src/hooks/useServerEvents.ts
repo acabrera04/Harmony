@@ -87,9 +87,19 @@ export interface UseServerEventsOptions {
   /** Called when server metadata (name, icon, description) changes. Optional. */
   onServerUpdated?: (server: Server) => void;
   /** Called when a reaction is added to a message in any channel of the server. Optional. */
-  onReactionAdded?: (data: { messageId: string; channelId: string; userId: string; emoji: string }) => void;
+  onReactionAdded?: (data: {
+    messageId: string;
+    channelId: string;
+    userId: string;
+    emoji: string;
+  }) => void;
   /** Called when a reaction is removed from a message in any channel of the server. Optional. */
-  onReactionRemoved?: (data: { messageId: string; channelId: string; userId: string; emoji: string }) => void;
+  onReactionRemoved?: (data: {
+    messageId: string;
+    channelId: string;
+    userId: string;
+    emoji: string;
+  }) => void;
   /** Set to false to disable the connection (e.g. for unauthenticated guests). Defaults to true. */
   enabled?: boolean;
 }
@@ -167,9 +177,8 @@ export function useServerEvents({
     const activeHandlers: Array<[string, (event: MessageEvent<string>) => void]> = [];
 
     const connect = async () => {
-      let ticket: string;
       try {
-        ticket = await fetchSseTicket(apiUrl, token);
+        await fetchSseTicket(apiUrl, token, 'server');
       } catch (err) {
         logger.warn('Failed to fetch SSE ticket; aborting server connection', {
           feature: 'server-events',
@@ -182,255 +191,255 @@ export function useServerEvents({
       }
       if (cancelled) return;
 
-      let url = `${apiUrl}/api/events/server/${serverId}?ticket=${encodeURIComponent(ticket)}`;
+      let url = `${apiUrl}/api/events/server/${serverId}`;
       // On reconnect, pass the last seen event id so the server can replay missed messages.
       if (reconnectKey > 0 && lastEventIdRef.current) {
-        url += `&lastEventId=${encodeURIComponent(lastEventIdRef.current)}`;
+        url += `?lastEventId=${encodeURIComponent(lastEventIdRef.current)}`;
       }
-      es = new EventSource(url);
+      es = new EventSource(url, { withCredentials: true });
 
-    const handleCreated = (event: MessageEvent<string>) => {
-      try {
-        const channel = JSON.parse(event.data) as Channel;
-        onCreatedRef.current(channel);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'channel:created',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleCreated = (event: MessageEvent<string>) => {
+        try {
+          const channel = JSON.parse(event.data) as Channel;
+          onCreatedRef.current(channel);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'channel:created',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleUpdated = (event: MessageEvent<string>) => {
-      try {
-        const channel = JSON.parse(event.data) as Channel;
-        onUpdatedRef.current(channel);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'channel:updated',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleUpdated = (event: MessageEvent<string>) => {
+        try {
+          const channel = JSON.parse(event.data) as Channel;
+          onUpdatedRef.current(channel);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'channel:updated',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleDeleted = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as { channelId: string };
-        onDeletedRef.current(payload.channelId);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'channel:deleted',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleDeleted = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as { channelId: string };
+          onDeletedRef.current(payload.channelId);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'channel:deleted',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMemberJoined = (event: MessageEvent<string>) => {
-      try {
-        const user = JSON.parse(event.data) as User;
-        onMemberJoinedRef.current?.(user);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'member:joined',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMemberJoined = (event: MessageEvent<string>) => {
+        try {
+          const user = JSON.parse(event.data) as User;
+          onMemberJoinedRef.current?.(user);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'member:joined',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMemberLeft = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as { userId: string };
-        onMemberLeftRef.current?.(payload.userId);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'member:left',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMemberLeft = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as { userId: string };
+          onMemberLeftRef.current?.(payload.userId);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'member:left',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMemberStatusChanged = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as { id: string; status: UserStatus };
-        onMemberStatusChangedRef.current?.(payload);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'member:statusChanged',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMemberStatusChanged = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as { id: string; status: UserStatus };
+          onMemberStatusChangedRef.current?.(payload);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'member:statusChanged',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMemberProfileUpdated = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as {
-          id: string;
-          username: string;
-          displayName?: string;
-          avatarUrl?: string;
-        };
-        onMemberProfileUpdatedRef.current?.(payload);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'member:profileUpdated',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMemberProfileUpdated = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as {
+            id: string;
+            username: string;
+            displayName?: string;
+            avatarUrl?: string;
+          };
+          onMemberProfileUpdatedRef.current?.(payload);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'member:profileUpdated',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleVisibilityChanged = (event: MessageEvent<string>) => {
-      try {
-        // The backend sends the full updated channel object plus oldVisibility.
-        const payload = JSON.parse(event.data) as Channel & { oldVisibility: ChannelVisibility };
-        const { oldVisibility, ...channel } = payload;
-        onVisibilityChangedRef.current?.(channel, oldVisibility);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'channel:visibility-changed',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleVisibilityChanged = (event: MessageEvent<string>) => {
+        try {
+          // The backend sends the full updated channel object plus oldVisibility.
+          const payload = JSON.parse(event.data) as Channel & { oldVisibility: ChannelVisibility };
+          const { oldVisibility, ...channel } = payload;
+          onVisibilityChangedRef.current?.(channel, oldVisibility);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'channel:visibility-changed',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMessageCreated = (event: MessageEvent<string>) => {
-      try {
-        const msg = JSON.parse(event.data) as Message;
-        // Track the last event id for Last-Event-ID replay on reconnect.
-        if (event.lastEventId) lastEventIdRef.current = event.lastEventId;
-        onMessageCreatedRef.current?.(msg);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'message:created',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMessageCreated = (event: MessageEvent<string>) => {
+        try {
+          const msg = JSON.parse(event.data) as Message;
+          // Track the last event id for Last-Event-ID replay on reconnect.
+          if (event.lastEventId) lastEventIdRef.current = event.lastEventId;
+          onMessageCreatedRef.current?.(msg);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'message:created',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMessageEdited = (event: MessageEvent<string>) => {
-      try {
-        const msg = JSON.parse(event.data) as Message;
-        onMessageEditedRef.current?.(msg);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'message:edited',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMessageEdited = (event: MessageEvent<string>) => {
+        try {
+          const msg = JSON.parse(event.data) as Message;
+          onMessageEditedRef.current?.(msg);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'message:edited',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleMessageDeleted = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as { messageId: string; channelId: string };
-        onMessageDeletedRef.current?.(payload.messageId, payload.channelId);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'message:deleted',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleMessageDeleted = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as { messageId: string; channelId: string };
+          onMessageDeletedRef.current?.(payload.messageId, payload.channelId);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'message:deleted',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleServerUpdated = (event: MessageEvent<string>) => {
-      try {
-        const server = JSON.parse(event.data) as Server;
-        onServerUpdatedRef.current?.(server);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'server:updated',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleServerUpdated = (event: MessageEvent<string>) => {
+        try {
+          const server = JSON.parse(event.data) as Server;
+          onServerUpdatedRef.current?.(server);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'server:updated',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleReactionAdded = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as {
-          messageId: string;
-          channelId: string;
-          userId: string;
-          emoji: string;
-        };
-        onReactionAddedRef.current?.(payload);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'reaction:added',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleReactionAdded = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as {
+            messageId: string;
+            channelId: string;
+            userId: string;
+            emoji: string;
+          };
+          onReactionAddedRef.current?.(payload);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'reaction:added',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
-    const handleReactionRemoved = (event: MessageEvent<string>) => {
-      try {
-        const payload = JSON.parse(event.data) as {
-          messageId: string;
-          channelId: string;
-          userId: string;
-          emoji: string;
-        };
-        onReactionRemovedRef.current?.(payload);
-      } catch (error) {
-        logger.warn('Dropped malformed server SSE payload', {
-          feature: 'server-events',
-          event: 'payload_parse_failed',
-          source: 'sse',
-          operation: 'reaction:removed',
-          target: '/api/events/server/[serverId]',
-          error,
-        });
-      }
-    };
+      const handleReactionRemoved = (event: MessageEvent<string>) => {
+        try {
+          const payload = JSON.parse(event.data) as {
+            messageId: string;
+            channelId: string;
+            userId: string;
+            emoji: string;
+          };
+          onReactionRemovedRef.current?.(payload);
+        } catch (error) {
+          logger.warn('Dropped malformed server SSE payload', {
+            feature: 'server-events',
+            event: 'payload_parse_failed',
+            source: 'sse',
+            operation: 'reaction:removed',
+            target: '/api/events/server/[serverId]',
+            error,
+          });
+        }
+      };
 
       es.addEventListener('channel:created', handleCreated);
       es.addEventListener('channel:updated', handleUpdated);

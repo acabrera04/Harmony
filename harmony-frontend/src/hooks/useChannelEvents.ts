@@ -88,9 +88,8 @@ export function useChannelEvents({
     const activeHandlers: Array<[string, (event: MessageEvent<string>) => void]> = [];
 
     const connect = async () => {
-      let ticket: string;
       try {
-        ticket = await fetchSseTicket(apiUrl, token);
+        await fetchSseTicket(apiUrl, token, 'channel');
       } catch (err) {
         logger.warn('Failed to fetch SSE ticket; aborting channel connection', {
           feature: 'channel-events',
@@ -103,8 +102,8 @@ export function useChannelEvents({
       }
       if (cancelled) return;
 
-      const url = `${apiUrl}/api/events/channel/${channelId}?ticket=${encodeURIComponent(ticket)}`;
-      es = new EventSource(url);
+      const url = `${apiUrl}/api/events/channel/${channelId}`;
+      es = new EventSource(url, { withCredentials: true });
 
       // ── Event handlers ────────────────────────────────────────────────────
 
