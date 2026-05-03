@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /c/
+Disallow: /api/
+Disallow: /trpc/
+Sitemap: https://harmony-dun-omega.vercel.app/sitemap.xml

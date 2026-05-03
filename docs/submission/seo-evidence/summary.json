@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-05-03T20:11:41.046Z",
+  "frontendUrl": "https://harmony-dun-omega.vercel.app",
+  "backendUrl": "https://harmony-production-13e3.up.railway.app",
+  "primaryServer": {
+    "id": "01cca9d4-77e6-40e3-a94b-9e3a73b8cdc8",
+    "slug": "testserver",
+    "name": "TestServer"
+  },
+  "crawlerCaptures": [
+    {
+      "serverSlug": "testserver",
+      "channelSlug": "new-channel",
+      "channelName": "new-channel",
+      "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel",
+      "status": 200,
+      "htmlFile": "crawler-html/testserver__new-channel.html",
+      "htmlSha256": "58f43374b4a1667b0f0fbb7b0d3c783981f128952274846a001ec798ec10996d",
+      "title": "hello everyone — TestServer",
+      "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+      "robots": "index, follow",
+      "canonical": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel",
+      "jsonLdFile": "structured-data/testserver__new-channel.json",
+      "jsonLdValidBlocks": 1,
+      "jsonLdTypes": ["DiscussionForumPosting"]
+    },
+    {
+      "serverSlug": "testserver",
+      "channelSlug": "how-to-use-ai",
+      "channelName": "how-to-use-ai",
+      "url": "https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai",
+      "status": 200,
+      "htmlFile": "crawler-html/testserver__how-to-use-ai.html",
+      "htmlSha256": "cd566dc99cf2dbf190cdacc31284243a1d9cb530d4e0050ca6390f8ad08f0a4e",
+      "title": "scale-main-probe-[phone] — TestServer",
+      "description": "TestServer › #how-to-use-ai: scale-main-probe-[phone]",
+      "robots": "index, follow",
+      "canonical": "https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai",
+      "jsonLdFile": "structured-data/testserver__how-to-use-ai.json",
+      "jsonLdValidBlocks": 1,
+      "jsonLdTypes": ["DiscussionForumPosting"]
+    },
+    {
+      "serverSlug": "hello-world",
+      "channelSlug": "general",
+      "channelName": "general",
+      "url": "https://harmony-dun-omega.vercel.app/c/hello-world/general",
+      "status": 200,
+      "htmlFile": "crawler-html/hello-world__general.html",
+      "htmlSha256": "f232e062c2ceb87ad4645b6403fa32c6915eec1001e92cfbe31a755cea59ce6d",
+      "title": "hello !!! — Hello World",
+      "description": "Hello World › #general: hello !!! — Join the discussion on Hello World.",
+      "robots": "index, follow",
+      "canonical": "https://harmony-dun-omega.vercel.app/c/hello-world/general",
+      "jsonLdFile": "structured-data/hello-world__general.json",
+      "jsonLdValidBlocks": 1,
+      "jsonLdTypes": ["DiscussionForumPosting"]
+    }
+  ],
+  "healthReplicaEvidence": {
+    "samples": 20,
+    "distinctHeaderInstanceIds": ["fe0e0816e7e6-70360a", "82ea54bdc6b1-fb4504"],
+    "distinctBodyInstanceIds": ["fe0e0816e7e6-70360a", "82ea54bdc6b1-fb4504"]
+  },
+  "metaTagReplicaEvidence": {
+    "samples": 20,
+    "distinctHeaderInstanceIds": ["fe0e0816e7e6-70360a", "82ea54bdc6b1-fb4504"],
+    "distinctBodyHashes": [
+      "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588"
+    ]
+  },
+  "sitemapEvidence": {
+    "frontendRobotsStatus": 200,
+    "frontendSitemapStatus": 200,
+    "frontendServerSitemapStatus": 200,
+    "backendSitemapStatus": 200,
+    "frontendSitemapContainsServerSitemap": true,
+    "frontendServerSitemapContainsPrimaryChannel": true,
+    "backendSitemapContainsPrimaryChannel": true
+  },
+  "stagingWritePath": {
+    "status": "not-run",
+    "reason": "Issue #360 documented that no isolated Sprint 5 staging environment was provisioned; write-path ACs fall back to local-only evidence per docs/deployment/deployment-architecture.md §12.2."
+  },
+  "richResults": {
+    "status": "not-run-automated",
+    "reason": "Google Rich Results Test requires an external interactive validator run. This bundle includes raw crawler HTML and machine-validated JSON-LD captures for each target."
+  }
+}

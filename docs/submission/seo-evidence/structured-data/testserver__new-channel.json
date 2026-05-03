@@ -1,0 +1,27 @@
+{
+  "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel",
+  "status": 200,
+  "validJsonLdBlocks": 1,
+  "invalidJsonLdBlocks": 0,
+  "blocks": [
+    {
+      "validJson": true,
+      "value": {
+        "@context": "https://schema.org",
+        "@type": "DiscussionForumPosting",
+        "name": "hello everyone — TestServer",
+        "headline": "hello everyone — TestServer",
+        "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "text": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "author": {
+          "@type": "Organization",
+          "name": "TestServer",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "datePublished": "2026-04-13T15:56:25.292Z"
+      },
+      "raw": "{\"@context\":\"https://schema.org\",\"@type\":\"DiscussionForumPosting\",\"name\":\"hello everyone — TestServer\",\"headline\":\"hello everyone — TestServer\",\"url\":\"https://harmony-dun-omega.vercel.app/c/testserver/new-channel\",\"description\":\"TestServer › #new-channel: hello everyone — Join the discussion on TestServer.\",\"text\":\"TestServer › #new-channel: hello everyone — Join the discussion on TestServer.\",\"author\":{\"@type\":\"Organization\",\"name\":\"TestServer\",\"url\":\"https://harmony-dun-omega.vercel.app/c/testserver/new-channel\"},\"datePublished\":\"2026-04-13T15:56:25.292Z\"}"
+    }
+  ]
+}

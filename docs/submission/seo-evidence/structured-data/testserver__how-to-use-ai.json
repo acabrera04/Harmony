@@ -1,0 +1,27 @@
+{
+  "url": "https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai",
+  "status": 200,
+  "validJsonLdBlocks": 1,
+  "invalidJsonLdBlocks": 0,
+  "blocks": [
+    {
+      "validJson": true,
+      "value": {
+        "@context": "https://schema.org",
+        "@type": "DiscussionForumPosting",
+        "name": "scale-main-probe-[phone] — TestServer",
+        "headline": "scale-main-probe-[phone] — TestServer",
+        "url": "https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai",
+        "description": "TestServer › #how-to-use-ai: scale-main-probe-[phone]",
+        "text": "TestServer › #how-to-use-ai: scale-main-probe-[phone]",
+        "author": {
+          "@type": "Organization",
+          "name": "TestServer",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai"
+        },
+        "datePublished": "2026-04-13T16:22:46.518Z"
+      },
+      "raw": "{\"@context\":\"https://schema.org\",\"@type\":\"DiscussionForumPosting\",\"name\":\"scale-main-probe-[phone] — TestServer\",\"headline\":\"scale-main-probe-[phone] — TestServer\",\"url\":\"https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai\",\"description\":\"TestServer › #how-to-use-ai: scale-main-probe-[phone]\",\"text\":\"TestServer › #how-to-use-ai: scale-main-probe-[phone]\",\"author\":{\"@type\":\"Organization\",\"name\":\"TestServer\",\"url\":\"https://harmony-dun-omega.vercel.app/c/testserver/how-to-use-ai\"},\"datePublished\":\"2026-04-13T16:22:46.518Z\"}"
+    }
+  ]
+}

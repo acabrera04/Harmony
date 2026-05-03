@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/testserver.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/hello-world.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/admin.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/allens-server.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/meee.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/my-rad-cool-server.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/channels.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://harmony-dun-omega.vercel.app/sitemap/testserver-1.xml</loc>
+  </sitemap>
+</sitemapindex>

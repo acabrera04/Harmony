@@ -1,0 +1,82 @@
+{
+  "generatedAt": "2026-05-03T20:11:41.046Z",
+  "frontendUrl": "https://harmony-dun-omega.vercel.app",
+  "backendUrl": "https://harmony-production-13e3.up.railway.app",
+  "serversResponse": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-credentials": "true",
+      "cache-control": "public, max-age=300",
+      "connection": "keep-alive",
+      "content-length": "1460",
+      "content-security-policy": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests",
+      "content-type": "application/json; charset=utf-8",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "date": "Sun, 03 May 2026 20:11:41 GMT",
+      "etag": "W/\"5b4-t9aIbm/tddsZXGH6JCBNV+6UHDU\"",
+      "origin-agent-cluster": "?1",
+      "ratelimit-limit": "100",
+      "ratelimit-policy": "100;w=60",
+      "ratelimit-remaining": "98",
+      "ratelimit-reset": "19",
+      "referrer-policy": "no-referrer",
+      "server": "railway-edge",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "vary": "Origin",
+      "x-cache": "MISS",
+      "x-cache-hits": "0",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "SAMEORIGIN",
+      "x-instance-id": "82ea54bdc6b1-fb4504",
+      "x-permitted-cross-domain-policies": "none",
+      "x-railway-cdn-edge": "fastly/cache-lga21967-LGA",
+      "x-railway-edge": "railway/us-east4-eqdc4a",
+      "x-railway-request-id": "ahUSX54YQc-njwp7Cx5-qw",
+      "x-served-by": "cache-lga21967-LGA",
+      "x-xss-protection": "0"
+    },
+    "sha256": "300c1b6160bd1bdce2d66598084dd85386860475c7165a7510e1d00119af3f83"
+  },
+  "discoveredServerCount": 8,
+  "selectedPrimaryServer": {
+    "id": "01cca9d4-77e6-40e3-a94b-9e3a73b8cdc8",
+    "slug": "testserver",
+    "name": "TestServer",
+    "publicChannels": [
+      {
+        "id": "65029c74-f956-4512-86d9-4e0555d760ae",
+        "name": "new-channel",
+        "slug": "new-channel",
+        "type": "TEXT",
+        "topic": null
+      },
+      {
+        "id": "2a441215-63e0-40a0-a21c-5d9e36a9473e",
+        "name": "how-to-use-ai",
+        "slug": "how-to-use-ai",
+        "type": "TEXT",
+        "topic": null
+      }
+    ]
+  },
+  "crawlerTargets": [
+    {
+      "serverSlug": "testserver",
+      "channelSlug": "new-channel",
+      "channelName": "new-channel"
+    },
+    {
+      "serverSlug": "testserver",
+      "channelSlug": "how-to-use-ai",
+      "channelName": "how-to-use-ai"
+    },
+    {
+      "serverSlug": "hello-world",
+      "channelSlug": "general",
+      "channelName": "general"
+    }
+  ]
+}

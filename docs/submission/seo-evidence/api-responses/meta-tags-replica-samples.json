@@ -1,0 +1,670 @@
+{
+  "generatedAt": "2026-05-03T20:11:41.046Z",
+  "url": "https://harmony-production-13e3.up.railway.app/api/public/servers/testserver/channels/new-channel/meta-tags",
+  "distinctHeaderInstanceIds": ["fe0e0816e7e6-70360a", "82ea54bdc6b1-fb4504"],
+  "distinctBodyHashes": [
+    "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588"
+  ],
+  "samples": [
+    {
+      "sample": 1,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 2,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 3,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 4,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 5,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 6,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 7,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 8,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 9,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 10,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 11,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 12,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 13,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 14,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 15,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 16,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 17,
+      "status": 200,
+      "xInstanceId": "fe0e0816e7e6-70360a",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 18,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 19,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    },
+    {
+      "sample": 20,
+      "status": 200,
+      "xInstanceId": "82ea54bdc6b1-fb4504",
+      "bodySha256": "7e9c3a286a97e253a71717df93bb613c7d918a18e5a46fc1614620041de34588",
+      "body": {
+        "title": "hello everyone — TestServer",
+        "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogTitle": "hello everyone — TestServer",
+        "ogDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "ogImage": "https://harmony.chat/og-default.png",
+        "keywords": ["also", "test", "hello", "everyone", "works"],
+        "generatedAt": "2026-05-02T21:03:38.077Z",
+        "isFallbackPreview": false,
+        "isCustom": false,
+        "generatedTitle": "hello everyone — TestServer",
+        "generatedDescription": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+        "customTitle": null,
+        "customDescription": null,
+        "customOgImage": null,
+        "searchPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "url": "https://harmony-dun-omega.vercel.app/c/testserver/new-channel"
+        },
+        "socialPreview": {
+          "title": "hello everyone — TestServer",
+          "description": "TestServer › #new-channel: hello everyone — Join the discussion on TestServer.",
+          "image": "https://harmony.chat/og-default.png"
+        },
+        "visibility": "PUBLIC_INDEXABLE"
+      }
+    }
+  ]
+}

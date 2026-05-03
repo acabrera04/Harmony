@@ -1,0 +1,27 @@
+{
+  "url": "https://harmony-dun-omega.vercel.app/c/hello-world/general",
+  "status": 200,
+  "validJsonLdBlocks": 1,
+  "invalidJsonLdBlocks": 0,
+  "blocks": [
+    {
+      "validJson": true,
+      "value": {
+        "@context": "https://schema.org",
+        "@type": "DiscussionForumPosting",
+        "name": "hello !!! — Hello World",
+        "headline": "hello !!! — Hello World",
+        "url": "https://harmony-dun-omega.vercel.app/c/hello-world/general",
+        "description": "Hello World › #general: hello !!! — Join the discussion on Hello World.",
+        "text": "Hello World › #general: hello !!! — Join the discussion on Hello World.",
+        "author": {
+          "@type": "Organization",
+          "name": "Hello World",
+          "url": "https://harmony-dun-omega.vercel.app/c/hello-world/general"
+        },
+        "datePublished": "2026-04-29T23:27:27.727Z"
+      },
+      "raw": "{\"@context\":\"https://schema.org\",\"@type\":\"DiscussionForumPosting\",\"name\":\"hello !!! — Hello World\",\"headline\":\"hello !!! — Hello World\",\"url\":\"https://harmony-dun-omega.vercel.app/c/hello-world/general\",\"description\":\"Hello World › #general: hello !!! — Join the discussion on Hello World.\",\"text\":\"Hello World › #general: hello !!! — Join the discussion on Hello World.\",\"author\":{\"@type\":\"Organization\",\"name\":\"Hello World\",\"url\":\"https://harmony-dun-omega.vercel.app/c/hello-world/general\"},\"datePublished\":\"2026-04-29T23:27:27.727Z\"}"
+    }
+  ]
+}

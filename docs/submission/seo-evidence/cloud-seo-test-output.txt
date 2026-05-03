@@ -1,0 +1,28 @@
+> test:cloud
+> TEST_TARGET=cloud jest --config jest.config.js --runTestsByPath seo-meta-tags.test.ts
+PASS ./seo-meta-tags.test.ts
+  SEO Meta Tags — cloud-read-only
+    AC-1: <title> and <meta name="description"> present on public channel pages
+      ✓ AC-1: discovered cloud public channel has non-empty <title> and description meta (265 ms)
+    Crawler-UA: Googlebot sees SEO tags and valid JSON-LD
+      ✓ Crawler-UA: Googlebot fetches ≥3 cloud public channels with SEO tags and JSON-LD (1395 ms)
+    AC-2: length bounds on auto-generated title and description
+      ✓ AC-2: "general" generated title ≤60 chars and description 50-160 chars (46 ms)
+    AC-8: no PII or profanity in generated tags for fixture channels
+      ✓ AC-8: "general" tags do not contain raw email, @mention, or profanity (49 ms)
+  [local-only] SEO Meta Tags — local-only (write path)
+    ○ skipped AC-3: customTitle >70 chars is rejected with 422
+    ○ skipped AC-3: customDescription >200 chars is rejected with 422
+    ○ skipped AC-3: valid override within limits (title ≤70, description ≤200) is accepted
+    ○ skipped AC-5: POST regeneration job returns 202 with jobId and pollUrl
+    ○ skipped AC-5: job status endpoint returns a valid job record
+    ○ skipped AC-5: job eventually reaches terminal state (succeeded or failed)
+    ○ skipped AC-6: same Idempotency-Key within 60s returns the same jobId with status deduplicated
+    ○ skipped AC-7: custom override persists after a completed background regeneration job
+    ○ skipped AC-9: NLP failure returns fallback tags with needs_regeneration=true — requires fault injection, covered by backend unit tests
+    ○ skipped AC-4/AC-10: changing channel to PRIVATE removes it from meta-tags public API and sitemap
+Test Suites: 1 passed, 1 total
+Tests:       10 skipped, 4 passed, 14 total
+Snapshots:   0 total
+Time:        2.547 s, estimated 4 s
+Ran all test suites within paths "seo-meta-tags.test.ts".
