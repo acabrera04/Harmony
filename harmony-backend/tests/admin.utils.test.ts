@@ -5,7 +5,12 @@
  * matches ADMIN_EMAIL cannot escalate privileges in production.
  */
 
-import { isSystemAdmin, ADMIN_EMAIL, RESERVED_EMAILS, RESERVED_USERNAMES } from '../src/lib/admin.utils';
+import {
+  isSystemAdmin,
+  ADMIN_EMAIL,
+  RESERVED_EMAILS,
+  RESERVED_USERNAMES,
+} from '../src/lib/admin.utils';
 
 const ADMIN_USER_ID = '00000000-0000-0000-0000-000000000099';
 
@@ -84,6 +89,18 @@ describe('isSystemAdmin — ENABLE_DEV_ADMIN guard (issue #425)', () => {
     const result = await isSystemAdmin('attacker-id');
 
     expect(result).toBe(false);
+  });
+
+  it('rechecks the database so a deleted admin row does not stay authorized', async () => {
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true });
+    process.env.ENABLE_DEV_ADMIN = 'true';
+    mockPrisma.user.findUnique
+      .mockResolvedValueOnce({ email: ADMIN_EMAIL })
+      .mockResolvedValueOnce(null);
+
+    await expect(isSystemAdmin(ADMIN_USER_ID)).resolves.toBe(true);
+    await expect(isSystemAdmin(ADMIN_USER_ID)).resolves.toBe(false);
+    expect(mockPrisma.user.findUnique).toHaveBeenCalledTimes(2);
   });
 });
 
