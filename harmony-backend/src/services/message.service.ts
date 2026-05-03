@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { createLogger } from '../lib/logger';
 import { cacheService, CacheTTL, sanitizeKeySegment } from './cache.service';
@@ -10,6 +11,7 @@ import { channelMemberRepository } from '../repositories/channelMember.repositor
 import { messageRepository } from '../repositories/message.repository';
 import { processMentions, processBroadcastMentions } from './mention.service';
 import { pushNotificationService } from './pushNotification.service';
+import type { SseMessagePayload } from '../events/eventTypes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,6 +103,55 @@ function msgCacheKey(
   );
 }
 
+type HydratedMessageForSse = {
+  id: string;
+  channelId: string;
+  authorId: string;
+  author: SseMessagePayload['author'];
+  content: string;
+  createdAt: Date | string;
+  editedAt: Date | string | null;
+  attachments: SseMessagePayload['attachments'];
+  parentMessageId: string | null;
+  parent?: {
+    id: string;
+    content: string;
+    isDeleted: boolean;
+    author: SseMessagePayload['author'];
+  } | null;
+};
+
+function toIsoString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function toNullableIsoString(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  return toIsoString(value);
+}
+
+function toSseMessagePayload(message: HydratedMessageForSse): SseMessagePayload {
+  return {
+    id: message.id,
+    channelId: message.channelId,
+    authorId: message.authorId,
+    author: message.author,
+    content: message.content,
+    timestamp: toIsoString(message.createdAt),
+    attachments: message.attachments,
+    editedAt: toNullableIsoString(message.editedAt),
+    parentMessageId: message.parentMessageId,
+    parentMessage: message.parent
+      ? {
+          id: message.parent.id,
+          content: message.parent.isDeleted ? '' : message.parent.content,
+          isDeleted: message.parent.isDeleted,
+          author: message.parent.author,
+        }
+      : null,
+  };
+}
+
 /**
  * Resolve a channel and assert it belongs to the given server.
  * Throws NOT_FOUND (collapsed from both "no channel" and "wrong server") to
@@ -129,7 +180,10 @@ async function requirePrivateChannelAccess(
 
   const isMember = await channelMemberRepository.isMember(userId, channel.id);
   if (!isMember) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have access to this private channel' });
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You do not have access to this private channel',
+    });
   }
 }
 
@@ -175,7 +229,7 @@ export const messageService = {
         const page = hasMore ? messages.slice(0, clampedLimit) : messages;
         const nextCursor = hasMore ? page[page.length - 1].id : null;
 
-        const messagesWithReactions = page.map(msg => ({
+        const messagesWithReactions = page.map((msg: (typeof page)[number]) => ({
           ...msg,
           reactions: groupReactions(msg.reactions),
         }));
@@ -213,7 +267,10 @@ export const messageService = {
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
       );
     } catch (err) {
-      logger.warn({ err, channelId, serverId }, 'Failed to invalidate channel message cache after send');
+      logger.warn(
+        { err, channelId, serverId },
+        'Failed to invalidate channel message cache after send',
+      );
     }
 
     eventBus
@@ -222,6 +279,7 @@ export const messageService = {
         channelId,
         authorId,
         timestamp: message.createdAt.toISOString(),
+        message: toSseMessagePayload(message),
       })
       .catch((err) =>
         logger.warn(
@@ -256,7 +314,10 @@ export const messageService = {
     // Dispatch push notifications fire-and-forget
     (async () => {
       try {
-        const server = await prisma.server.findUnique({ where: { id: serverId }, select: { slug: true } });
+        const server = await prisma.server.findUnique({
+          where: { id: serverId },
+          select: { slug: true },
+        });
         if (!server) return;
 
         const ctx = {
@@ -312,6 +373,7 @@ export const messageService = {
         messageId,
         channelId: message.channelId,
         timestamp: updated.editedAt!.toISOString(),
+        message: toSseMessagePayload(updated),
       })
       .catch((err) =>
         logger.warn(
@@ -329,9 +391,7 @@ export const messageService = {
       authorId,
       authorUsername: updated.author.username,
       content,
-    }).catch((err) =>
-      logger.warn({ err, messageId }, 'processMentions failed on editMessage'),
-    );
+    }).catch((err) => logger.warn({ err, messageId }, 'processMentions failed on editMessage'));
     processBroadcastMentions({
       messageId,
       channelId: message.channelId,
@@ -370,7 +430,7 @@ export const messageService = {
       }
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Soft-delete the message itself
       await messageRepository.updateRaw(messageId, { isDeleted: true }, tx);
 
@@ -438,7 +498,7 @@ export const messageService = {
     const channel = await requireChannelInServer(preCheck.channelId, serverId);
     await requirePrivateChannelAccess(channel, userId, serverId);
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const msg = await messageRepository.findByIdWithChannel(messageId, tx);
 
       if (!msg || msg.isDeleted || msg.channel.serverId !== serverId) {
@@ -477,7 +537,7 @@ export const messageService = {
     const channel = await requireChannelInServer(preCheck.channelId, serverId);
     await requirePrivateChannelAccess(channel, userId, serverId);
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const msg = await messageRepository.findByIdWithChannel(messageId, tx);
 
       if (!msg || msg.isDeleted || msg.channel.serverId !== serverId) {
@@ -524,7 +584,7 @@ export const messageService = {
     const channel = await requireChannelInServer(channelId, serverId);
     await requirePrivateChannelAccess(channel, authorId, serverId);
 
-    const reply = await prisma.$transaction(async (tx) => {
+    const reply = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const parent = await messageRepository.findByIdWithChannelFull(parentMessageId, tx);
 
       if (
@@ -557,11 +617,7 @@ export const messageService = {
         tx,
       );
 
-      await messageRepository.updateRaw(
-        parentMessageId,
-        { replyCount: { increment: 1 } },
-        tx,
-      );
+      await messageRepository.updateRaw(parentMessageId, { replyCount: { increment: 1 } }, tx);
 
       return created;
     });
@@ -572,7 +628,10 @@ export const messageService = {
         `channel:msgs:${sanitizeKeySegment(serverId)}:${sanitizeKeySegment(channelId)}:*`,
       );
     } catch (err) {
-      logger.warn({ err, channelId, serverId }, 'Failed to invalidate channel message cache after reply');
+      logger.warn(
+        { err, channelId, serverId },
+        'Failed to invalidate channel message cache after reply',
+      );
     }
     try {
       await cacheService.invalidatePattern(`thread:msgs:${sanitizeKeySegment(parentMessageId)}:*`);
@@ -587,6 +646,7 @@ export const messageService = {
         authorId,
         parentMessageId,
         timestamp: reply.createdAt.toISOString(),
+        message: toSseMessagePayload(reply),
       })
       .catch((err) =>
         logger.warn(

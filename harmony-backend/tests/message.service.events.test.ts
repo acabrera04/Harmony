@@ -181,6 +181,33 @@ describe('messageService.sendMessage — event publishing', () => {
     );
   });
 
+  it('publishes the hydrated message so SSE consumers do not re-query per client', async () => {
+    await messageService.sendMessage({
+      serverId: SERVER_ID,
+      channelId: CHANNEL_ID,
+      authorId: AUTHOR_ID,
+      content: 'hello',
+    });
+
+    expect(mockPublish).toHaveBeenCalledWith(
+      'harmony:MESSAGE_CREATED',
+      expect.objectContaining({
+        message: expect.objectContaining({
+          id: MESSAGE_ID,
+          channelId: CHANNEL_ID,
+          authorId: AUTHOR_ID,
+          author: MOCK_MESSAGE.author,
+          content: 'hello',
+          timestamp: MOCK_MESSAGE.createdAt.toISOString(),
+          attachments: [],
+          editedAt: null,
+          parentMessageId: null,
+          parentMessage: null,
+        }),
+      }),
+    );
+  });
+
   it('timestamp in MESSAGE_CREATED is a valid ISO 8601 string', async () => {
     await messageService.sendMessage({
       serverId: SERVER_ID,
@@ -227,6 +254,33 @@ describe('messageService.editMessage — event publishing', () => {
         messageId: MESSAGE_ID,
         channelId: CHANNEL_ID,
         timestamp: expect.any(String),
+      }),
+    );
+  });
+
+  it('publishes the edited hydrated message so SSE consumers do not re-query per client', async () => {
+    await messageService.editMessage({
+      serverId: SERVER_ID,
+      messageId: MESSAGE_ID,
+      authorId: AUTHOR_ID,
+      content: 'edited',
+    });
+
+    expect(mockPublish).toHaveBeenCalledWith(
+      'harmony:MESSAGE_EDITED',
+      expect.objectContaining({
+        message: expect.objectContaining({
+          id: MESSAGE_ID,
+          channelId: CHANNEL_ID,
+          authorId: AUTHOR_ID,
+          author: MOCK_UPDATED_MESSAGE.author,
+          content: 'edited',
+          timestamp: MOCK_UPDATED_MESSAGE.createdAt.toISOString(),
+          attachments: [],
+          editedAt: MOCK_UPDATED_MESSAGE.editedAt!.toISOString(),
+          parentMessageId: null,
+          parentMessage: null,
+        }),
       }),
     );
   });
@@ -341,6 +395,34 @@ describe('messageService.createReply — event publishing', () => {
         authorId: AUTHOR_ID,
         parentMessageId: MESSAGE_ID,
         timestamp: expect.any(String),
+      }),
+    );
+  });
+
+  it('publishes the hydrated reply message so SSE consumers do not re-query per client', async () => {
+    await messageService.createReply({
+      parentMessageId: MESSAGE_ID,
+      channelId: CHANNEL_ID,
+      serverId: SERVER_ID,
+      authorId: AUTHOR_ID,
+      content: 'reply',
+    });
+
+    expect(mockPublish).toHaveBeenCalledWith(
+      'harmony:MESSAGE_CREATED',
+      expect.objectContaining({
+        message: expect.objectContaining({
+          id: REPLY_ID,
+          channelId: CHANNEL_ID,
+          authorId: AUTHOR_ID,
+          author: MOCK_REPLY.author,
+          content: 'reply',
+          timestamp: MOCK_REPLY.createdAt.toISOString(),
+          attachments: [],
+          editedAt: null,
+          parentMessageId: MESSAGE_ID,
+          parentMessage: null,
+        }),
       }),
     );
   });
