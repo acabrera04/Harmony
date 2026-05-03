@@ -333,7 +333,7 @@ Point both backend services at the `harmony-backend` directory. The checked-in `
 Minimum backend env/config to mirror the documented deployment shape:
 
 - Shared on `backend-api` and `backend-worker`: `DATABASE_URL`, `REDIS_URL`
-- Required on `backend-api`: `FRONTEND_URL`, `TRUST_PROXY_HOPS=1`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_DAYS`, `BASE_URL`
+- Required on `backend-api`: `FRONTEND_URL`, `TRUST_PROXY_HOPS=1`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `DUMMY_SALT_HMAC_KEY`, `JWT_ACCESS_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_DAYS`, `BASE_URL`
 - Required for production uploads: `STORAGE_PROVIDER=s3` plus `R2_ACCOUNT_ID`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`, `R2_PUBLIC_URL`
 
 SEO-specific deploy notes:

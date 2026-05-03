@@ -126,6 +126,7 @@ Copy `.env.example` to `.env` before running locally. All variables with no defa
 | `BASE_URL`                 | `http://localhost:3000` | Canonical public frontend origin used for generated public links and sitemap XML                       |
 | `JWT_ACCESS_SECRET`        | —                       | **Required.** Sign/verify access tokens. Must be 32+ random chars in production.                       |
 | `JWT_REFRESH_SECRET`       | —                       | **Required.** Sign/verify refresh tokens. Must be 32+ random chars in production.                      |
+| `DUMMY_SALT_HMAC_KEY`      | —                       | **Required in production.** HMAC key for unknown-user login challenge salts. Must be 32+ random chars. |
 | `JWT_ACCESS_EXPIRES_IN`    | `15m`                   | Access token TTL (`jsonwebtoken` duration string)                                                      |
 | `JWT_REFRESH_EXPIRES_DAYS` | `7`                     | Refresh token TTL in days                                                                              |
 | `TWILIO_ACCOUNT_SID`       | —                       | Optional. Twilio Account SID for voice channels.                                                       |
@@ -169,8 +170,8 @@ AWS_SECRET_ACCESS_KEY=<r2-api-token-secret>
 S3_BUCKET=<your-bucket-name>
 R2_PUBLIC_URL=https://pub-<token>.r2.dev   # or your custom domain
 ```
-
 To obtain the R2 credentials:
+
 1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/) → **R2** → your bucket.
 2. Go to **Manage API tokens** and create a token with **Object Read & Write** on the target bucket.
 3. Copy the **Access Key ID** and **Secret Access Key** — the secret is shown only once.
@@ -203,7 +204,8 @@ docker compose up -d
 
 # 2. Create your local env file
 cp .env.example .env
-# Open .env and set strong secrets for JWT_ACCESS_SECRET and JWT_REFRESH_SECRET
+# Open .env and set strong secrets for JWT_ACCESS_SECRET, JWT_REFRESH_SECRET,
+# and DUMMY_SALT_HMAC_KEY
 # before running the server in any environment beyond your own laptop.
 
 # 3. Apply database migrations

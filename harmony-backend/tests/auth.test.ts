@@ -235,10 +235,16 @@ describe('POST /api/auth/login/challenge', () => {
       .post('/api/auth/login/challenge')
       .set('Origin', 'http://localhost:3000')
       .send({ email: 'nobody@example.com' });
+    const publicFormulaSalt = crypto
+      .createHash('sha256')
+      .update('missing-user:nobody@example.com')
+      .digest('hex')
+      .slice(0, 32);
 
     expect(first.status).toBe(200);
     expect(first.body.passwordSalt).toMatch(/^[0-9a-f]{32}$/i);
     expect(second.body.passwordSalt).toBe(first.body.passwordSalt);
+    expect(first.body.passwordSalt).not.toBe(publicFormulaSalt);
   });
 });
 

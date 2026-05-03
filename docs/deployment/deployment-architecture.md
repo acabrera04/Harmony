@@ -276,6 +276,7 @@ Not part of the deployment contract:
 | `TRUST_PROXY_HOPS`         | Required                                    | `1`                                         | Required behind Railway proxy/load balancer                                              |
 | `JWT_ACCESS_SECRET`        | Required                                    | secret                                      | Shared with worker only if worker verifies tokens; do not rotate independently           |
 | `JWT_REFRESH_SECRET`       | Required                                    | secret                                      | Shared auth secret                                                                       |
+| `DUMMY_SALT_HMAC_KEY`      | Required                                    | secret                                      | HMAC key for unknown-user login challenge salts; do not expose to clients                |
 | `JWT_ACCESS_EXPIRES_IN`    | Required                                    | `15m`                                       | Keep explicit                                                                            |
 | `JWT_REFRESH_EXPIRES_DAYS` | Required                                    | `7`                                         | Keep explicit                                                                            |
 | `BASE_URL`                 | Required                                    | `https://harmony.chat`                      | Canonical public base URL for generated public links/sitemaps                            |
@@ -308,6 +309,7 @@ Must not be enabled in production:
 | `TRUST_PROXY_HOPS`         | Optional                                                       | `1`                                         | Only needed if worker exposes HTTP health traffic behind proxy |
 | `JWT_ACCESS_SECRET`        | Optional/currently likely unnecessary                          | shared secret                               | Only if worker code verifies or issues tokens                  |
 | `JWT_REFRESH_SECRET`       | Optional/currently likely unnecessary                          | shared secret                               | Same note                                                      |
+| `DUMMY_SALT_HMAC_KEY`      | Optional/currently likely unnecessary                          | shared secret                               | Required only if worker imports auth challenge code            |
 | `JWT_ACCESS_EXPIRES_IN`    | Optional/currently likely unnecessary                          | `15m`                                       | Keep aligned if auth code is reused                            |
 | `JWT_REFRESH_EXPIRES_DAYS` | Optional/currently likely unnecessary                          | `7`                                         | Keep aligned if auth code is reused                            |
 | `BASE_URL`                 | Future/Required if worker generates canonical public artifacts | `https://harmony.chat`                      | For sitemap/meta generation jobs                               |
@@ -316,12 +318,12 @@ Must not be enabled in production:
 
 ## 6.4 Shared service env ownership
 
-| Variable family      | Owner                         | Shared across                                |
-| -------------------- | ----------------------------- | -------------------------------------------- |
-| `DATABASE_URL`       | Railway project config        | `backend-api`, `backend-worker`              |
-| `REDIS_URL`          | Railway project config        | `backend-api`, `backend-worker`              |
-| JWT secrets and TTLs | Railway project config        | `backend-api`, `backend-worker` when needed  |
-| `BASE_URL`           | Deployment architecture owner | Any service generating canonical public URLs |
+| Variable family                 | Owner                         | Shared across                                |
+| ------------------------------- | ----------------------------- | -------------------------------------------- |
+| `DATABASE_URL`                  | Railway project config        | `backend-api`, `backend-worker`              |
+| `REDIS_URL`                     | Railway project config        | `backend-api`, `backend-worker`              |
+| JWT/dummy-salt secrets and TTLs | Railway project config        | `backend-api`, `backend-worker` when needed  |
+| `BASE_URL`                      | Deployment architecture owner | Any service generating canonical public URLs |
 
 ## 7. Preview vs Production Model
 
