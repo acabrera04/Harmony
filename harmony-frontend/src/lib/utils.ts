@@ -92,7 +92,12 @@ export function getUserErrorMessage(
   if (isAxiosError(err)) {
     const data = err.response?.data;
     if (data) {
-      // Validation errors: { error: "Validation failed", details: [{ message: "..." }] }
+      // Auth validation errors: { error: "Validation failed", fields: [{ field, message }] }
+      if (Array.isArray(data.fields) && data.fields.length > 0) {
+        const messages = data.fields.map((f: { message?: string }) => f.message).filter(Boolean);
+        if (messages.length > 0) return messages.join('. ');
+      }
+      // Legacy validation errors: { error: "Validation failed", details: [{ message: "..." }] }
       if (Array.isArray(data.details) && data.details.length > 0) {
         const messages = data.details.map((d: { message?: string }) => d.message).filter(Boolean);
         if (messages.length > 0) return messages.join('. ');

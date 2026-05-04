@@ -94,6 +94,25 @@ describe('utils', () => {
   });
 
   describe('getUserErrorMessage', () => {
+    it('joins auth validation field messages from Axios errors', () => {
+      const err = {
+        isAxiosError: true,
+        response: {
+          data: {
+            error: 'Validation failed',
+            fields: [
+              { field: 'email', message: 'Please enter a valid email address' },
+              { field: '', message: 'Request body is invalid' },
+            ],
+          },
+        },
+      } as AxiosError;
+
+      expect(getUserErrorMessage(err)).toBe(
+        'Please enter a valid email address. Request body is invalid',
+      );
+    });
+
     it('joins validation detail messages from Axios errors', () => {
       const err = {
         isAxiosError: true,

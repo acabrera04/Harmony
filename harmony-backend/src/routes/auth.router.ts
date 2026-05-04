@@ -67,13 +67,27 @@ function trpcCodeToHttp(code: TRPCError['code']): number {
   }
 }
 
+function publicValidationError(error: z.ZodError): {
+  error: 'Validation failed';
+  fields: Array<{ field: string; message: string }>;
+} {
+  return {
+    error: 'Validation failed',
+    fields: error.errors.map((issue) => ({
+      // Empty field names represent root-level validation errors with no Zod path.
+      field: issue.path.map(String).join('.'),
+      message: issue.message,
+    })),
+  };
+}
+
 function handleError(res: Response, err: unknown): void {
   if (err instanceof TRPCError) {
     res.status(trpcCodeToHttp(err.code)).json({ error: err.message });
     return;
   }
   if (err instanceof z.ZodError) {
-    res.status(400).json({ error: 'Validation failed', details: err.errors });
+    res.status(400).json(publicValidationError(err));
     return;
   }
   logger.error({ err }, 'Auth route failed');
@@ -97,7 +111,7 @@ authRouter.post('/register/challenge', (_req: Request, res: Response) => {
 authRouter.post('/register', async (req: Request, res: Response) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+    res.status(400).json(publicValidationError(parsed.error));
     return;
   }
 
@@ -117,7 +131,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
 authRouter.post('/login/challenge', async (req: Request, res: Response) => {
   const parsed = challengeSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+    res.status(400).json(publicValidationError(parsed.error));
     return;
   }
 
@@ -137,7 +151,7 @@ authRouter.post('/login/challenge', async (req: Request, res: Response) => {
 authRouter.post('/login', async (req: Request, res: Response) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+    res.status(400).json(publicValidationError(parsed.error));
     return;
   }
 
@@ -157,7 +171,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
 authRouter.post('/logout', async (req: Request, res: Response) => {
   const parsed = logoutSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+    res.status(400).json(publicValidationError(parsed.error));
     return;
   }
 
@@ -176,7 +190,7 @@ authRouter.post('/logout', async (req: Request, res: Response) => {
 authRouter.post('/refresh', async (req: Request, res: Response) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Validation failed', details: parsed.error.errors });
+    res.status(400).json(publicValidationError(parsed.error));
     return;
   }
 
