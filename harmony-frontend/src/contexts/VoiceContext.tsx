@@ -72,6 +72,8 @@ export interface VoiceContextValue {
   leaveChannel: () => Promise<void>;
   setMuted: (muted: boolean) => Promise<void>;
   setDeafened: (deafened: boolean) => Promise<void>;
+  /** Updates the server's live voice channel set after channel create/delete events. */
+  setVoiceChannelIds: (channelIds: string[]) => void;
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -109,9 +111,15 @@ interface VoiceProviderProps {
   currentUserId?: string;
 }
 
-export function VoiceProvider({ children, serverId, voiceChannelIds, currentUserId }: VoiceProviderProps) {
+export function VoiceProvider({
+  children,
+  serverId,
+  voiceChannelIds,
+  currentUserId,
+}: VoiceProviderProps) {
   const { showToast } = useToast();
 
+  const [liveVoiceChannelIds, setLiveVoiceChannelIds] = useState<string[]>(voiceChannelIds);
   const [connectedChannelId, setConnectedChannelId] = useState<string | null>(null);
   const [connectedChannelName, setConnectedChannelName] = useState<string | null>(null);
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
@@ -147,16 +155,36 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const remoteAudioTracksRef = useRef<Map<string, any[]>>(new Map());
 
+  const setVoiceChannelIds = useCallback((channelIds: string[]) => {
+    setLiveVoiceChannelIds(prev => {
+      const nextKey = channelIds.join(',');
+      return prev.join(',') === nextKey ? prev : channelIds;
+    });
+  }, []);
+
   // ── Fetch participant lists for all voice channels on mount / server change ──
   // This populates the sidebar before the user has joined any channel.
   // Stable string key so text-channel mutations don't trigger a re-fetch here.
-  // voiceChannelIds itself changes reference on every setLocalChannels call in HarmonyShell,
+  // liveVoiceChannelIds itself changes reference on every setLocalChannels call in HarmonyShell,
   // but the IDs only change when a voice channel is actually added or removed.
-  const voiceChannelIdsKey = voiceChannelIds.join(',');
+  const voiceChannelIdsKey = liveVoiceChannelIds.join(',');
 
   useEffect(() => {
-    if (!serverId || !voiceChannelIdsKey) return;
-    const ids = voiceChannelIdsKey.split(',');
+    setLiveVoiceChannelIds(voiceChannelIds);
+  }, [serverId, voiceChannelIds]);
+
+  useEffect(() => {
+    if (!serverId) return;
+    const ids = voiceChannelIdsKey ? voiceChannelIdsKey.split(',') : [];
+    const idSet = new Set(ids);
+    setChannelParticipants(prev => {
+      const next: Record<string, VoiceParticipant[]> = {};
+      for (const [channelId, participants] of Object.entries(prev)) {
+        if (idSet.has(channelId)) next[channelId] = participants;
+      }
+      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+    });
+    if (ids.length === 0) return;
     void Promise.all(
       ids.map(channelId =>
         apiClient
@@ -520,7 +548,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
         setJoining(false);
       }
     },
-    [leaveChannel, resetVoiceState, showToast],
+    [currentUserId, leaveChannel, resetVoiceState, showToast],
   );
 
   const setMuted = useCallback(async (muted: boolean) => {
@@ -733,6 +761,7 @@ export function VoiceProvider({ children, serverId, voiceChannelIds, currentUser
         leaveChannel,
         setMuted,
         setDeafened,
+        setVoiceChannelIds,
       }}
     >
       {children}

@@ -25,6 +25,7 @@ import { useServerListSync } from '@/hooks/useServerListSync';
 import { ChannelType, ChannelVisibility, UserStatus } from '@/types';
 import { useRouter } from 'next/navigation';
 import { CreateServerModal } from '@/components/server-rail/CreateServerModal';
+import { useVoiceOptional } from '@/contexts/VoiceContext';
 import type { Server, Channel, Message, User } from '@/types';
 
 // ─── Discord colour tokens ────────────────────────────────────────────────────
@@ -119,6 +120,7 @@ export function HarmonyShell({
   }
   // Local channels state so newly created channels appear immediately in the sidebar.
   const [localChannels, setLocalChannels] = useState<Channel[]>(channels);
+  const voice = useVoiceOptional();
   // Map of serverId → default channel slug — used by BrowseServersModal for "Open" navigation.
   // Mirrors the same derivation in ServerRail so both always agree on the default channel.
   const defaultChannelByServerId = useMemo(() => {
@@ -140,6 +142,15 @@ export function HarmonyShell({
     setPrevChannelsProp(channels);
     setLocalChannels(channels);
   }
+  const localVoiceChannelIds = useMemo(
+    () => localChannels.filter(c => c.type === ChannelType.VOICE).map(c => c.id),
+    [localChannels],
+  );
+  const localVoiceChannelIdsKey = localVoiceChannelIds.join(',');
+  const setVoiceChannelIds = voice?.setVoiceChannelIds;
+  useEffect(() => {
+    setVoiceChannelIds?.(localVoiceChannelIds);
+  }, [setVoiceChannelIds, localVoiceChannelIds, localVoiceChannelIdsKey]);
   // Local members state so join/leave/status events update the sidebar without reload.
   const [localMembers, setLocalMembers] = useState<User[]>(members);
   // Reset when the members prop changes (server navigation or SSR revalidation).
@@ -310,7 +321,10 @@ export function HarmonyShell({
           }
           return {
             ...m,
-            reactions: [...(m.reactions ?? []), { emoji: data.emoji, count: 1, userIds: [data.userId] }],
+            reactions: [
+              ...(m.reactions ?? []),
+              { emoji: data.emoji, count: 1, userIds: [data.userId] },
+            ],
           };
         }),
       );
@@ -328,13 +342,18 @@ export function HarmonyShell({
           if (!existing) return m;
           // Guard against duplicate SSE delivery
           if (!existing.userIds.includes(data.userId)) return m;
-          const updated = existing.count <= 1
-            ? (m.reactions ?? []).filter(r => r.emoji !== data.emoji)
-            : m.reactions!.map(r =>
-                r.emoji === data.emoji
-                  ? { ...r, count: r.count - 1, userIds: r.userIds.filter(id => id !== data.userId) }
-                  : r,
-              );
+          const updated =
+            existing.count <= 1
+              ? (m.reactions ?? []).filter(r => r.emoji !== data.emoji)
+              : m.reactions!.map(r =>
+                  r.emoji === data.emoji
+                    ? {
+                        ...r,
+                        count: r.count - 1,
+                        userIds: r.userIds.filter(id => id !== data.userId),
+                      }
+                    : r,
+                );
           return { ...m, reactions: updated };
         }),
       );
@@ -524,178 +543,178 @@ export function HarmonyShell({
 
   return (
     <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
-        {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
-        <a
-          href='#main-content'
-          className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#5865f2] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none'
-        >
-          Skip to content
-        </a>
+      {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
+      <a
+        href='#main-content'
+        className='sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:m-2 focus-visible:rounded focus-visible:bg-[#5865f2] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none'
+      >
+        Skip to content
+      </a>
 
-        {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
-        <ServerRail
-          servers={localServers}
-          allChannels={allChannels}
-          currentServerId={currentServer.id}
-          basePath={basePath}
-          isMobileVisible={isMenuOpen}
-          onBrowseServers={() => setIsBrowseServersOpen(true)}
-          onAddServer={
-            isAuthLoading
-              ? undefined
-              : () => {
-                  if (!isAuthenticated) {
-                    router.push('/auth/login');
-                    return;
-                  }
-                  setIsCreateServerOpen(true);
+      {/* 1. Server rail — uses allChannels (full set) to derive default slug per server */}
+      <ServerRail
+        servers={localServers}
+        allChannels={allChannels}
+        currentServerId={currentServer.id}
+        basePath={basePath}
+        isMobileVisible={isMenuOpen}
+        onBrowseServers={() => setIsBrowseServersOpen(true)}
+        onAddServer={
+          isAuthLoading
+            ? undefined
+            : () => {
+                if (!isAuthenticated) {
+                  router.push('/auth/login');
+                  return;
                 }
-          }
+                setIsCreateServerOpen(true);
+              }
+        }
+      />
+
+      {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
+      <ChannelSidebar
+        server={currentServer}
+        channels={localChannels}
+        currentChannelId={currentChannel.id}
+        currentUser={currentUser}
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        basePath={basePath}
+        isAuthenticated={isAuthenticated}
+        serverId={currentServer.id}
+        members={members}
+        onCreateChannel={defaultType => {
+          setCreateChannelDefaultType(defaultType);
+          setIsCreateChannelOpen(true);
+        }}
+      />
+
+      {/* 3. Main column */}
+      <main
+        id='main-content'
+        className='flex flex-1 flex-col overflow-hidden'
+        aria-label={`${currentChannel.name} channel`}
+        tabIndex={-1}
+      >
+        <TopBar
+          channel={currentChannel}
+          serverSlug={currentServer.slug}
+          isAdmin={checkIsAdmin(currentServer.ownerId)}
+          isMembersOpen={isMembersOpen}
+          onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
+          onSearchOpen={isChannelLocked ? undefined : () => setIsSearchOpen(true)}
+          onPinsOpen={isChannelLocked ? undefined : () => setIsPinsOpen(v => !v)}
+          disableMessageActions={isChannelLocked}
+          isMenuOpen={isMenuOpen}
+          onMenuToggle={() => setIsMenuOpen(v => !v)}
+          userId={authUser?.id}
         />
 
-        {/* 2. Channel sidebar — mobile overlay when isMenuOpen, always visible on desktop */}
-        <ChannelSidebar
-          server={currentServer}
-          channels={localChannels}
-          currentChannelId={currentChannel.id}
-          currentUser={currentUser}
-          isOpen={isMenuOpen}
-          onClose={() => setIsMenuOpen(false)}
-          basePath={basePath}
-          isAuthenticated={isAuthenticated}
-          serverId={currentServer.id}
-          members={members}
-          onCreateChannel={defaultType => {
-            setCreateChannelDefaultType(defaultType);
-            setIsCreateChannelOpen(true);
+        <div className='flex flex-1 overflow-hidden'>
+          <div className={cn('flex flex-1 flex-col overflow-hidden', BG.primary)}>
+            {lockedMessagePane ? (
+              lockedMessagePane
+            ) : (
+              <>
+                <MessageList
+                  key={currentChannel.id}
+                  channel={currentChannel}
+                  messages={localMessages}
+                  serverId={currentServer.id}
+                  canPin={canPin}
+                  onReplyClick={handleReplyClick}
+                  onPinToggle={handlePinToggle}
+                />
+                <MessageInput
+                  channelId={currentChannel.id}
+                  channelName={currentChannel.name}
+                  serverId={currentServer.id}
+                  isReadOnly={currentUser.role === 'guest'}
+                  onMessageSent={handleMessageSent}
+                  replyingTo={replyingTo}
+                  onCancelReply={handleCancelReply}
+                />
+                {!isAuthLoading && !isAuthenticated && (
+                  <GuestPromoBanner
+                    serverName={currentServer.name}
+                    memberCount={currentServer.memberCount ?? members.length}
+                  />
+                )}
+              </>
+            )}
+          </div>
+          {!isChannelLocked && (
+            <PinnedMessagesPanel
+              channelId={currentChannel.id}
+              serverId={currentServer.id}
+              channelName={currentChannel.name}
+              isOpen={isPinsOpen}
+              refreshKey={pinsRefreshKey}
+              onClose={() => setIsPinsOpen(false)}
+            />
+          )}
+          <MembersSidebar
+            members={localMembers}
+            isOpen={isMembersOpen}
+            onClose={() => setIsMembersOpen(false)}
+          />
+        </div>
+      </main>
+
+      <CreateServerModal
+        isOpen={isCreateServerOpen}
+        onClose={() => setIsCreateServerOpen(false)}
+        onCreated={handleServerCreated}
+      />
+
+      <BrowseServersModal
+        isOpen={isBrowseServersOpen}
+        onClose={() => setIsBrowseServersOpen(false)}
+        joinedServerIds={new Set(localServers.map(s => s.id))}
+        defaultChannelByServerId={defaultChannelByServerId}
+        basePath={basePath}
+        onJoined={notifyServerJoined}
+      />
+
+      {!isChannelLocked && (
+        <SearchModal
+          messages={localMessages}
+          channelName={currentChannel.name}
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          onResultSelect={message => {
+            const el = document.querySelector(`[data-message-id="${message.id}"]`);
+            if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.remove('message-highlight-flash');
+            // Force a reflow so re-selecting the same message re-triggers the animation.
+            void (el as HTMLElement).offsetWidth;
+            el.classList.add('message-highlight-flash');
           }}
         />
+      )}
 
-        {/* 3. Main column */}
-        <main
-          id='main-content'
-          className='flex flex-1 flex-col overflow-hidden'
-          aria-label={`${currentChannel.name} channel`}
-          tabIndex={-1}
-        >
-          <TopBar
-            channel={currentChannel}
-            serverSlug={currentServer.slug}
-            isAdmin={checkIsAdmin(currentServer.ownerId)}
-            isMembersOpen={isMembersOpen}
-            onMembersToggle={() => setIsMembersOpen(!isMembersOpen)}
-            onSearchOpen={isChannelLocked ? undefined : () => setIsSearchOpen(true)}
-            onPinsOpen={isChannelLocked ? undefined : () => setIsPinsOpen(v => !v)}
-            disableMessageActions={isChannelLocked}
-            isMenuOpen={isMenuOpen}
-            onMenuToggle={() => setIsMenuOpen(v => !v)}
-            userId={authUser?.id}
-          />
-
-          <div className='flex flex-1 overflow-hidden'>
-            <div className={cn('flex flex-1 flex-col overflow-hidden', BG.primary)}>
-              {lockedMessagePane ? (
-                lockedMessagePane
-              ) : (
-                <>
-                  <MessageList
-                    key={currentChannel.id}
-                    channel={currentChannel}
-                    messages={localMessages}
-                    serverId={currentServer.id}
-                    canPin={canPin}
-                    onReplyClick={handleReplyClick}
-                    onPinToggle={handlePinToggle}
-                  />
-                  <MessageInput
-                    channelId={currentChannel.id}
-                    channelName={currentChannel.name}
-                    serverId={currentServer.id}
-                    isReadOnly={currentUser.role === 'guest'}
-                    onMessageSent={handleMessageSent}
-                    replyingTo={replyingTo}
-                    onCancelReply={handleCancelReply}
-                  />
-                  {!isAuthLoading && !isAuthenticated && (
-                    <GuestPromoBanner
-                      serverName={currentServer.name}
-                      memberCount={currentServer.memberCount ?? members.length}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-            {!isChannelLocked && (
-              <PinnedMessagesPanel
-                channelId={currentChannel.id}
-                serverId={currentServer.id}
-                channelName={currentChannel.name}
-                isOpen={isPinsOpen}
-                refreshKey={pinsRefreshKey}
-                onClose={() => setIsPinsOpen(false)}
-              />
-            )}
-            <MembersSidebar
-              members={localMembers}
-              isOpen={isMembersOpen}
-              onClose={() => setIsMembersOpen(false)}
-            />
-          </div>
-        </main>
-
-        <CreateServerModal
-          isOpen={isCreateServerOpen}
-          onClose={() => setIsCreateServerOpen(false)}
-          onCreated={handleServerCreated}
+      {isCreateChannelOpen && (
+        <CreateChannelModal
+          serverId={currentServer.id}
+          serverSlug={currentServer.slug}
+          existingChannels={localChannels}
+          defaultType={createChannelDefaultType}
+          onCreated={newChannel =>
+            setLocalChannels(prev => {
+              // Insert before voice channels so text/announcement channels stay grouped correctly.
+              const insertIdx =
+                newChannel.type === ChannelType.VOICE
+                  ? prev.length
+                  : prev.findIndex(c => c.type === ChannelType.VOICE);
+              const at = insertIdx === -1 ? prev.length : insertIdx;
+              return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
+            })
+          }
+          onClose={() => setIsCreateChannelOpen(false)}
         />
-
-        <BrowseServersModal
-          isOpen={isBrowseServersOpen}
-          onClose={() => setIsBrowseServersOpen(false)}
-          joinedServerIds={new Set(localServers.map(s => s.id))}
-          defaultChannelByServerId={defaultChannelByServerId}
-          basePath={basePath}
-          onJoined={notifyServerJoined}
-        />
-
-        {!isChannelLocked && (
-          <SearchModal
-            messages={localMessages}
-            channelName={currentChannel.name}
-            isOpen={isSearchOpen}
-            onClose={() => setIsSearchOpen(false)}
-            onResultSelect={message => {
-              const el = document.querySelector(`[data-message-id="${message.id}"]`);
-              if (!el) return;
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              el.classList.remove('message-highlight-flash');
-              // Force a reflow so re-selecting the same message re-triggers the animation.
-              void (el as HTMLElement).offsetWidth;
-              el.classList.add('message-highlight-flash');
-            }}
-          />
-        )}
-
-        {isCreateChannelOpen && (
-          <CreateChannelModal
-            serverId={currentServer.id}
-            serverSlug={currentServer.slug}
-            existingChannels={localChannels}
-            defaultType={createChannelDefaultType}
-            onCreated={newChannel =>
-              setLocalChannels(prev => {
-                // Insert before voice channels so text/announcement channels stay grouped correctly.
-                const insertIdx =
-                  newChannel.type === ChannelType.VOICE
-                    ? prev.length
-                    : prev.findIndex(c => c.type === ChannelType.VOICE);
-                const at = insertIdx === -1 ? prev.length : insertIdx;
-                return [...prev.slice(0, at), newChannel, ...prev.slice(at)];
-              })
-            }
-            onClose={() => setIsCreateChannelOpen(false)}
-          />
-        )}
+      )}
     </div>
   );
 }
