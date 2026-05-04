@@ -74,6 +74,7 @@ function publicValidationError(error: z.ZodError): {
   return {
     error: 'Validation failed',
     fields: error.errors.map((issue) => ({
+      // Empty field names represent root-level validation errors with no Zod path.
       field: issue.path.map(String).join('.'),
       message: issue.message,
     })),
