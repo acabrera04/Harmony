@@ -110,7 +110,7 @@ export function UserProfilePopover({
   const displayName = displayed?.displayName || displayed?.username || '…';
   const username = displayed?.username || '';
   const avatarUrl = displayed?.avatarUrl;
-  const status = (user?.status ?? 'offline') as UserStatus;
+  const status = (user?.status?.toLowerCase() ?? 'offline') as UserStatus;
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
