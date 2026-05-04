@@ -199,21 +199,22 @@ export function HarmonyShell({
         role: 'guest',
       };
 
-  // Show the pin UI only to users with MODERATOR+ server-scoped role, and never
-  // while the channel is locked (pinning would be meaningless/unauthorized anyway).
+  // Users with MODERATOR+ server-scoped role can perform moderation actions.
   // localMembers is populated by toFrontendMember() in serverService.ts, which maps
   // the backend ServerMember.role field (server-scoped) to User.role.
   // System admins bypass membership checks — they are authorized server-side regardless.
-  const canPin = useMemo(
+  const canModerate = useMemo(
     () =>
       isAuthenticated &&
-      !isChannelLocked &&
       (authUser?.isSystemAdmin ||
         currentMemberRecord?.role === 'owner' ||
         currentMemberRecord?.role === 'admin' ||
         currentMemberRecord?.role === 'moderator'),
-    [isAuthenticated, isChannelLocked, authUser?.isSystemAdmin, currentMemberRecord?.role],
+    [isAuthenticated, authUser?.isSystemAdmin, currentMemberRecord?.role],
   );
+
+  // Show the pin UI only when pinning is meaningful for the current channel.
+  const canPin = useMemo(() => canModerate && !isChannelLocked, [canModerate, isChannelLocked]);
 
   const handleServerCreated = useCallback(
     (server: Server, defaultChannel: Channel) => {
@@ -615,7 +616,7 @@ export function HarmonyShell({
                     messages={localMessages}
                     serverId={currentServer.id}
                     canPin={canPin}
-                    canDeleteAny={canPin}
+                    canDeleteAny={canModerate}
                     onReplyClick={handleReplyClick}
                     onPinToggle={handlePinToggle}
                     onDelete={handleDeleteMessage}
