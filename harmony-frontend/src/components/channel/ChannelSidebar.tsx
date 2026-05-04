@@ -196,8 +196,6 @@ export function ChannelSidebar({
   // Precompute userId → User map to avoid O(members × participants) lookups on every render.
   const memberMap = useMemo(() => new Map(members?.map(m => [m.id, m]) ?? []), [members]);
 
-  const isAdmin =
-    isAuthenticated && (currentUser.isSystemAdmin || currentUser.id === server.ownerId);
   const hasServerSettingsAccess =
     isAuthenticated &&
     (currentUser.isSystemAdmin ||
@@ -336,7 +334,9 @@ export function ChannelSidebar({
                 isCollapsed={textCollapsed}
                 onToggle={() => setTextCollapsed(v => !v)}
                 onAdd={
-                  isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.TEXT) : undefined
+                  hasServerSettingsAccess && onCreateChannel
+                    ? () => onCreateChannel(ChannelType.TEXT)
+                    : undefined
                 }
                 addLabel='Add text channel'
               />
@@ -378,7 +378,7 @@ export function ChannelSidebar({
                               </span>
                             )}
                           </Link>
-                          {isAdmin && (
+                          {hasServerSettingsAccess && (
                             <Link
                               href={`/settings/${server.slug}/${channel.slug}`}
                               title='Channel settings'
@@ -416,7 +416,9 @@ export function ChannelSidebar({
                 isCollapsed={voiceCollapsed}
                 onToggle={() => setVoiceCollapsed(v => !v)}
                 onAdd={
-                  isAdmin && onCreateChannel ? () => onCreateChannel(ChannelType.VOICE) : undefined
+                  hasServerSettingsAccess && onCreateChannel
+                    ? () => onCreateChannel(ChannelType.VOICE)
+                    : undefined
                 }
                 addLabel='Add voice channel'
               />
@@ -450,7 +452,7 @@ export function ChannelSidebar({
                           <ChannelIcon type={channel.type} />
                           <span className='flex-1 truncate text-left'>{channel.name}</span>
                         </button>
-                        {isAdmin && (
+                        {hasServerSettingsAccess && (
                           <Link
                             href={`/settings/${server.slug}/${channel.slug}`}
                             title='Channel settings'
