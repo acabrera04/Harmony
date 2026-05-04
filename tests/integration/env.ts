@@ -122,6 +122,7 @@ async function resolveIndexableChannelsForServer(
 ): Promise<string[]> {
   const publicChannels: string[] = [];
 
+  // Sequential fetch: stop as soon as we have 3 PUBLIC_INDEXABLE channels.
   for (const candidate of channelCandidates) {
     if (!candidate.slug) continue;
 
