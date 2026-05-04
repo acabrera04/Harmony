@@ -179,7 +179,7 @@ describe('NotificationBell — mark-as-read flows (Issue #574)', () => {
     });
 
     await waitFor(() =>
-      expect(mockTrpcMutation).toHaveBeenCalledWith('notification.markAllAsRead'),
+      expect(mockTrpcMutation).toHaveBeenCalledWith('notification.markAllAsRead', {}),
     );
   });
 
