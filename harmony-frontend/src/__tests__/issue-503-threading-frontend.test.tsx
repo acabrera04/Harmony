@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { mergeCreatedMessageIntoChannelMessages } from '@/lib/message-threading';
+import {
+  appendUniqueReplies,
+  mergeCreatedMessageIntoChannelMessages,
+} from '@/lib/message-threading';
 import { ThreadView } from '@/components/message/ThreadView';
 import type { Message } from '@/types';
 
@@ -66,6 +69,16 @@ describe('Issue #503 — message threading frontend wiring', () => {
 
     expect(secondMerge).toHaveLength(2);
     expect(secondMerge[0]).toMatchObject({ id: parentMessage.id, replyCount: 1 });
+  });
+
+  it('appends only replies that are not already loaded', () => {
+    const duplicateReply = { ...replyMessage };
+    const secondReply = { ...replyMessage, id: 'reply-2', content: 'Another threaded response' };
+
+    expect(appendUniqueReplies([replyMessage], [duplicateReply, secondReply])).toEqual([
+      replyMessage,
+      secondReply,
+    ]);
   });
 
   it('appends an incoming reply to an open thread without dropping loaded replies', async () => {

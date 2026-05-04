@@ -11,3 +11,8 @@ export function mergeCreatedMessageIntoChannelMessages(prev: Message[], msg: Mes
 
   return alreadyExists ? withParentReplyCount : [...withParentReplyCount, msg];
 }
+
+export function appendUniqueReplies(base: Message[], incoming: Message[]): Message[] {
+  const seen = new Set(base.map(reply => reply.id));
+  return [...base, ...incoming.filter(reply => !seen.has(reply.id))];
+}

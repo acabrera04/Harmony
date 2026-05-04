@@ -13,14 +13,10 @@ import { formatMessageTimestamp } from '@/lib/utils';
 import { getThreadMessagesAction } from '@/app/actions/getThreadMessages';
 import { createReplyAction } from '@/app/actions/createReply';
 import { useToast } from '@/hooks/useToast';
+import { appendUniqueReplies } from '@/lib/message-threading';
 import type { Message } from '@/types';
 
 // ─── ReplyItem ────────────────────────────────────────────────────────────────
-
-function appendUniqueReplies(base: Message[], incoming: Message[]) {
-  const seen = new Set(base.map(reply => reply.id));
-  return [...base, ...incoming.filter(reply => !seen.has(reply.id))];
-}
 
 function ReplyItem({ reply }: { reply: Message }) {
   const [avatarError, setAvatarError] = useState(false);

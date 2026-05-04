@@ -683,6 +683,8 @@ export function MessageItem({
   if (prevReplyCount !== (message.replyCount ?? 0)) {
     const nextReplyCount = message.replyCount ?? 0;
     setPrevReplyCount(nextReplyCount);
+    // Composer-created replies optimistically bump local state first; this replaces
+    // that delta with the authoritative parent count once channel state catches up.
     setLocalReplyCount(nextReplyCount);
   }
 

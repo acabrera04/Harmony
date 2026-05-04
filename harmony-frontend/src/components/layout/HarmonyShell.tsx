@@ -286,9 +286,10 @@ export function HarmonyShell({
     // response (Redis pub/sub on the same backend + established SSE connection beats
     // the HTTP round-trip). Without this check, the message would be added twice.
     setLocalMessages(prev => mergeCreatedMessageIntoChannelMessages(prev, msg));
-    if (msg.parentMessageId) {
+    const parentId = msg.parentMessageId;
+    if (parentId) {
       setLatestReplyByParentId(prev =>
-        prev[msg.parentMessageId!]?.id === msg.id ? prev : { ...prev, [msg.parentMessageId!]: msg },
+        prev[parentId]?.id === msg.id ? prev : { ...prev, [parentId]: msg },
       );
     }
   }, []);
