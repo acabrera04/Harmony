@@ -879,7 +879,7 @@ export function ChannelSettingsPage({
           {effectiveSection === 'notifications' && (
             <ChannelNotificationsSection channel={channel} serverId={channel.serverId} />
           )}
-          {activeSection === 'danger' && (
+          {effectiveSection === 'danger' && (
             <DangerZoneSection
               channel={channel}
               serverSlug={serverSlug}
