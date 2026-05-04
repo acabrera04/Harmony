@@ -13,6 +13,7 @@ import { formatMessageTimestamp } from '@/lib/utils';
 import { getThreadMessagesAction } from '@/app/actions/getThreadMessages';
 import { createReplyAction } from '@/app/actions/createReply';
 import { useToast } from '@/hooks/useToast';
+import { appendUniqueReplies } from '@/lib/message-threading';
 import type { Message } from '@/types';
 
 // ─── ReplyItem ────────────────────────────────────────────────────────────────
@@ -174,16 +175,11 @@ export interface ThreadViewProps {
   parentMessage: Message;
   channelId: string;
   serverId: string;
-  /** Called when a new reply is sent so the parent can update its replyCount. */
-  onReplyCountChange?: (delta: number) => void;
+  /** Reply created outside this component, e.g. via channel composer or SSE. */
+  incomingReply?: Message;
 }
 
-export function ThreadView({
-  parentMessage,
-  channelId,
-  serverId,
-  onReplyCountChange,
-}: ThreadViewProps) {
+export function ThreadView({ parentMessage, channelId, serverId, incomingReply }: ThreadViewProps) {
   const [replies, setReplies] = useState<Message[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -191,6 +187,15 @@ export function ThreadView({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const initializedRef = useRef(false);
+  const incomingReplyId =
+    incomingReply?.parentMessageId === parentMessage.id ? incomingReply.id : null;
+  const [prevIncomingReplyId, setPrevIncomingReplyId] = useState<string | null>(null);
+  if (incomingReplyId !== prevIncomingReplyId) {
+    setPrevIncomingReplyId(incomingReplyId);
+    if (incomingReplyId && incomingReply) {
+      setReplies(prev => appendUniqueReplies(prev, [incomingReply]));
+    }
+  }
 
   const loadReplies = useCallback(
     async (cursor?: string) => {
@@ -199,7 +204,11 @@ export function ThreadView({
       const result = await getThreadMessagesAction(parentMessage.id, channelId, serverId, cursor);
       setIsLoading(false);
       if (result.ok) {
-        setReplies(prev => (cursor ? [...prev, ...result.replies] : result.replies));
+        setReplies(prev =>
+          cursor
+            ? appendUniqueReplies(prev, result.replies)
+            : appendUniqueReplies(result.replies, prev),
+        );
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       } else {
@@ -221,7 +230,7 @@ export function ThreadView({
       if (!isCurrent) return;
       setIsLoading(false);
       if (result.ok) {
-        setReplies(result.replies);
+        setReplies(prev => appendUniqueReplies(result.replies, prev));
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       } else {
@@ -233,14 +242,10 @@ export function ThreadView({
     };
   }, [parentMessage.id, channelId, serverId]);
 
-  const handleReplySent = useCallback(
-    (reply: Message) => {
-      setReplies(prev => [...prev, reply]);
-      setIsComposerOpen(false);
-      onReplyCountChange?.(1);
-    },
-    [onReplyCountChange],
-  );
+  const handleReplySent = useCallback((reply: Message) => {
+    setReplies(prev => appendUniqueReplies(prev, [reply]));
+    setIsComposerOpen(false);
+  }, []);
 
   return (
     <div className='ml-14 mt-1 border-l-2 border-white/10 pl-3'>

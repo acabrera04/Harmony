@@ -255,12 +255,11 @@ function ReactionList({
             onClick={() => onReactionClick?.(r.emoji, alreadyReacted)}
             className={cn(
               'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors duration-300',
-              alreadyReacted && !isHighlighted &&
+              alreadyReacted &&
+                !isHighlighted &&
                 'border-[#5865f2]/60 bg-[#5865f2]/20 text-[#5865f2] hover:bg-[#5865f2]/30',
-              alreadyReacted && isHighlighted &&
-                'border-[#5865f2] bg-[#5865f2]/50 text-white',
-              !alreadyReacted &&
-                'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10',
+              alreadyReacted && isHighlighted && 'border-[#5865f2] bg-[#5865f2]/50 text-white',
+              !alreadyReacted && 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10',
             )}
           >
             <span>{r.emoji}</span>
@@ -440,8 +439,11 @@ function ActionBar({
         });
         onReactionAdd?.(emoji.native);
       } catch (err: unknown) {
-        const e = err as { response?: { status?: number; data?: { error?: { json?: { code?: string } } } } };
-        const isConflict = e?.response?.status === 409 || e?.response?.data?.error?.json?.code === 'CONFLICT';
+        const e = err as {
+          response?: { status?: number; data?: { error?: { json?: { code?: string } } } };
+        };
+        const isConflict =
+          e?.response?.status === 409 || e?.response?.data?.error?.json?.code === 'CONFLICT';
         if (isConflict) {
           onReactionConflict?.(emoji.native);
         } else {
@@ -714,6 +716,7 @@ export function MessageItem({
   serverSlug,
   onReplyClick,
   onPinToggle,
+  latestReply,
   onDelete,
 }: {
   message: Message;
@@ -735,6 +738,8 @@ export function MessageItem({
   onReplyClick?: (message: Message) => void;
   /** Called when the user triggers a pin/unpin action for this message. */
   onPinToggle?: (messageId: string, pinned: boolean) => void;
+  /** Latest reply for this message's thread, delivered from composer/SSE state. */
+  latestReply?: Message;
   /** Called after the user successfully deletes this message. */
   onDelete?: (messageId: string) => void;
 }) {
@@ -755,6 +760,14 @@ export function MessageItem({
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(message.replyCount ?? 0);
   const [profileAnchorRect, setProfileAnchorRect] = useState<DOMRect | null>(null);
+  const [prevReplyCount, setPrevReplyCount] = useState(message.replyCount ?? 0);
+  if (prevReplyCount !== (message.replyCount ?? 0)) {
+    const nextReplyCount = message.replyCount ?? 0;
+    setPrevReplyCount(nextReplyCount);
+    // Composer-created replies optimistically bump local state first; this replaces
+    // that delta with the authoritative parent count once channel state catches up.
+    setLocalReplyCount(nextReplyCount);
+  }
 
   // Render-phase derived-state reset: when the avatar URL changes (including A→B→A),
   // reset avatarError so the new URL is always attempted.
@@ -781,16 +794,18 @@ export function MessageItem({
 
   const isOwnMessage = !!user && user.id === message.author.id;
   const displayedContent = localContent ?? message.content;
-  const isMentioned = !!currentUsername && (() => {
-    const re = /@([a-zA-Z0-9_-]{1,32})/g;
-    let m;
-    while ((m = re.exec(displayedContent)) !== null) {
-      const name = m[1].toLowerCase();
-      if (name === currentUsername.toLowerCase()) return true;
-      if (name === 'everyone' || name === 'here') return true;
-    }
-    return false;
-  })();
+  const isMentioned =
+    !!currentUsername &&
+    (() => {
+      const re = /@([a-zA-Z0-9_-]{1,32})/g;
+      let m;
+      while ((m = re.exec(displayedContent)) !== null) {
+        const name = m[1].toLowerCase();
+        if (name === currentUsername.toLowerCase()) return true;
+        if (name === 'everyone' || name === 'here') return true;
+      }
+      return false;
+    })();
 
   const handleReactionAdd = useCallback(
     (emoji: string) => {
@@ -819,7 +834,12 @@ export function MessageItem({
     highlightTimerRef.current = setTimeout(() => setHighlightedEmoji(null), 800);
   }, []);
 
-  useEffect(() => () => { if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    },
+    [],
+  );
 
   // Called when user clicks an existing reaction pill to add or remove their reaction.
   const handleReactionToggle = useCallback(
@@ -1025,7 +1045,7 @@ export function MessageItem({
         parentMessage={message}
         channelId={message.channelId}
         serverId={serverId}
-        onReplyCountChange={delta => setLocalReplyCount(c => c + delta)}
+        incomingReply={latestReply}
       />
     ) : null;
 
@@ -1164,7 +1184,12 @@ export function MessageItem({
               onClick={handleAuthorNameClick}
               role='button'
               tabIndex={0}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAuthorNameClick(e); } }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleAuthorNameClick(e);
+                }
+              }}
             >
               {message.author.displayName ?? message.author.username}
             </span>
