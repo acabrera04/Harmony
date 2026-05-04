@@ -523,15 +523,15 @@ describe('authService.resetRequiredPassword', () => {
 
   it('uses the generic invalid-credentials response when reset is not required', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+    const passwordVerifier = derivePasswordVerifier('NewSecurePass123!');
+    const compareSpy = jest.spyOn(bcrypt, 'compare');
 
     await expect(
-      authService.resetRequiredPassword(
-        mockUser.email,
-        PASSWORD_SALT,
-        derivePasswordVerifier('NewSecurePass123!'),
-      ),
+      authService.resetRequiredPassword(mockUser.email, PASSWORD_SALT, passwordVerifier),
     ).rejects.toMatchObject({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
+    expect(compareSpy).toHaveBeenCalledWith(passwordVerifier, expect.stringMatching(/^\$2[aby]\$/));
     expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    compareSpy.mockRestore();
   });
 
   it('does not reveal whether an email exists during reset', async () => {

@@ -264,6 +264,7 @@ export const authService = {
     }
 
     if (decodePasswordVerifierRecord(user.passwordHash)) {
+      await bcrypt.compare(passwordVerifier, TIMING_DUMMY_HASH);
       throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid credentials' });
     }
 
