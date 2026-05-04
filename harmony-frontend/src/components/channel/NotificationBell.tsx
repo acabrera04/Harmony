@@ -95,17 +95,12 @@ export function NotificationBell({ userId, onUnreadCountsByServerChange, onUnrea
     onUnreadCountsByChannelChangeRef.current?.(unreadByChannel);
   }, [unreadByChannel]);
 
-  // Stable ref so the markChannelAsRead effect can read the latest unread counts without
-  // adding unreadByChannel to its dependency array (which would re-fire on every badge update).
-  const unreadByChannelRef = useRef(unreadByChannel);
-  unreadByChannelRef.current = unreadByChannel;
-
-  // Auto-mark notifications as read when the user visits the channel they were mentioned in.
-  // Guard: skip the round-trip when there are no unread notifications for this channel —
-  // unreadByChannelRef is always up-to-date so new SSE-delivered mentions still trigger a call.
+  // Auto-mark notifications as read when the user is in a channel that has unread mentions.
+  // Depends on unreadByChannel so it re-fires when notifications load after initial mount or
+  // when a new SSE-delivered mention arrives while the user is already in that channel.
   useEffect(() => {
     if (!currentChannelId || !userId) return;
-    if (!unreadByChannelRef.current[currentChannelId]) return;
+    if (!unreadByChannel[currentChannelId]) return;
     void apiClient
       .trpcMutation('notification.markChannelAsRead', { channelId: currentChannelId })
       .then(() => {
@@ -114,7 +109,7 @@ export function NotificationBell({ userId, onUnreadCountsByServerChange, onUnrea
         );
       })
       .catch((err) => console.error('[NotificationBell] markChannelAsRead failed:', err));
-  }, [currentChannelId, userId]);
+  }, [currentChannelId, userId, unreadByChannel]);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
