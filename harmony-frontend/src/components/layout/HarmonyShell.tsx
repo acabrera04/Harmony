@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useSyncExternalStore, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { cn } from '@/lib/utils';
 import { TopBar } from '@/components/channel/TopBar';
 import { MembersSidebar } from '@/components/channel/MembersSidebar';
@@ -19,7 +19,7 @@ import { ServerRail } from '@/components/server-rail/ServerRail';
 import { GuestPromoBanner } from '@/components/channel/GuestPromoBanner';
 import { CreateChannelModal } from '@/components/channel/CreateChannelModal';
 import { useAuth } from '@/hooks/useAuth';
-import { VoiceProvider } from '@/contexts/VoiceContext';
+import { VoiceProvider, type VoiceExternalActions } from '@/contexts/VoiceContext';
 import { BrowseServersModal } from '@/components/server-rail/BrowseServersModal';
 import { useServerEvents } from '@/hooks/useServerEvents';
 import { useServerListSync } from '@/hooks/useServerListSync';
@@ -191,6 +191,8 @@ export function HarmonyShell({
   const [isCreateServerOpen, setIsCreateServerOpen] = useState(false);
   const [isBrowseServersOpen, setIsBrowseServersOpen] = useState(false);
   const [localServers, setLocalServers] = useState<Server[]>(servers);
+  const [mentionCountByServer, setMentionCountByServer] = useState<Record<string, number>>({});
+  const [mentionCountByChannel, setMentionCountByChannel] = useState<Record<string, number>>({});
   const [prevServers, setPrevServers] = useState<Server[]>(servers);
   if (prevServers !== servers) {
     setPrevServers(servers);
@@ -198,6 +200,8 @@ export function HarmonyShell({
   }
 
   const { notifyServerCreated, notifyServerJoined } = useServerListSync();
+  // Imperative handle for forwarding SSE voice events into VoiceContext.channelParticipants.
+  const voiceActionsRef = useRef<VoiceExternalActions | null>(null);
 
   const currentMemberRecord = useMemo(
     () => localMembers.find(m => m.id === authUser?.id),
@@ -560,6 +564,33 @@ export function HarmonyShell({
     onServerUpdated: handleServerUpdated,
     onReactionAdded: isChannelLocked ? undefined : handleReactionAdded,
     onReactionRemoved: isChannelLocked ? undefined : handleReactionRemoved,
+    // Forward voice presence events into VoiceContext via the imperative ref so the
+    // sidebar shows real-time participant counts for channels we're not joined in.
+    onVoiceUserJoined: useCallback(
+      ({ channelId, userId }: { channelId: string; userId: string }) => {
+        voiceActionsRef.current?.notifyUserJoined(channelId, userId);
+      },
+      [],
+    ),
+    onVoiceUserLeft: useCallback(({ channelId, userId }: { channelId: string; userId: string }) => {
+      voiceActionsRef.current?.notifyUserLeft(channelId, userId);
+    }, []),
+    onVoiceStateChanged: useCallback(
+      ({
+        channelId,
+        userId,
+        muted,
+        deafened,
+      }: {
+        channelId: string;
+        userId: string;
+        muted: boolean;
+        deafened: boolean;
+      }) => {
+        voiceActionsRef.current?.notifyStateChanged(channelId, userId, muted, deafened);
+      },
+      [],
+    ),
     enabled: isAuthenticated,
   });
 
@@ -581,6 +612,7 @@ export function HarmonyShell({
       serverId={currentServer.id}
       voiceChannelIds={voiceChannelIds}
       currentUserId={authUser?.id}
+      externalActionsRef={voiceActionsRef}
     >
       <div className='flex h-screen overflow-hidden bg-[#202225] font-sans'>
         {/* Skip-to-content: visually hidden, appears on keyboard focus (WCAG 2.4.1) */}
@@ -598,6 +630,7 @@ export function HarmonyShell({
           currentServerId={currentServer.id}
           basePath={basePath}
           isMobileVisible={isMenuOpen}
+          mentionCountByServer={mentionCountByServer}
           onBrowseServers={() => setIsBrowseServersOpen(true)}
           onAddServer={
             isAuthLoading
@@ -624,6 +657,7 @@ export function HarmonyShell({
           isAuthenticated={isAuthenticated}
           serverId={currentServer.id}
           members={members}
+          mentionCountByChannel={mentionCountByChannel}
           onCreateChannel={defaultType => {
             setCreateChannelDefaultType(defaultType);
             setIsCreateChannelOpen(true);
@@ -649,6 +683,9 @@ export function HarmonyShell({
             isMenuOpen={isMenuOpen}
             onMenuToggle={() => setIsMenuOpen(v => !v)}
             userId={authUser?.id}
+            onUnreadCountsByServerChange={setMentionCountByServer}
+            onUnreadCountsByChannelChange={setMentionCountByChannel}
+            currentChannelId={currentChannel.id}
           />
 
           <div className='flex flex-1 overflow-hidden'>
